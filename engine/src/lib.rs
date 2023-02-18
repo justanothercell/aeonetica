@@ -1,9 +1,12 @@
 pub use nanoserde;
 pub use libloading;
-
 pub use chrono;
+pub use uuid;
 
+pub mod networking;
 pub mod error;
+
+pub type Id = [u8;16];
 
 #[macro_export]
 macro_rules! log {

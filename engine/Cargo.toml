@@ -7,3 +7,4 @@ edition = "2021"
 libloading = "0.7"
 nanoserde = "0.1.32"
 chrono = "0.4.23"
+uuid = { version="1.3.0", features=["v4"] }
