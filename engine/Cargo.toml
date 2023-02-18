@@ -1,0 +1,9 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+libloading = "0.7"
+nanoserde = "0.1.32"
+chrono = "0.4.23"
