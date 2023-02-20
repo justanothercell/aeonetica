@@ -17,10 +17,29 @@ use client::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
 
 #[cfg(target_os = "windows")]
-const MOD_FILE_EXTENSION: &str = ".dll";
+mod paths_util {
+    pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
+    pub(crate) fn client_lib(path: &str, name: &str) -> String {
+        &format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
+    }
+}
 
 #[cfg(target_os = "linux")]
-const MOD_FILE_EXTENSION: &str = ".so";
+mod paths_util {
+    pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+    pub(crate) fn client_lib(path: &str, name: &str) -> String {
+        &format!("runtime/{path}/lib{name}_client{MOD_FILE_EXTENSION}")
+    }
+}
+
+mod paths_util_common {
+    pub(crate) fn mod_hash(path: &str) -> String {
+        format!("runtime/{path}.hash")
+    }
+}
+
+pub(crate) use paths_util::*;
+use crate::client_runtime::paths_util_common::mod_hash;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ClientState {
@@ -114,7 +133,7 @@ impl ClientRuntime {
                                 .map(|(name_path, flags, hash, size)| {
                                     let (name, path) = name_path.split_once(":").unwrap();
                                     let mut local_hash = String::new();
-                                    let _ = File::open(&format!("runtime/{path}.hash")).map(|mut f| f.read_to_string(&mut local_hash));
+                                    let _ = File::open(mod_hash(path)).map(|mut f| f.read_to_string(&mut local_hash));
                                     let available = local_hash.trim() == &hash;
                                     log!("  - {name_path}");
                                     if !available {
@@ -238,7 +257,7 @@ impl ClientRuntime {
 
 pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
     let (name, path) = name_path.split_once(":").unwrap();
-    let client_lib = unsafe { Library::new(&format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}"))
+    let client_lib = unsafe { Library::new(client_lib(path, name))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod create function: {e}"))))? };

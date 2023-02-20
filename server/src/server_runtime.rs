@@ -13,11 +13,17 @@ use crate::networking::NetworkServer;
 #[cfg(target_os = "windows")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
+    pub(crate) fn server_lib(path: &str, name: &str) -> String {
+        &format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}")
+    }
 }
 
 #[cfg(target_os = "linux")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+    pub(crate) fn server_lib(path: &str, name: &str) -> String {
+        &format!("runtime/{path}/server/lib{name}_server{MOD_FILE_EXTENSION}")
+    }
 }
 
 mod paths_util_common {
@@ -81,7 +87,7 @@ pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, AError> {
     unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;
     unzip_archive(File::open(mod_server_zip(path, name))?, format!("runtime/{path}/server"))?;
 
-    let server_lib = unsafe { Library::new(&format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}"))
+    let server_lib = unsafe { Library::new(server_lib(path, name))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_server: Symbol<fn() -> Box<dyn ServerMod>> = unsafe { server_lib.get("_create_mod_server".as_ref())
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
