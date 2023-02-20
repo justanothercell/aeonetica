@@ -2,26 +2,20 @@
 ### crates
 - client: client executable, web client, client loop, graphics, etc
 - server: server executable, web server, server game loop
-- mods/coremod: example mod, compiles to .dll, has client/server stuff seperated via features
+- mods/coremod: example mod, compiles to `.dll` (windows) or `.so` (linux), has client/server stuff separated via features
 - runtime folders in client/server hold all the extracted mod files
 
 ### how to run
-- compile the mods you changed using [build.bat](../mods/coremod/build.bat)
+- compile the mods you changed using [build.bat](../mods/coremod/build.bat) or [build.sh](../mods/coremod/build.sh)
 - start server with args specified in [main](../server/src/main.rs)
 - start client with args specified in [main](../client/src/main.rs)
 
 ### how it does what it does
 - future me problem
-
-### places that need fixing for unix
-- [client_runtime.rs](../client/src/client_runtime.rs)
-- [server_runtime.rs](../server/src/server_runtime.rs)
-- [build.bat](../mods/coremod/build.bat)
-
 ---
 # TODO/Fixes:
 - cleanup of error handling
-- utility functions that return the path to a lib (and have platform appropiate ending)
+- utility functions that return the path to a lib (and have platform appropriate ending)
 - checking whether all mods are valid after loading by checking for files and checking which platforms are supported
 - better mod build script using probably python, make it platform  generic
 
