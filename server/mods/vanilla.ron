@@ -2,6 +2,7 @@
     profile: "vanilla",
     version: "0.1.0",
     modstack: {
-        "coremod": []
+        // name:path
+        "coremod:coremod": []
     }
 )

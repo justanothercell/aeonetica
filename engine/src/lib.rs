@@ -2,11 +2,15 @@ pub use nanoserde;
 pub use libloading;
 pub use chrono;
 pub use uuid;
+pub use sha2;
 
 pub mod networking;
 pub mod error;
+pub mod util;
 
 pub type Id = [u8;16];
+
+pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[macro_export]
 macro_rules! log {
@@ -34,7 +38,7 @@ macro_rules! log_err {
         println!()
     };
     ($($arg:tt)*) => {
-        println!("{} [{} - ERR]: {}", $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
+        println!("[@{}]\n{} [{} - ERR]: {}", format!("{}:{}:{}", file!(), line!(), column!()), $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
     };
 }
 

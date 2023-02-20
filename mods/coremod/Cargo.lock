@@ -259,7 +259,9 @@ dependencies = [
  "chrono",
  "libloading",
  "nanoserde",
+ "sha2",
  "uuid",
+ "zip",
 ]
 
 [[package]]
@@ -503,7 +505,6 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "engine",
- "zip",
 ]
 
 [[package]]

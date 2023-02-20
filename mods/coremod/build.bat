@@ -1,14 +1,30 @@
 @echo off
 
-mkdir "target/debug/out"
-cargo build --features="client"
-echo F|xcopy "target\debug\coremod.dll" "target\debug\out\coremod_client.dll" /y
-cargo build --features="server"
-echo F|xcopy "target\debug\coremod.dll" "target\debug\out\coremod_server.dll" /y
+mkdir "target/debug/out/server"
+mkdir "target/debug/out/client"
 
-rm "target\debug\out\*"
+cargo build --features="client"
+echo F|xcopy "target\debug\coremod.dll" "target\debug\out\client\coremod_client.dll" /y
+cargo build --features="server"
+echo F|xcopy "target\debug\coremod.dll" "target\debug\out\server\coremod_server.dll" /y
+
+
 rm "target\debug\coremod.zip
+rm "target\debug\out\coremod_server.zip
+rm "target\debug\out\coremod_client.zip
+
 cd "target\debug\out"
-7z a -r "..\coremod.zip" *
+
+cd "server"
+7z a -r "..\coremod_server.zip" *
+cd ".."
+
+cd "client"
+7z a -r "..\coremod_client.zip" *
+cd ".."
+
+7z a -r "..\coremod.zip" "coremod_server.zip" "coremod_client.zip"
+
 cd "..\..\.."
+
 echo F|xcopy "target\debug\coremod.zip" "..\..\server\mods\coremod.zip" /y

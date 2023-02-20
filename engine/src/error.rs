@@ -22,10 +22,14 @@ impl AError {
             trace: Backtrace::force_capture()
         }
     }
-    pub fn log_exit(&self) {
-        log_err!("{self}");
-        log_raw!("{}", self.trace);
+    pub fn log_exit(&self) -> !{
+        self.log();
         exit(1)
+    }
+
+    pub fn log(&self) {
+        log_err!("{self}\nlocation: {}", self.location);
+        log_raw!("{}", self.trace);
     }
 }
 
@@ -40,7 +44,7 @@ pub enum AET {
 
 impl Display for AError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}\nlocation: {}", match &self.et {
+        write!(f, "{}{}\n", match &self.et {
             AET::ValueError(e) => format!("ValueError: {e}"),
             AET::DataError(e) => format!("DataError: {e}"),
             AET::IOError(e) => format!("IOError: {e}"),
@@ -49,11 +53,11 @@ impl Display for AError {
             AET::ModConflict(e) => format!("IOError: {e}"),
         }, if self.additional_info.len() > 0 {
             format!("\n => {}", self.additional_info.join("\n => "))
-        } else { String::new() }, self.location)
+        } else { String::new() })
     }
 }
 
-impl From<std::io::Error> for AError {
+impl From<Error> for AError {
     #[track_caller]
     fn from(value: Error) -> Self {
         AError::new(AET::IOError(value.to_string()))

@@ -10,14 +10,14 @@ pub trait ServerMod {
 
 pub struct ServerModBox {
     server_mod: Box<dyn ServerMod>,
-    library: Library
+    _library: Library
 }
 
 impl ServerModBox {
     pub fn new(server_mod: Box<dyn ServerMod>, library: Library) -> Self{
         Self {
             server_mod,
-            library,
+            _library: library,
         }
     }
 }
