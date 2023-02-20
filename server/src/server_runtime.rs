@@ -84,7 +84,7 @@ impl ServerRuntime {
 }
 
 pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, AError> {
-    let (name, path) = name_path.split_once(":").unwrap();
+    let (name, path) = name_path.split_once(':').unwrap();
 
     unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;
     unzip_archive(File::open(mod_server_zip(path, name))?, format!("runtime/{path}/server"))?;

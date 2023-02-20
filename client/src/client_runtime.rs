@@ -71,6 +71,8 @@ pub(crate) struct LoadingMod{
     available: bool
 }
 
+type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
+
 impl ClientRuntime {
     pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str) -> Result<Self, AError>{
         let nc = NetworkClient::start(addr, server_addr).map_err(|e| {
@@ -115,7 +117,7 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn register(&mut self) -> Result<Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>, AError>{
+    fn register(&mut self) -> Result<LoadingModList, AError>{
         let mut mod_list = Rc::new(RefCell::new(HashMap::new()));
         let mut mod_list_filler = mod_list.clone();
         self.request_response(&ClientPacket {
@@ -190,7 +192,7 @@ impl ClientRuntime {
         Ok(mod_list)
     }
 
-    fn download_mods(&mut self, mod_list: &Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>) -> Result<(), AError>{
+    fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
         log!("downloading {} mod(s)", mod_list.borrow().values().into_iter().filter(|m| !m.borrow().available).count());
         let mut total = 0;
         let mut borrowed_ml = mod_list.borrow_mut();
@@ -204,10 +206,10 @@ impl ClientRuntime {
             for i in (0..lmb.total_size).step_by(MAX_RAW_DATA_SIZE) {
                 let lm = lm.clone();
                 self.request_response(&ClientPacket {
-                    client_id: self.client_id.clone(),
+                    client_id: self.client_id,
                     conv_id: Uuid::new_v4().into_bytes(),
                     message: ClientMessage::DownloadMod(name_path.clone(), i),
-                }, move |client, resp| {
+                }, move |_client, resp| {
                     let mut lmb = lm.borrow_mut();
                     match &resp.message {
                         ServerMessage::RawData(data) => {
@@ -256,7 +258,7 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn enable_mods(&mut self, mod_list: &Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>) -> Result<(), AError>{
+    fn enable_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
         for (name_path, lm) in mod_list.borrow_mut().iter_mut() {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
