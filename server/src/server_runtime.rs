@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::env::consts::OS;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::{log, nanoserde};
 use aeonetica_engine::error::{AError, AET};
@@ -8,6 +9,13 @@ use aeonetica_engine::nanoserde::{DeBin, DeRon, SerBin, SerRon};
 use aeonetica_engine::util::unzip_archive;
 use server::{ServerMod, ServerModBox};
 use crate::networking::NetworkServer;
+
+
+#[cfg(target_os = "windows")]
+const MOD_FILE_EXTENSION: &str = ".dll";
+
+#[cfg(target_os = "linux")]
+const MOD_FILE_EXTENSION: &str = ".so";
 
 pub struct ServerRuntime {
     pub(crate) mod_profile: ModProfile,
@@ -58,7 +66,7 @@ pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, AError> {
     unzip_archive(File::open(format!("mods/{path}.zip"))?, format!("runtime/{path}"))?;
     unzip_archive(File::open(format!("runtime/{path}/{name}_server.zip"))?, format!("runtime/{path}/server"))?;
 
-    let server_lib = unsafe { Library::new(&format!("runtime/{path}/server/{name}_server.dll"))
+    let server_lib = unsafe { Library::new(&format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}"))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_server: Symbol<fn() -> Box<dyn ServerMod>> = unsafe { server_lib.get("_create_mod_server".as_ref())
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
