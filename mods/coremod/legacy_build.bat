@@ -1,5 +1,7 @@
 @echo off
 
+echo THIS IS DEPRECATED, USE build.py INSTEAD!!
+
 mkdir "target/debug/out/server"
 mkdir "target/debug/out/client"
 

@@ -4,6 +4,8 @@ MOD_NAME='coremod'
 
 set -xe
 
+echo "THIS IS DEPRECATED, USE build.py INSTEAD!!"
+
 BUILD_DIR='target/debug'
 GENERATED_MOD_FILE="lib$MOD_NAME.so"
 
