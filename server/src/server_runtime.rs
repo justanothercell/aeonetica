@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
-use std::env::consts::OS;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::{log, nanoserde};
 use aeonetica_engine::error::{AError, AET};
