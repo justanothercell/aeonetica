@@ -13,11 +13,19 @@ use crate::networking::NetworkServer;
 #[cfg(target_os = "windows")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
+
+    pub(crate) fn server_lib(path: &str, name: &str) -> String {
+        format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}")
+    }
 }
 
 #[cfg(target_os = "linux")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+
+    pub(crate) fn server_lib(path: &str, name: &str) -> String {
+        format!("runtime/{path}/server/lib{name}_server{MOD_FILE_EXTENSION}")
+    }
 }
 
 mod paths_util_common {
@@ -46,9 +54,9 @@ pub struct ModProfile {
 }
 
 impl ServerRuntime {
-    pub(crate) fn create(mod_profile: &str, addr: &str) -> Result<ServerRuntime, AError> {
+    pub(crate) fn create(addr: &str) -> Result<ServerRuntime, AError> {
         let mut data = String::new();
-        File::open(&format!("mods/{mod_profile}.ron"))?.read_to_string(&mut data)?;
+        File::open("mods/mods.ron")?.read_to_string(&mut data)?;
         let profile: ModProfile = DeRon::deserialize_ron(&data)?;
         let mut mods = vec![];
         for item in &profile.modstack {
@@ -81,7 +89,7 @@ pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, AError> {
     unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;
     unzip_archive(File::open(mod_server_zip(path, name))?, format!("runtime/{path}/server"))?;
 
-    let server_lib = unsafe { Library::new(&format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}"))
+    let server_lib = unsafe { Library::new(server_lib(path, name))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_server: Symbol<fn() -> Box<dyn ServerMod>> = unsafe { server_lib.get("_create_mod_server".as_ref())
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
