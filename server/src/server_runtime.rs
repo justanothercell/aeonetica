@@ -11,10 +11,26 @@ use crate::networking::NetworkServer;
 
 
 #[cfg(target_os = "windows")]
-const MOD_FILE_EXTENSION: &str = ".dll";
+mod paths_util {
+    pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
+}
 
 #[cfg(target_os = "linux")]
-const MOD_FILE_EXTENSION: &str = ".so";
+mod paths_util {
+    pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+}
+
+mod paths_util_common {
+    pub(crate) fn mod_zip(path: &str) -> String {
+        format!("mods/{path}.zip")
+    }
+    pub(crate) fn mod_server_zip(path: &str, name: &str) -> String {
+        format!("runtime/{path}/{name}_server.zip")
+    }
+}
+
+pub(crate) use paths_util::*;
+pub(crate) use paths_util_common::*;
 
 pub struct ServerRuntime {
     pub(crate) mod_profile: ModProfile,
@@ -62,8 +78,8 @@ impl ServerRuntime {
 pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, AError> {
     let (name, path) = name_path.split_once(":").unwrap();
 
-    unzip_archive(File::open(format!("mods/{path}.zip"))?, format!("runtime/{path}"))?;
-    unzip_archive(File::open(format!("runtime/{path}/{name}_server.zip"))?, format!("runtime/{path}/server"))?;
+    unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;
+    unzip_archive(File::open(mod_server_zip(path, name))?, format!("runtime/{path}/server"))?;
 
     let server_lib = unsafe { Library::new(&format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}"))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };

@@ -1,4 +1,6 @@
 **/target/
-*.zip
+client/runtime/
+server/runtime/
+server/mods/**.zip
 .idea/
 .vscode/
