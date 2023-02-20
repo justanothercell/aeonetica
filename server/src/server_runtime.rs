@@ -56,7 +56,7 @@ pub struct ModProfile {
 impl ServerRuntime {
     pub(crate) fn create(addr: &str) -> Result<ServerRuntime, AError> {
         let mut data = String::new();
-        File::open("mods/profile.ron")?.read_to_string(&mut data)?;
+        File::open("mods/mods.ron")?.read_to_string(&mut data)?;
         let profile: ModProfile = DeRon::deserialize_ron(&data)?;
         let mut mods = vec![];
         for item in &profile.modstack {
