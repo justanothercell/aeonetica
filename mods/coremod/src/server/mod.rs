@@ -7,6 +7,6 @@ pub struct CoreModServer {
 
 impl ServerMod for CoreModServer {
     fn init(&mut self, _flags: &Vec<String>) {
-        log!("hello from client core!")
+        log!("hello from server core!")
     }
 }
