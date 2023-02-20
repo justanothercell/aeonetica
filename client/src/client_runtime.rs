@@ -16,6 +16,12 @@ use aeonetica_engine::util::unzip_archive;
 use client::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
 
+#[cfg(target_os = "windows")]
+const MOD_FILE_EXTENSION: &str = ".dll";
+
+#[cfg(target_os = "linux")]
+const MOD_FILE_EXTENSION: &str = ".so";
+
 #[derive(Debug, PartialEq)]
 pub(crate) enum ClientState {
     Start,
@@ -232,7 +238,7 @@ impl ClientRuntime {
 
 pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
     let (name, path) = name_path.split_once(":").unwrap();
-    let client_lib = unsafe { Library::new(&format!("runtime/{path}/{name}_client.dll"))
+    let client_lib = unsafe { Library::new(&format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}"))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod create function: {e}"))))? };
