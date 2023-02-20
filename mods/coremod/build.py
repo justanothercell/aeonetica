@@ -111,7 +111,7 @@ if __name__ == '__main__':
             for a in archives:
                 zipf.write(a)
                 
-    if len(output_file) > 0:\
+    if len(output_file) > 0:
         shutil.copy(f'{prefix}/{archive}', output_file)     
     
     if len(deploy_path) > 0:
