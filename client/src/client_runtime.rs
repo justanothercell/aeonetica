@@ -30,7 +30,7 @@ mod paths_util {
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
     pub(crate) fn client_lib(path: &str, name: &str) -> String {
-        format!("runtime/{path}/lib{name}_client{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
     }
 }
 
