@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-set -xe
-
 MOD_NAME='coremod'
+
+set -xe
 
 BUILD_DIR='target/debug'
 GENERATED_MOD_FILE="lib$MOD_NAME.so"
@@ -14,7 +14,7 @@ cargo build --features='client'
 
 pushd $BUILD_DIR
 
-TARGET_MOD_FILE="out/client/$MOD_NAME.so"
+TARGET_MOD_FILE="out/client/${MOD_NAME}_client.so"
 
 if [ -f $GENERATED_MOD_FILE ]; then
     mv $GENERATED_MOD_FILE $TARGET_MOD_FILE
@@ -29,7 +29,7 @@ cargo build --features='server'
 
 pushd $BUILD_DIR
 
-TARGET_MOD_FILE="out/server/$MOD_NAME.so"
+TARGET_MOD_FILE="out/server/${MOD_NAME}_server.so"
 
 if [ -f $GENERATED_MOD_FILE ]; then
     mv $GENERATED_MOD_FILE $TARGET_MOD_FILE
