@@ -1,20 +1,19 @@
 use std::collections::HashMap;
-use std::fmt::Display;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
 use std::process::exit;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 use aeonetica_engine::uuid::Uuid;
-use aeonetica_engine::error::AError;
+use aeonetica_engine::libloading::{Library, Symbol};
+use aeonetica_engine::error::{AError,AET};
 use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
-use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
+use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
 use aeonetica_engine::util::unzip_archive;
-use client::ClientModBox;
+use client::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
 
 #[derive(Debug, PartialEq)]
@@ -75,7 +74,8 @@ impl ClientRuntime {
             }
         });
         log!("started timeout preventer");
-        client.download_mods();
+        client.download_mods().map_err(|e| client.gracefully_abort(e));
+        client.enable_mods().map_err(|e| client.gracefully_abort(e));
         Ok(client)
     }
 
@@ -116,7 +116,6 @@ impl ClientRuntime {
                                     }
                                     (name_path.clone(), (name.to_string(), path.to_string(), flags, hash, size, 0, vec![0;size as usize], available))
                                 }).collect();
-                            log!("downloading {} mod(s)", client.modloading.mod_list.values().into_iter().filter(|m| !m.7).count());
                         }
                         NetResult::Err(msg) => {
                             log_err!("server did not accept connection: {msg}");
@@ -141,7 +140,8 @@ impl ClientRuntime {
         }
     }
 
-    fn download_mods(&mut self) {
+    fn download_mods(&mut self) -> Result<(), AError>{
+        log!("downloading {} mod(s)", self.modloading.mod_list.values().into_iter().filter(|m| !m.7).count());
         let keys = self.modloading.mod_list.keys().map(|s| s.to_string()).collect::<Vec<_>>();
         let mut total = 0;
         for name_path in keys {
@@ -178,9 +178,7 @@ impl ClientRuntime {
         let mut p = 0.0;
         while self.state != ClientState::DownloadedMods {
             for packet in self.nc.queued_packets() {
-                self.handle_packet(&packet).map_err(|e| {
-                    e.log_exit();
-                }).unwrap();
+                self.handle_packet(&packet)?;
             }
 
             let mut downloaded = 0;
@@ -189,14 +187,8 @@ impl ClientRuntime {
                     downloaded += m.5;
                     if m.4 == m.5 {
                         m.7 = true;
-                        unzip_archive(Cursor::new(&m.6), &format!("runtime/{}", m.1)).map_err(|e| {
-                            let e: AError = e.into();
-                            e.log_exit();
-                        }).unwrap();
-                        File::create(&format!("runtime/{}.hash", m.1)).unwrap().write_all(m.3.as_bytes()).map_err(|e| {
-                            let e: AError = e.into();
-                            e.log_exit();
-                        }).unwrap();
+                        unzip_archive(Cursor::new(&m.6), &format!("runtime/{}", m.1))?;
+                        File::create(&format!("runtime/{}.hash", m.1)).unwrap().write_all(m.3.as_bytes())?;
                         log!("finished downloading mod {}", key)
                     }
                 }
@@ -209,10 +201,25 @@ impl ClientRuntime {
                 self.state = ClientState::DownloadedMods
             }
         }
-        log!("downloaded all missing mods")
+        log!("downloaded all missing mods");
+        Ok(())
     }
 
-    fn gracefully_abort(&self){
+    fn enable_mods(&mut self) -> Result<(), AError>{
+        for (name_path, m) in &self.modloading.mod_list {
+            log!("loading mod {} ...", name_path);
+            let mut loaded_mod = load_mod(name_path)?;
+            loaded_mod.init(&m.2);
+            self.loaded_mods.push(loaded_mod);
+            log!("loaded mod {} ...", name_path);
+        }
+        log!("successfully loaded {} mods from profile {} v{}", self.loaded_mods.len(), self.mod_profile, self.mod_profile_version);
+        Ok(())
+    }
+
+    fn gracefully_abort<E: Into<AError>>(&self, e: E) -> !{
+        let err = e.into();
+        err.log();
         let _ = self.nc.send(&ClientPacket {
             client_id: self.client_id,
             conv_id: Uuid::new_v4().into_bytes(),
@@ -221,4 +228,14 @@ impl ClientRuntime {
         log_err!("gracefully aborted client");
         exit(1);
     }
+}
+
+pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
+    let (name, path) = name_path.split_once(":").unwrap();
+    let client_lib = unsafe { Library::new(&format!("runtime/{path}/{name}_client.dll"))
+        .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
+    let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())
+        .map_err(|e| AError::new(AET::ModError(format!("could not load mod create function: {e}"))))? };
+    let mod_client = _create_mod_client();
+    Ok(ClientModBox::new(mod_client, client_lib))
 }

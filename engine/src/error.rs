@@ -22,11 +22,13 @@ impl AError {
             trace: Backtrace::force_capture()
         }
     }
+    #[track_caller]
     pub fn log_exit(&self) -> !{
         self.log();
         exit(1)
     }
 
+    #[track_caller]
     pub fn log(&self) {
         log_err!("{self}\nlocation: {}", self.location);
         log_raw!("{}", self.trace);

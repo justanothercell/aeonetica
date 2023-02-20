@@ -63,6 +63,7 @@ impl ServerRuntime {
                 }
             }
             ClientMessage::Unregister => {
+                log!("unregistered client ip {}", addr);
                 self.ns.clients.remove(&packet.client_id);
             }
             ClientMessage::Ping(msg) => self.ns.send(&packet.client_id, &ServerPacket{
