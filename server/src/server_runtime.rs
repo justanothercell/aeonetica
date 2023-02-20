@@ -13,16 +13,18 @@ use crate::networking::NetworkServer;
 #[cfg(target_os = "windows")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
+
     pub(crate) fn server_lib(path: &str, name: &str) -> String {
-        &format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}")
     }
 }
 
 #[cfg(target_os = "linux")]
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+
     pub(crate) fn server_lib(path: &str, name: &str) -> String {
-        &format!("runtime/{path}/server/lib{name}_server{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/server/lib{name}_server{MOD_FILE_EXTENSION}")
     }
 }
 
@@ -52,9 +54,9 @@ pub struct ModProfile {
 }
 
 impl ServerRuntime {
-    pub(crate) fn create(mod_profile: &str, addr: &str) -> Result<ServerRuntime, AError> {
+    pub(crate) fn create(addr: &str) -> Result<ServerRuntime, AError> {
         let mut data = String::new();
-        File::open(&format!("mods/{mod_profile}.ron"))?.read_to_string(&mut data)?;
+        File::open("mods/profile.ron")?.read_to_string(&mut data)?;
         let profile: ModProfile = DeRon::deserialize_ron(&data)?;
         let mut mods = vec![];
         for item in &profile.modstack {

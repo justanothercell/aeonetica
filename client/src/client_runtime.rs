@@ -1,8 +1,10 @@
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
 use std::process::exit;
 use std::thread;
+use std::rc::Rc;
 use std::time::Duration;
 use aeonetica_engine::uuid::Uuid;
 use aeonetica_engine::libloading::{Library, Symbol};
@@ -20,7 +22,7 @@ use crate::networking::NetworkClient;
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
     pub(crate) fn client_lib(path: &str, name: &str) -> String {
-        &format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
     }
 }
 
@@ -28,7 +30,7 @@ mod paths_util {
 mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
     pub(crate) fn client_lib(path: &str, name: &str) -> String {
-        &format!("runtime/{path}/lib{name}_client{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/lib{name}_client{MOD_FILE_EXTENSION}")
     }
 }
 
@@ -55,12 +57,18 @@ pub(crate) struct ClientRuntime {
     pub(crate) nc: NetworkClient,
     pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
-    pub(crate) state: ClientState,
-    modloading: Modloading
+    pub(crate) state: ClientState
 }
 
-pub(crate) struct Modloading{
-    mod_list: HashMap<String, (String, String, Vec<String>, String, u64, u64, Vec<u8>, bool)>
+pub(crate) struct LoadingMod{
+    name: String,
+    path: String,
+    flags: Vec<String>,
+    hash: String,
+    total_size: u64,
+    size: u64,
+    data: Vec<u8>,
+    available: bool
 }
 
 impl ClientRuntime {
@@ -76,12 +84,9 @@ impl ClientRuntime {
             mod_profile_version: String::new(),
             awaiting_replies: Default::default(),
             loaded_mods: vec![],
-            state: ClientState::Start,
-            modloading: Modloading {
-                mod_list: Default::default(),
-            }
+            state: ClientState::Start
         };
-        client.register();
+        let mut mod_list = client.register()?;
         let timeout_socket = client.nc.socket.try_clone()?;
         thread::spawn(move || {
             loop {
@@ -99,8 +104,8 @@ impl ClientRuntime {
             }
         });
         log!("started timeout preventer");
-        client.download_mods().map_err(|e| client.gracefully_abort(e));
-        client.enable_mods().map_err(|e| client.gracefully_abort(e));
+        client.download_mods(&mut mod_list).map_err(|e| client.gracefully_abort(e));
+        client.enable_mods(&mut mod_list).map_err(|e| client.gracefully_abort(e));
         Ok(client)
     }
 
@@ -110,7 +115,9 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn register(&mut self) {
+    fn register(&mut self) -> Result<Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>, AError>{
+        let mut mod_list = Rc::new(RefCell::new(HashMap::new()));
+        let mut mod_list_filler = mod_list.clone();
         self.request_response(&ClientPacket {
             client_id: self.client_id.clone(),
             conv_id: Uuid::new_v4().into_bytes(),
@@ -118,7 +125,7 @@ impl ClientRuntime {
                 client_id: self.client_id,
                 client_version: ENGINE_VERSION.to_string(),
             }),
-        }, |client, resp| {
+        }, move |client, resp| {
             match &resp.message {
                 ServerMessage::RegisterResponse(res) => {
                     match res {
@@ -129,7 +136,7 @@ impl ClientRuntime {
                             client.mod_profile = info.mod_profile.clone();
                             client.mod_profile_version = info.mod_version.clone();
                             log!("server has mod profile {} v{} with {} mod(s):", client.mod_profile, client.mod_profile_version, info.mods.len());
-                            client.modloading.mod_list = info.mods.clone().into_iter()
+                            let local_mod_list: HashMap<_, _> = info.mods.clone().into_iter()
                                 .map(|(name_path, flags, hash, size)| {
                                     let (name, path) = name_path.split_once(":").unwrap();
                                     let mut local_hash = String::new();
@@ -138,9 +145,30 @@ impl ClientRuntime {
                                     log!("  - {name_path}");
                                     if !available {
                                         let _ = std::fs::remove_dir_all(&format!("runtime/{path}"));
+                                        (name_path.clone(),  Rc::new(RefCell::new(LoadingMod {
+                                            name: name.to_string(),
+                                            path: name.to_string(),
+                                            flags,
+                                            hash,
+                                            total_size: size,
+                                            size: 0,
+                                            data: vec![0;size as usize],
+                                            available: false,
+                                        })))
+                                    } else {
+                                        (name_path.clone(), Rc::new(RefCell::new(LoadingMod {
+                                            name: name.to_string(),
+                                            path: name.to_string(),
+                                            flags,
+                                            hash,
+                                            total_size: size,
+                                            size, // already fully available, is redundant
+                                            data: vec![],
+                                            available: true,
+                                        })))
                                     }
-                                    (name_path.clone(), (name.to_string(), path.to_string(), flags, hash, size, 0, vec![0;size as usize], available))
                                 }).collect();
+                            mod_list_filler.replace(local_mod_list);
                         }
                         NetResult::Err(msg) => {
                             log_err!("server did not accept connection: {msg}");
@@ -153,42 +181,38 @@ impl ClientRuntime {
                     exit(1);
                 }
             }
-        }).map_err(|e| {
-            e.log_exit();
-        }).unwrap();
+        })?;
         while self.state != ClientState::Registered {
             for packet in self.nc.queued_packets() {
-                self.handle_packet(&packet).map_err(|e| {
-                    e.log_exit();
-                }).unwrap();
+                self.handle_packet(&packet)?;
             }
         }
+        Ok(mod_list)
     }
 
-    fn download_mods(&mut self) -> Result<(), AError>{
-        log!("downloading {} mod(s)", self.modloading.mod_list.values().into_iter().filter(|m| !m.7).count());
-        let keys = self.modloading.mod_list.keys().map(|s| s.to_string()).collect::<Vec<_>>();
+    fn download_mods(&mut self, mod_list: &Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>) -> Result<(), AError>{
+        log!("downloading {} mod(s)", mod_list.borrow().values().into_iter().filter(|m| !m.borrow().available).count());
         let mut total = 0;
-        for name_path in keys {
-            let d = self.modloading.mod_list.get(&name_path).unwrap();
-            if d.7 {
+        let mut borrowed_ml = mod_list.borrow_mut();
+        for (name_path, lm) in borrowed_ml.iter_mut() {
+            let lmb = lm.borrow_mut();
+            if lmb.available {
                 continue
             }
-            let size = d.4;
-            log!("downloading mod {name_path} across {} packets", size.div_ceil(MAX_RAW_DATA_SIZE as u64));
-            total += size;
-            for i in (0..size).step_by(MAX_RAW_DATA_SIZE) {
-                let np = name_path.clone();
+            log!("downloading mod {name_path} across {} packets", lmb.total_size.div_ceil(MAX_RAW_DATA_SIZE as u64));
+            total += lmb.total_size;
+            for i in (0..lmb.total_size).step_by(MAX_RAW_DATA_SIZE) {
+                let lm = lm.clone();
                 self.request_response(&ClientPacket {
                     client_id: self.client_id.clone(),
                     conv_id: Uuid::new_v4().into_bytes(),
                     message: ClientMessage::DownloadMod(name_path.clone(), i),
                 }, move |client, resp| {
+                    let mut lmb = lm.borrow_mut();
                     match &resp.message {
                         ServerMessage::RawData(data) => {
-                            let m = client.modloading.mod_list.get_mut(&np).unwrap();
-                            m.5 += data.len() as u64;
-                            m.6.splice(i as usize..(i as usize+data.len()), data.to_owned());
+                            lmb.size += data.len() as u64;
+                            lmb.data.splice(i as usize..(i as usize+data.len()), data.to_owned());
                         },
                         e => {
                             log_err!("invalid response: {e:?}");
@@ -200,6 +224,7 @@ impl ClientRuntime {
                 }).unwrap();
             }
         }
+
         let mut p = 0.0;
         while self.state != ClientState::DownloadedMods {
             for packet in self.nc.queued_packets() {
@@ -207,13 +232,14 @@ impl ClientRuntime {
             }
 
             let mut downloaded = 0;
-            for (key, m) in self.modloading.mod_list.iter_mut(){
-                if !m.7 {
-                    downloaded += m.5;
-                    if m.4 == m.5 {
-                        m.7 = true;
-                        unzip_archive(Cursor::new(&m.6), &format!("runtime/{}", m.1))?;
-                        File::create(&format!("runtime/{}.hash", m.1)).unwrap().write_all(m.3.as_bytes())?;
+            for (key, lm) in borrowed_ml.iter_mut(){
+                let mut lm = lm.borrow_mut();
+                if !lm.available {
+                    downloaded += lm.size;
+                    if lm.size == lm.total_size {
+                        lm.available = true;
+                        unzip_archive(Cursor::new(&lm.data), &format!("runtime/{}", lm.path))?;
+                        File::create(mod_hash(&lm.path)).unwrap().write_all(lm.data.as_slice())?;
                         log!("finished downloading mod {}", key)
                     }
                 }
@@ -230,11 +256,11 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn enable_mods(&mut self) -> Result<(), AError>{
-        for (name_path, m) in &self.modloading.mod_list {
+    fn enable_mods(&mut self, mod_list: &Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>) -> Result<(), AError>{
+        for (name_path, lm) in mod_list.borrow_mut().iter_mut() {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
-            loaded_mod.init(&m.2);
+            loaded_mod.init(&lm.borrow().flags);
             self.loaded_mods.push(loaded_mod);
             log!("loaded mod {} ...", name_path);
         }
