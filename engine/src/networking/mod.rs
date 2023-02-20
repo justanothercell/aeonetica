@@ -5,6 +5,7 @@ pub mod client_packets;
 pub mod server_packets;
 
 pub const MAX_PACKET_SIZE: usize = 1500;
+pub const MAX_RAW_DATA_SIZE: usize = 1500 - 26;
 
 #[derive(Debug, SerBin, DeBin)]
 pub enum NetResult<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin>{

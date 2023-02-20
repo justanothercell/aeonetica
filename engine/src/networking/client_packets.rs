@@ -30,7 +30,7 @@ pub enum ClientMessage {
     Logout,
     KeepAlive,
     Register(ClientInfo),
-    DownloadMod(String),
+    DownloadMod(String, u64),
     Unregister,
     Acknowlege(Id),
     Ping(String),

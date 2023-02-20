@@ -1,3 +1,5 @@
+#![feature(int_roundings)]
+
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{log, log_err};
 use aeonetica_engine::uuid::Uuid;
@@ -22,7 +24,6 @@ fn main() {
 
     loop {
         for packet in client.nc.queued_packets() {
-            println!("{packet:#?}");
             let _ = client.handle_packet(&packet).map_err(|e| {
                 log_err!("{e}")
             });

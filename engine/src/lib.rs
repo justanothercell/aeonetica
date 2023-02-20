@@ -11,6 +11,7 @@ pub mod util;
 pub type Id = [u8;16];
 
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s
 
 #[macro_export]
 macro_rules! log {

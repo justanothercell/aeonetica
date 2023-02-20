@@ -27,8 +27,8 @@ impl Debug for ServerPacket {
 pub enum ServerMessage {
     KeepAlive,
     Acknowlege(Id),
+    Unregister(String),
     RegisterResponse(NetResult<ServerInfo, String>),
-    DownloadModPacket(usize, Vec<u8>),
     Kick(String),
     Login(Id, String),
     Logout(Id, String),

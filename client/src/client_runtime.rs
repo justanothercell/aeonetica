@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Cursor, Write};
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
+use std::time::Duration;
 use aeonetica_engine::uuid::Uuid;
 use aeonetica_engine::error::AError;
-use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err};
-use aeonetica_engine::nanoserde::DeRonTok::Str;
+use aeonetica_engine::nanoserde::SerBin;
+use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
-use aeonetica_engine::networking::NetResult;
+use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
+use aeonetica_engine::util::unzip_archive;
 use client::ClientModBox;
 use crate::networking::NetworkClient;
 
@@ -18,8 +21,6 @@ use crate::networking::NetworkClient;
 pub(crate) enum ClientState {
     Start,
     Registered,
-    AquiredModList,
-    DownloadingMods(String, usize),
     DownloadedMods,
 }
 
@@ -28,7 +29,7 @@ pub(crate) struct ClientRuntime {
     pub(crate) mod_profile: String,
     pub(crate) mod_profile_version: String,
     pub(crate) nc: NetworkClient,
-    pub(crate) awaiting_replies: HashMap<Id, fn(&mut ClientRuntime, &ServerPacket)>,
+    pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
     pub(crate) state: ClientState,
     modloading: Modloading
@@ -53,15 +54,33 @@ impl ClientRuntime {
             loaded_mods: vec![],
             state: ClientState::Start,
             modloading: Modloading {
-                mod_list: vec![],
+                mod_list: Default::default(),
             }
         };
         client.register();
+        let timeout_socket = client.nc.socket.try_clone()?;
+        thread::spawn(move || {
+            loop {
+                let data = SerBin::serialize_bin(&ClientPacket {
+                    client_id: client_id.clone(),
+                    conv_id: Uuid::new_v4().into_bytes(),
+                    message: ClientMessage::KeepAlive,
+                });
+                let _ = timeout_socket.send(data.as_slice()).map_err(|e|{
+                    let e: AError = e.into();
+                    log_err!("{e}");
+                    exit(1);
+                });
+                std::thread::sleep(Duration::from_millis((MAX_CLIENT_TIMEOUT - 1000) as u64))
+            }
+        });
+        log!("started timeout preventer");
+        client.download_mods();
         Ok(client)
     }
 
-    pub(crate) fn request_response(&mut self, packet: &ClientPacket, handler: fn(&mut ClientRuntime, &ServerPacket)) -> Result<(), AError> {
-        self.awaiting_replies.insert(packet.conv_id, handler);
+    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F) -> Result<(), AError> {
+        self.awaiting_replies.insert(packet.conv_id, Box::new(handler));
         self.nc.send(packet)?;
         Ok(())
     }
@@ -95,9 +114,9 @@ impl ClientRuntime {
                                     if !available {
                                         let _ = std::fs::remove_dir_all(&format!("runtime/{path}"));
                                     }
-                                    (name.to_string(), path.to_string(), flags, hash, size, 0, vec![], available)
+                                    (name_path.clone(), (name.to_string(), path.to_string(), flags, hash, size, 0, vec![0;size as usize], available))
                                 }).collect();
-                            log!("downloading {} mod(s)", client.modloading.mod_list.iter().filter(|m| !m.7).count());
+                            log!("downloading {} mod(s)", client.modloading.mod_list.values().into_iter().filter(|m| !m.7).count());
                         }
                         NetResult::Err(msg) => {
                             log_err!("server did not accept connection: {msg}");
@@ -122,8 +141,75 @@ impl ClientRuntime {
         }
     }
 
-    fn load_mods(&mut self) {
+    fn download_mods(&mut self) {
+        let keys = self.modloading.mod_list.keys().map(|s| s.to_string()).collect::<Vec<_>>();
+        let mut total = 0;
+        for name_path in keys {
+            let d = self.modloading.mod_list.get(&name_path).unwrap();
+            if d.7 {
+                continue
+            }
+            let size = d.4;
+            log!("downloading mod {name_path} across {} packets", size.div_ceil(MAX_RAW_DATA_SIZE as u64));
+            total += size;
+            for i in (0..size).step_by(MAX_RAW_DATA_SIZE) {
+                let np = name_path.clone();
+                self.request_response(&ClientPacket {
+                    client_id: self.client_id.clone(),
+                    conv_id: Uuid::new_v4().into_bytes(),
+                    message: ClientMessage::DownloadMod(name_path.clone(), i),
+                }, move |client, resp| {
+                    match &resp.message {
+                        ServerMessage::RawData(data) => {
+                            let m = client.modloading.mod_list.get_mut(&np).unwrap();
+                            m.5 += data.len() as u64;
+                            m.6.splice(i as usize..(i as usize+data.len()), data.to_owned());
+                        },
+                        e => {
+                            log_err!("invalid response: {e:?}");
+                            exit(1);
+                        }
+                    }
+                }).map_err(|e| {
+                    e.log_exit();
+                }).unwrap();
+            }
+        }
+        let mut p = 0.0;
+        while self.state != ClientState::DownloadedMods {
+            for packet in self.nc.queued_packets() {
+                self.handle_packet(&packet).map_err(|e| {
+                    e.log_exit();
+                }).unwrap();
+            }
 
+            let mut downloaded = 0;
+            for (key, m) in self.modloading.mod_list.iter_mut(){
+                if !m.7 {
+                    downloaded += m.5;
+                    if m.4 == m.5 {
+                        m.7 = true;
+                        unzip_archive(Cursor::new(&m.6), &format!("runtime/{}", m.1)).map_err(|e| {
+                            let e: AError = e.into();
+                            e.log_exit();
+                        }).unwrap();
+                        File::create(&format!("runtime/{}.hash", m.1)).unwrap().write_all(m.3.as_bytes()).map_err(|e| {
+                            let e: AError = e.into();
+                            e.log_exit();
+                        }).unwrap();
+                        log!("finished downloading mod {}", key)
+                    }
+                }
+            }
+            if downloaded as f32 / total as f32 - p > 0.2 {
+                p = downloaded as f32 / total as f32;
+                log!("progress: {p}")
+            }
+            if downloaded == total {
+                self.state = ClientState::DownloadedMods
+            }
+        }
+        log!("downloaded all missing mods")
     }
 
     fn gracefully_abort(&self){

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
@@ -18,9 +19,10 @@ pub(crate) struct NetworkServer {
 }
 
 pub(crate) struct ClientHandle {
-    client_addr: SocketAddr,
+    pub(crate) last_seen: Instant,
+    pub(crate) client_addr: SocketAddr,
     socket: UdpSocket,
-    awaiting_replies: HashMap<Id, fn(&mut ServerRuntime, &ClientPacket)>
+    awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>>
 }
 
 impl NetworkServer {
@@ -63,8 +65,10 @@ impl NetworkServer {
         if data.len() > MAX_PACKET_SIZE {
             return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
         }
-        let c = self.clients.get(client_id).ok_or(AError::new(AET::NetworkError("client does nto exist".to_string())))?;
-        c.socket.send(&data[..])?;
+        let _ = self.clients.get(client_id).map(|client| {
+            let _ = client.socket.send(&data[..]);
+        });
+
         Ok(())
     }
 

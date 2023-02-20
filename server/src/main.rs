@@ -1,5 +1,7 @@
 use aeonetica_engine::error::{AError, AET};
-use aeonetica_engine::{log, log_err};
+use aeonetica_engine::{log, log_err, MAX_CLIENT_TIMEOUT};
+use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use aeonetica_engine::uuid::Uuid;
 use crate::server_runtime::ServerRuntime;
 
 mod server_runtime;
@@ -21,9 +23,24 @@ fn main() {
 
     loop {
         for (addr, packet) in runtime.ns.queued_packets() {
-            println!("{packet:#?}");
             let _ = runtime.handle_packet(&addr, &packet).map_err(|e| {
                 log_err!("{e}")
+            });
+        }
+        let mut removed = vec![];
+        runtime.ns.clients.retain(|id, client| {
+            if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
+                true
+            } else {
+                removed.push(id.clone());
+                log!("timed out client ip {}", client.client_addr);
+                false
+            }
+        });
+        for r in removed {
+            let _ = runtime.ns.send(&r, &ServerPacket {
+                conv_id: Uuid::new_v4().into_bytes(),
+                message: ServerMessage::Unregister("TIMEOUT".to_string()),
             });
         }
     }
