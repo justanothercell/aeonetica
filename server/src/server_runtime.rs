@@ -24,7 +24,7 @@ mod paths_util {
     pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
 
     pub(crate) fn server_lib(path: &str, name: &str) -> String {
-        format!("runtime/{path}/server/lib{name}_server{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/server/{name}_server{MOD_FILE_EXTENSION}")
     }
 }
 
