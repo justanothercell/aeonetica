@@ -1,8 +1,7 @@
 #![feature(int_roundings)]
 
 use aeonetica_engine::error::{AError, AET};
-use aeonetica_engine::{log, log_err};
-use aeonetica_engine::uuid::Uuid;
+use aeonetica_engine::{Id, log, log_err};
 use crate::client_runtime::ClientRuntime;
 
 mod networking;
@@ -17,7 +16,7 @@ fn main() {
         let e = AError::new(AET::ValueError(format!("expected command line arg <local_ip:port> <server_ip:port>, got {}", args.len())));
         e.log_exit();
     }
-    let client_id = Uuid::new_v4().into_bytes();
+    let client_id = Id::new();
     let mut client = ClientRuntime::create(client_id, &args[0], &args[1]).map_err(|e| {
         e.log_exit();
     }).unwrap();

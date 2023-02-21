@@ -6,21 +6,10 @@ use crate::nanoserde::{SerBin, DeBin};
 use crate::networking::NetResult;
 
 
-#[derive(SerBin, DeBin)]
+#[derive(Debug, SerBin, DeBin)]
 pub struct ServerPacket {
     pub conv_id: Id,
     pub message: ServerMessage
-}
-
-impl Debug for ServerPacket {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let c = Uuid::from_bytes(self.conv_id);
-        if !f.alternate(){
-            write!(f, "ClientPacket {{ conv_id: {c}, message: {:?} }}", self.message)
-        } else {
-            write!(f, "ClientPacket {{\n    conv_id: {c},\n    message: {}\n}}", format!("{:#?}", self.message).replace("\n", "\n    "))
-        }
-    }
 }
 
 #[derive(Debug, SerBin, DeBin)]

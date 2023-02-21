@@ -1,4 +1,4 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{RefCell};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
@@ -6,7 +6,6 @@ use std::process::exit;
 use std::thread;
 use std::rc::Rc;
 use std::time::Duration;
-use aeonetica_engine::uuid::Uuid;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::error::{AError,AET};
 use aeonetica_engine::nanoserde::SerBin;
@@ -94,7 +93,7 @@ impl ClientRuntime {
             loop {
                 let data = SerBin::serialize_bin(&ClientPacket {
                     client_id: client_id.clone(),
-                    conv_id: Uuid::new_v4().into_bytes(),
+                    conv_id: Id::new(),
                     message: ClientMessage::KeepAlive,
                 });
                 let _ = timeout_socket.send(data.as_slice()).map_err(|e|{
@@ -118,11 +117,11 @@ impl ClientRuntime {
     }
 
     fn register(&mut self) -> Result<LoadingModList, AError>{
-        let mut mod_list = Rc::new(RefCell::new(HashMap::new()));
-        let mut mod_list_filler = mod_list.clone();
+        let mod_list = Rc::new(RefCell::new(HashMap::new()));
+        let mod_list_filler = mod_list.clone();
         self.request_response(&ClientPacket {
-            client_id: self.client_id.clone(),
-            conv_id: Uuid::new_v4().into_bytes(),
+            client_id: self.client_id,
+            conv_id: Id::new(),
             message: ClientMessage::Register(ClientInfo {
                 client_id: self.client_id,
                 client_version: ENGINE_VERSION.to_string(),
@@ -140,13 +139,13 @@ impl ClientRuntime {
                             log!("server has mod profile {} v{} with {} mod(s):", client.mod_profile, client.mod_profile_version, info.mods.len());
                             let local_mod_list: HashMap<_, _> = info.mods.clone().into_iter()
                                 .map(|(name_path, flags, hash, size)| {
-                                    let (name, path) = name_path.split_once(":").unwrap();
+                                    let (name, path) = name_path.split_once(':').unwrap();
                                     let mut local_hash = String::new();
                                     let _ = File::open(mod_hash(path)).map(|mut f| f.read_to_string(&mut local_hash));
-                                    let available = local_hash.trim() == &hash;
+                                    let available = local_hash.trim() == hash;
                                     log!("  - {name_path}");
                                     if !available {
-                                        let _ = std::fs::remove_dir_all(&format!("runtime/{path}"));
+                                        let _ = std::fs::remove_dir_all(format!("runtime/{path}"));
                                         (name_path.clone(),  Rc::new(RefCell::new(LoadingMod {
                                             name: name.to_string(),
                                             path: name.to_string(),
@@ -193,7 +192,7 @@ impl ClientRuntime {
     }
 
     fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
-        log!("downloading {} mod(s)", mod_list.borrow().values().into_iter().filter(|m| !m.borrow().available).count());
+        log!("downloading {} mod(s)", mod_list.borrow().values().filter(|m| !m.borrow().available).count());
         let mut total = 0;
         let mut borrowed_ml = mod_list.borrow_mut();
         for (name_path, lm) in borrowed_ml.iter_mut() {
@@ -207,7 +206,7 @@ impl ClientRuntime {
                 let lm = lm.clone();
                 self.request_response(&ClientPacket {
                     client_id: self.client_id,
-                    conv_id: Uuid::new_v4().into_bytes(),
+                    conv_id: Id::new(),
                     message: ClientMessage::DownloadMod(name_path.clone(), i),
                 }, move |_client, resp| {
                     let mut lmb = lm.borrow_mut();
@@ -275,7 +274,7 @@ impl ClientRuntime {
         err.log();
         let _ = self.nc.send(&ClientPacket {
             client_id: self.client_id,
-            conv_id: Uuid::new_v4().into_bytes(),
+            conv_id: Id::new(),
             message: ClientMessage::Unregister,
         });
         log_err!("gracefully aborted client");
@@ -284,7 +283,7 @@ impl ClientRuntime {
 }
 
 pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
-    let (name, path) = name_path.split_once(":").unwrap();
+    let (name, path) = name_path.split_once(':').unwrap();
     let client_lib = unsafe { Library::new(client_lib(path, name))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())

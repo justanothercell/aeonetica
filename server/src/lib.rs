@@ -1,13 +1,14 @@
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
+use crate::ecs::World;
 
 pub mod ecs;
 
 pub trait ServerMod {
     #[allow(unused_variables)]
-    fn init(&mut self, flags: &Vec<String>){
-
-    }
+    fn init(&mut self, flags: &Vec<String>){}
+    #[allow(unused_variables)]
+    fn start<'a>(&mut self, world: &'a mut World<'a>) {}
 }
 
 pub struct ServerModBox {

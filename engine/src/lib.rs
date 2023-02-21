@@ -1,14 +1,43 @@
+use std::fmt::{Debug, Display, Formatter};
 pub use nanoserde;
 pub use libloading;
 pub use chrono;
-pub use uuid;
+use nanoserde::{DeBin, DeRon, SerBin, SerRon};
 pub use sha2;
+use uuid::Uuid;
 
 pub mod networking;
 pub mod error;
 pub mod util;
 
-pub type Id = [u8;16];
+#[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
+pub struct Id([u8;16]);
+
+impl Id {
+    pub fn new() -> Self {
+        Self(Uuid::new_v4().into_bytes())
+    }
+
+    pub fn from_bytes(b: [u8;16]) -> Self {
+        Self(b)
+    }
+
+    pub fn into_bytes(self) -> [u8;16] {
+        self.0
+    }
+}
+
+impl Debug for Id {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Uuid::from_bytes(self.0))
+    }
+}
+
+impl Display for Id {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
 
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s

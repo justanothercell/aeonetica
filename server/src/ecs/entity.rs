@@ -1,14 +1,14 @@
 use std::any::TypeId;
 use std::collections::{hash_map, HashMap};
-use std::collections::hash_map::Keys;
+use std::collections::hash_map::Iter;
+use std::iter::Map;
 use std::marker::PhantomData;
 use aeonetica_engine::Id;
-use aeonetica_engine::uuid::Uuid;
-use crate::ecs::module::Module;
+use crate::ecs::module::{Module, ModuleDyn};
 
 pub struct Entity<'a> {
-    entity_id: Id,
-    modules: HashMap<TypeId, Box<dyn Module>>,
+    pub(crate) entity_id: Id,
+    pub(crate) modules: HashMap<TypeId, Box<dyn ModuleDyn>>,
     phantom_data: PhantomData<&'a ()>
 }
 
@@ -21,19 +21,24 @@ impl<'a> Default for Entity<'a> {
 impl<'a> Entity<'a> {
     pub fn new() -> Self {
         Self {
-            entity_id: Uuid::new_v4().into_bytes(),
+            entity_id: Id::new(),
             modules: Default::default(),
             phantom_data: Default::default(),
         }
     }
 
-    pub fn add_module<T: Module + Sized + 'static>(&mut self, module: T) -> bool {
+    pub fn add_module<T: Module + Sized + 'static>(&mut self, mut module: T) -> bool {
+        module.init();
         if let hash_map::Entry::Vacant(e) = self.modules.entry(TypeId::of::<T>()) {
             e.insert(Box::new(module));
             true
         } else {
             false
         }
+    }
+
+    pub fn modules(&'a self) -> Vec<TypeId> {
+        self.modules.keys().copied().collect()
     }
 
     pub fn remove_module<T: Module + Sized + 'static>(&mut self) {
@@ -52,8 +57,8 @@ impl<'a> Entity<'a> {
         self.modules.contains_key(&TypeId::of::<T>())
     }
 
-    pub fn modules(&'a self) -> Keys<TypeId, Box<dyn Module>> {
-        self.modules.keys()
+    pub fn has_modul_type(&self, ty: &TypeId) -> bool {
+        self.modules.contains_key(&ty)
     }
 
     pub fn id(&self) -> Id {
