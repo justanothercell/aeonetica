@@ -1,6 +1,8 @@
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
 
+mod events;
+
 pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){
