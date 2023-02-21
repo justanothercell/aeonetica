@@ -8,7 +8,7 @@ pub trait ServerMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
     #[allow(unused_variables)]
-    fn start<'a>(&mut self, world: &'a mut World<'a>) {}
+    fn start(&mut self, world: &mut World) {}
 }
 
 pub struct ServerModBox {

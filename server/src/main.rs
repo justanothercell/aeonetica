@@ -22,7 +22,7 @@ fn main() {
 
     let mut world = World::new();
     runtime.loaded_mods.iter_mut().fold((), |_, m| {
-        m.start(unsafe{ &mut *(&mut world as *mut World) });
+        m.start(&mut world);
     });
 
     loop {

@@ -1,29 +1,24 @@
 use std::any::TypeId;
 use std::collections::{hash_map, HashMap};
-use std::collections::hash_map::Iter;
-use std::iter::Map;
-use std::marker::PhantomData;
 use aeonetica_engine::Id;
 use crate::ecs::module::{Module, ModuleDyn};
 
-pub struct Entity<'a> {
+pub struct Entity {
     pub(crate) entity_id: Id,
-    pub(crate) modules: HashMap<TypeId, Box<dyn ModuleDyn>>,
-    phantom_data: PhantomData<&'a ()>
+    pub(crate) modules: HashMap<TypeId, Box<dyn ModuleDyn>>
 }
 
-impl<'a> Default for Entity<'a> {
+impl Default for Entity {
     fn default() -> Self {
         Entity::new()
     }
 }
 
-impl<'a> Entity<'a> {
+impl Entity {
     pub fn new() -> Self {
         Self {
             entity_id: Id::new(),
-            modules: Default::default(),
-            phantom_data: Default::default(),
+            modules: Default::default()
         }
     }
 
@@ -37,7 +32,7 @@ impl<'a> Entity<'a> {
         }
     }
 
-    pub fn modules(&'a self) -> Vec<TypeId> {
+    pub fn modules(&self) -> Vec<TypeId> {
         self.modules.keys().copied().collect()
     }
 
@@ -45,12 +40,12 @@ impl<'a> Entity<'a> {
         self.modules.remove(&TypeId::of::<T>());
     }
 
-    pub fn get_module<T: Module + Sized + 'static>(&self) -> Option<&'a T> {
+    pub fn get_module<T: Module + Sized + 'static>(&self) -> Option<&T> {
         self.modules.get(&TypeId::of::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } )
     }
 
-    pub fn mut_module<T: Module + Sized + 'static>(&'a mut self) -> Option<&'a mut T> {
-        self.modules.get_mut(&TypeId::of::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&'a Box<_>, &(*mut T, usize)>(m).0 })
+    pub fn mut_module<T: Module + Sized + 'static>(&mut self) -> Option<&mut T> {
+        self.modules.get_mut(&TypeId::of::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 })
     }
 
     pub fn has_module<T: Module + Sized + 'static>(&self) -> bool {
