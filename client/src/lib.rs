@@ -1,7 +1,8 @@
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
 
-mod events;
+pub mod events;
+pub mod layers;
 
 pub trait ClientMod {
     #[allow(unused_variables)]

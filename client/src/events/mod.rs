@@ -1,37 +1,56 @@
-pub mod key;
-pub mod mouse;
-pub mod window;
+pub type KeyCode = u32;
 
-pub trait Event {
-    const NAME: &'static str;
+#[derive(Debug, Clone, Copy)]
+pub enum MouseButton {
+    Left,
+    Right,
+    Middle,
+    Other(u16)
+}
 
-    fn handled(&self) -> bool;
-    fn set_handled(&mut self);
+#[derive(Debug)]
+pub enum EventType {
+    KeyPressed(KeyCode),
+    KeyReleased(KeyCode),
+    MouseButtonPressed(MouseButton),
+    MouseButtonReleased(MouseButton),
+    MouseScrolled(f32, f32),
+    MouseMoved(f32, f32),
+    WindowClose(),
+    WindowResize(u32, u32),
 
-    fn name() -> &'static str {
-        Self::NAME
+    Unknown()
+}
+
+#[derive(Debug)]
+pub struct Event {
+    event_type: EventType,
+    handled: bool
+}
+
+impl From<EventType> for Event {
+    fn from(value: EventType) -> Self {
+        Self::new(value)
     }
 }
 
-pub type EventFn<T> = fn(&T) -> bool;
-
-pub struct Dispatcher<T> {
-    event: T,
-}
-
-impl<T> Dispatcher<T> {
-    pub fn new(event: T) -> Self
-        where T: Event {
+impl Event {
+    pub fn new(event_type: EventType) -> Self {
         Self {
-            event
+            event_type,
+            handled: false
         }
     }
 
-    pub fn dispatch(&mut self, func: EventFn<T>)
-        where T: Event {
-        let handled = func(&self.event);
-        if handled {
-            self.event.set_handled();
-        }
+    pub fn typ(&mut self) -> &EventType {
+        &self.event_type
+    } 
+
+    pub fn handled(&self) -> bool {
+        self.handled
+    }
+
+    pub fn set_handled(&mut self) {
+        self.handled = true;
     }
 }
