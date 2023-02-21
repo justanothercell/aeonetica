@@ -26,6 +26,14 @@
 - [ ] better mod build script using probably python, make it platform  generic
 
 ---
+# ECS (see thoughts below)
+- server side ecs
+- module can register an associated client side renderer (trait)
+- module can register associated client side event (such as keypress) functions (trait)
+- can communicate with client via packets (communication event function)<br>
+  -> the renderer can take simple actions, such as interpolation of position
+to ease the load on the network
+---
 # Some thoughts below:
 # ecs networking system
 
@@ -59,4 +67,4 @@
 - sending spontaneous events which are more important immediately
 - considering grouping data to ease network load 
 (use a "ModsData" packet that just groups a few until its full and then a 
-second is used, ideally we only ever need one on schduled updates)
+second is used, ideally we only ever need one on scheduled updates)

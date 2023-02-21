@@ -32,7 +32,7 @@ fn main() {
             if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
                 true
             } else {
-                removed.push(id.clone());
+                removed.push(*id);
                 log!("timed out client ip {}", client.client_addr);
                 false
             }
