@@ -1,15 +1,21 @@
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::collections::hash_map::{Iter, IterMut, Keys};
 use std::iter::{FilterMap};
+use std::rc::Rc;
 use crate::ecs::entity::Entity;
 use aeonetica_engine::Id;
+use crate::ecs::messaging::MessagingSystem;
 use crate::ecs::module::Module;
 
 pub mod module;
 pub mod entity;
+mod messaging;
 
 pub struct World {
-    entites: HashMap<Id, Entity>
+    entites: HashMap<Id, Entity>,
+    tagged: HashMap<String, Id>,
+    ms: Rc<RefCell<MessagingSystem>>
 }
 
 impl World {
@@ -17,6 +23,8 @@ impl World {
     pub fn new() -> Self {
         Self {
             entites: Default::default(),
+            tagged: Default::default(),
+            ms: Rc::new(RefCell::new(MessagingSystem::new())),
         }
     }
 
@@ -37,6 +45,46 @@ impl World {
         self.entites.remove(id).is_some()
     }
 
+    /// Returns `true` if tagging is successful.
+    /// Tagging fails if `tag_exists(tag)` returns true.
+    pub fn tag_entity(&mut self, tag: String, id: Id) -> bool {
+        if !self.tag_exists(&tag) {
+            self.tagged.insert(tag, id);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Returns `true` if tag exists and `entity_exists(id)` returns true.
+    /// Tags whose entity got removed are treated as nonexistent and can be overridden
+    pub fn tag_exists(&self, tag: &str) -> bool {
+       self.tagged.get(tag).map(|id| self.entity_exists(id)).unwrap_or(false)
+    }
+
+    /// Returns `true` if tag existed.
+    /// Removal fails if `tag_exists(tag)` returns false.
+    pub fn remove_tag(&mut self, tag: &str) -> bool {
+        if self.tag_exists(&tag) {
+            self.tagged.remove(tag);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn get_entity_by_tag(&self, tag: &str) -> Option<&Entity> {
+        self.entites.get(self.tagged.get(tag)?)
+    }
+
+    pub fn mut_entity_by_tag(&self, tag: &str) -> Option<&mut Entity> {
+        self.entites.get_mut(self.tagged.get(tag)?)
+    }
+
+    pub fn entity_exists(&self, id: &Id) -> bool {
+        self.entites.contains_key(id)
+    }
+
     pub fn get_entity(&self, id: &Id) -> Option<&Entity> {
         self.entites.get(id)
     }
@@ -51,6 +99,14 @@ impl World {
 
     pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &Id) -> Option<&mut T> {
         self.entites.get_mut(id)?.mut_module()
+    }
+
+    pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Option<&T> {
+        self.get_entity_by_tag(tag)?.get_module()
+    }
+
+    pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Option<&mut T> {
+        self.mut_entity_by_tag(tag)?.mut_module()
     }
 
     pub fn ids(&self) -> Keys<Id, Entity>{
