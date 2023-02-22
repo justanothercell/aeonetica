@@ -3,9 +3,7 @@ use aeonetica_engine::libloading::Library;
 
 pub trait ClientMod {
     #[allow(unused_variables)]
-    fn init(&mut self, flags: &Vec<String>){
-
-    }
+    fn init(&mut self, flags: &Vec<String>){}
 }
 
 pub struct ClientModBox {

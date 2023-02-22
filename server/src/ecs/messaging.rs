@@ -24,13 +24,13 @@ impl MessagingSystem {
 
 pub trait Message: SerBin + DeBin + Debug {}
 
-pub struct ClientInterface {
+pub struct ServerMessanger {
     ms: Rc<RefCell<MessagingSystem>>,
     sending: Option<Vec<u8>>,
     received: Option<Vec<u8>>
 }
 
-impl Module for ClientInterface {
+impl Module for ServerMessanger {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
         engine.ms.borrow_mut().client_interfaces.insert(*id);
     }
@@ -40,7 +40,7 @@ impl Module for ClientInterface {
     }
 }
 
-impl ClientInterface {
+impl ServerMessanger {
     pub fn new(engine: &Engine) -> Self {
         Self {
             ms: engine.ms.clone(),
@@ -64,8 +64,6 @@ impl ClientInterface {
     pub fn set_sending_data<T: Message>(&mut self, data: &T) {
         self.sending = Some(SerBin::serialize_bin(data))
     }
-
-
 
     pub fn get_received_data<T: Message>(&self) -> Option<T> {
         self.received.as_ref().map(|v| DeBin::deserialize_bin(v).ok())?
