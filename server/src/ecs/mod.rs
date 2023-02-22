@@ -11,7 +11,8 @@ use crate::server_runtime::ServerRuntime;
 
 pub mod module;
 pub mod entity;
-mod messaging;
+pub mod events;
+pub mod messaging;
 
 pub struct Engine {
     entites: HashMap<Id, Entity>,
@@ -134,6 +135,4 @@ impl Engine {
     pub fn find_with<'a, T: Module + Sized + 'static>(&'a self) -> FilterMap<Iter<Id, Entity>, fn((&'a Id, &'a Entity)) -> Option<(&'a Id, &'a dyn Module)>>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>()?))} else { None })
     }
-
-
 }

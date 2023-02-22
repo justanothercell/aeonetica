@@ -1,12 +1,18 @@
+use std::any::TypeId;
+use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
+use crate::messaging::ClientHandle;
 
 pub mod events;
 pub mod layers;
+pub mod messaging;
 
 pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
+    #[allow(unused_variables)]
+    fn register_handlers(&self, handlers: &mut HashMap<TypeId, fn() -> Box<dyn ClientHandle>>) {}
 }
 
 pub struct ClientModBox {

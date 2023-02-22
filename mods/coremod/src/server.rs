@@ -2,39 +2,50 @@ use aeonetica_engine::{Id, log};
 use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::module::Module;
 use aeonetica_server::ecs::Engine;
+use aeonetica_server::ecs::events::ConnectionListener;
+use aeonetica_server::ecs::messaging::ServerMessenger;
 use aeonetica_server::ServerMod;
+use crate::common::Broadcastings;
 
 pub struct CoreModServer {
 
 }
 
 pub struct MyModule {
-    data: i32
+    broadcastings: Vec<String>
 }
 
 impl Module for MyModule {
     fn init(&mut self) where Self: Sized {
-        self.data = 43;
         log!("mymodule initialized");
     }
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
         log!("mymodule started. entity id: {id:?}");
-        log!("accessing data in start: {}", engine.get_module_of::<Self>(id).unwrap().data);
-        let s = engine.mut_entity(id).unwrap();
-        {
-            let x= s.mut_module::<Self>().unwrap();
-            //let y= s.mut_module::<Self>().unwrap();
-            x.data = 1;
-            //y.data = 1;
-        }
-        {
-            let z = s.mut_module::<Self>().unwrap();
-            z.data = -1;
-        }
-        log!("accessing data in start second time: {}", engine.get_module_of::<Self>(id).unwrap().data);
+        let messenger = ServerMessenger::new(engine);
+        engine.mut_entity(id).unwrap().add_module(messenger);
+        log!("registering client loginout listener");
+        engine.mut_entity(id).unwrap().add_module(ConnectionListener {
+            on_join: |id, user, engine| {
+                log!("user joined: {user}");
+                let messenger: &mut ServerMessenger = engine.mut_module_of(id).unwrap();
+                messenger.add_receiver(*user);
+                engine.mut_module_of::<Self>(id).unwrap().broadcastings.push(format!("user joined: {user}"));
+            },
+            on_leave: |id, user, engine| {
+                log!("user left: {user}");
+                let messenger: &mut ServerMessenger = engine.mut_module_of(id).unwrap();
+                messenger.remove_receiver(user);
+                engine.mut_module_of::<Self>(id).unwrap().broadcastings.push(format!("user left: {user}"));
+            },
+        });
     }
-    fn tick(_id: &Id, _engine: &mut Engine) where Self: Sized {
-
+    fn tick(id: &Id, engine: &mut Engine) where Self: Sized {
+        if engine.get_module_of::<ServerMessenger>(id).unwrap().is_sending_tick() {
+            let mut messages = vec![];
+            std::mem::swap(&mut messages, &mut engine.mut_module_of::<Self>(id).unwrap().broadcastings);
+            let messenger = engine.mut_module_of::<ServerMessenger>(id).unwrap();
+            messenger.set_sending_data(&Broadcastings(messages));
+        }
     }
 }
 
@@ -46,7 +57,7 @@ impl ServerMod for CoreModServer {
         log!("server core start");
         let mut entity = Entity::new();
         entity.add_module(MyModule {
-            data: 0
+            broadcastings: vec![],
         });
         engine.add_entity(entity);
     }
