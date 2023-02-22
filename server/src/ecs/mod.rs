@@ -1,5 +1,5 @@
 use std::cell::{Ref, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::collections::hash_map::{Iter, IterMut, Keys};
 use std::iter::{FilterMap};
 use std::rc::Rc;
@@ -7,31 +7,35 @@ use crate::ecs::entity::Entity;
 use aeonetica_engine::Id;
 use crate::ecs::messaging::MessagingSystem;
 use crate::ecs::module::Module;
+use crate::server_runtime::ServerRuntime;
 
 pub mod module;
 pub mod entity;
 mod messaging;
 
-pub struct World {
+pub struct Engine {
     entites: HashMap<Id, Entity>,
     tagged: HashMap<String, Id>,
-    ms: Rc<RefCell<MessagingSystem>>
+    ms: Rc<RefCell<MessagingSystem>>,
+    clients: HashSet<Id>,
+    pub(crate) runtime: ServerRuntime
 }
 
-impl World {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+impl Engine {
+    pub fn new(runtime: ServerRuntime) -> Self {
         Self {
             entites: Default::default(),
             tagged: Default::default(),
             ms: Rc::new(RefCell::new(MessagingSystem::new())),
+            clients: Default::default(),
+            runtime
         }
     }
 
     pub fn add_entity(&mut self, entity: Entity) {
         let id = entity.entity_id;
         self.entites.insert(entity.id(), entity);
-        let mut_self_ref= unsafe { &mut *(self as *mut World) };
+        let mut_self_ref= unsafe { &mut *(self as *mut Engine) };
         let modules = &self.get_entity(&id).unwrap().modules;
         let keys = modules.keys().clone();
         for ty in keys{
@@ -46,9 +50,9 @@ impl World {
     }
 
     /// Returns `true` if tagging is successful.
-    /// Tagging fails if `tag_exists(tag)` returns true.
+    /// Tagging fails if `tag_exists(tag)` returns true or `entity_exists(id)` returns false.
     pub fn tag_entity(&mut self, tag: String, id: Id) -> bool {
-        if !self.tag_exists(&tag) {
+        if !self.tag_exists(&tag) && self.entity_exists(&id) {
             self.tagged.insert(tag, id);
             true
         } else {
@@ -77,7 +81,7 @@ impl World {
         self.entites.get(self.tagged.get(tag)?)
     }
 
-    pub fn mut_entity_by_tag(&self, tag: &str) -> Option<&mut Entity> {
+    pub fn mut_entity_by_tag(&mut self, tag: &str) -> Option<&mut Entity> {
         self.entites.get_mut(self.tagged.get(tag)?)
     }
 

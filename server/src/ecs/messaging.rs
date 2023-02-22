@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::rc::Rc;
 use aeonetica_engine::Id;
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
-use crate::ecs::{Module, World};
+use crate::ecs::{Module, Engine};
 
 pub(crate) struct MessagingSystem {
     client_interfaces: HashSet<Id>,
@@ -31,19 +31,19 @@ pub struct ClientInterface {
 }
 
 impl Module for ClientInterface {
-    fn start(id: &Id, world: &mut World) where Self: Sized {
-        world.ms.borrow().client_interfaces.insert(*id);
+    fn start(id: &Id, engine: &mut Engine) where Self: Sized {
+        engine.ms.borrow_mut().client_interfaces.insert(*id);
     }
 
-    fn remove(id: &Id, world: &mut World) where Self: Sized {
-        world.ms.borrow().client_interfaces.remove(id);
+    fn remove(id: &Id, engine: &mut Engine) where Self: Sized {
+        engine.ms.borrow_mut().client_interfaces.remove(id);
     }
 }
 
 impl ClientInterface {
-    pub fn new(world: &World) -> Self {
+    pub fn new(engine: &Engine) -> Self {
         Self {
-            ms: world.ms.clone(),
+            ms: engine.ms.clone(),
             sending: None,
             received: None,
         }
@@ -64,6 +64,7 @@ impl ClientInterface {
     pub fn set_sending_data<T: Message>(&mut self, data: &T) {
         self.sending = Some(SerBin::serialize_bin(data))
     }
+
 
 
     pub fn get_received_data<T: Message>(&self) -> Option<T> {

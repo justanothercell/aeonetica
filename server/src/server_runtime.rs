@@ -6,7 +6,7 @@ use aeonetica_engine::{log, nanoserde};
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::nanoserde::{DeBin, DeRon, SerBin, SerRon};
 use aeonetica_engine::util::unzip_archive;
-use server::{ServerMod, ServerModBox};
+use crate::{ServerMod, ServerModBox};
 use crate::networking::NetworkServer;
 
 
