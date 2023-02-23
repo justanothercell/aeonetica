@@ -11,38 +11,49 @@ use aeonetica_engine::{log, Id};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
 use aeonetica_engine::sha2;
 use aeonetica_engine::sha2::Digest;
+use crate::ecs::Engine;
+use crate::ecs::events::ConnectionListener;
 use crate::networking::ClientHandle;
 use crate::server_runtime::ServerRuntime;
 
-impl ServerRuntime {
+impl Engine {
+    pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
+        self.runtime.ns.queued_packets().into_iter().map(|addr, packet| self.handle_packet(&addr, &packet))
+        .reduce(|acc, r| {
+            acc?;
+            r?;
+            Ok(())
+        }).unwrap_or(Ok(()))
+    }
+
     pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> Result<(), AError>{
-        if let Some(client) = self.ns.clients.get_mut(&packet.client_id) {
+        if let Some(client) = self.runtime.ns.clients.get_mut(&packet.client_id) {
             client.last_seen = std::time::Instant::now();
             if let Some(handler) = client.awaiting_replies.remove(&packet.conv_id) {
-                handler(self, packet);
+                handler(&mut self.runtime, packet);
                 return Ok(())
             }
         }
         match &packet.message {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
-                    self.ns.clients.insert(packet.client_id.clone(), ClientHandle {
+                    self.runtime.ns.clients.insert(packet.client_id, ClientHandle {
                         last_seen: std::time::Instant::now(),
-                        client_addr: addr.clone(),
+                        client_addr: *addr,
                         socket: {
-                            let sock = self.ns.socket.try_clone()?;
+                            let sock = self.runtime.ns.socket.try_clone()?;
                             sock.connect(addr)?;
                             sock
                         },
                         awaiting_replies: Default::default(),
                     });
-                    self.ns.send(&packet.client_id, &ServerPacket{
-                        conv_id: packet.conv_id.clone(),
+                    self.runtime.ns.send(&packet.client_id, &ServerPacket{
+                        conv_id: packet.conv_id,
                         message: ServerMessage::RegisterResponse(NetResult::Ok(ServerInfo {
                             server_version: ENGINE_VERSION.to_string(),
-                            mod_profile: self.mod_profile.profile.clone(),
-                            mod_version: self.mod_profile.version.clone(),
-                            mods: self.mod_profile.modstack.iter().map(|(name_path, flags)| {
+                            mod_profile: self.runtime.mod_profile.profile.clone(),
+                            mod_version: self.runtime.mod_profile.version.clone(),
+                            mods: self.runtime.mod_profile.modstack.iter().map(|(name_path, flags)| {
                                 let (name, path) = name_path.split_once(":").unwrap();
                                 let client_path = format!("runtime/{path}/{name}_client.zip");
                                 let size = std::fs::metadata(&client_path).unwrap().len();
@@ -56,8 +67,8 @@ impl ServerRuntime {
                     })?;
                     log!("registered client ip {}", addr);
                 } else {
-                    self.ns.send_raw(&addr.to_string(), &ServerPacket{
-                        conv_id: packet.conv_id.clone(),
+                    self.runtime.ns.send_raw(&addr.to_string(), &ServerPacket{
+                        conv_id: packet.conv_id,
                         message: ServerMessage::RegisterResponse(NetResult::Err(
                             format!("client and server engine versions do not match: {} != {}", client_info.client_version, ENGINE_VERSION)
                         ))
@@ -66,10 +77,10 @@ impl ServerRuntime {
             }
             ClientMessage::Unregister => {
                 log!("unregistered client ip {}", addr);
-                self.ns.clients.remove(&packet.client_id);
+                self.runtime.ns.clients.remove(&packet.client_id);
             }
-            ClientMessage::Ping(msg) => self.ns.send(&packet.client_id, &ServerPacket{
-                conv_id: packet.conv_id.clone(),
+            ClientMessage::Ping(msg) => self.runtime.ns.send(&packet.client_id, &ServerPacket{
+                conv_id: packet.conv_id,
                 message: ServerMessage::Pong(msg.clone()),
             })?,
             ClientMessage::DownloadMod(name_path, offset) => {
@@ -79,10 +90,20 @@ impl ServerRuntime {
                 let mut buffer = [0;MAX_RAW_DATA_SIZE];
                 file.seek(SeekFrom::Start(*offset))?;
                 let len = file.read(&mut buffer[..])?;
-                self.ns.send(&packet.client_id, &ServerPacket{
-                    conv_id: packet.conv_id.clone(),
+                self.runtime.ns.send(&packet.client_id, &ServerPacket{
+                    conv_id: packet.conv_id,
                     message: ServerMessage::RawData(buffer[..len].to_vec())
                 })?;
+            },
+            ClientMessage::Login => {
+                self.clients.insert(packet.client_id);
+                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m|
+                    (m.on_join)(id, &packet.client_id, engine))
+            }
+            ClientMessage::Logout => {
+                self.clients.remove(&packet.client_id);
+                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m|
+                    (m.on_leave)(id, &packet.client_id, engine))
             }
             _ => ()
         }
@@ -90,10 +111,10 @@ impl ServerRuntime {
     }
 
     pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F) -> Result<(), AError> {
-        match self.ns.clients.get_mut(client_id) {
+        match self.runtime.ns.clients.get_mut(client_id) {
             Some(client) => {
                 client.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-                self.ns.send(client_id, packet)?;
+                self.runtime.ns.send(client_id, packet)?;
                 Ok(())
             }
             None => {

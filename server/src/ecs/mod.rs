@@ -1,12 +1,13 @@
-use std::cell::{Ref, RefCell};
+use std::cell::{RefCell};
 use std::collections::{HashMap, HashSet};
 use std::collections::hash_map::{Iter, IterMut, Keys};
 use std::iter::{FilterMap};
 use std::rc::Rc;
+use std::task::ready;
 use crate::ecs::entity::Entity;
 use aeonetica_engine::Id;
 use crate::ecs::messaging::MessagingSystem;
-use crate::ecs::module::Module;
+use crate::ecs::module::{Module, ModuleDyn};
 use crate::server_runtime::ServerRuntime;
 
 pub mod module;
@@ -18,7 +19,7 @@ pub struct Engine {
     entites: HashMap<Id, Entity>,
     tagged: HashMap<String, Id>,
     ms: Rc<RefCell<MessagingSystem>>,
-    clients: HashSet<Id>,
+    pub(crate) clients: HashSet<Id>,
     pub(crate) runtime: ServerRuntime
 }
 
@@ -30,6 +31,28 @@ impl Engine {
             ms: Rc::new(RefCell::new(MessagingSystem::new())),
             clients: Default::default(),
             runtime
+        }
+    }
+
+    pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
+        for id in self.entites.keys().collect::<Vec<_>>() {
+            self.entites.get(id).map(|e| {
+                for mid in e.modules.keys().collect::<Vec<_>>() {
+                    e.modules.get_mut(mid).map(|m| {
+                        runner(self, id,  m)
+                    });
+                }
+            });
+        }
+    }
+
+    pub(crate) fn for_each_module_of_type<T: Module, F: Fn(&mut Self, &Id, &mut T)>(&mut self, runner: F) {
+        for id in self.entites.keys().collect::<Vec<_>>() {
+            self.entites.get(id).map(|e| {
+                e.mut_module::<T>().map(|m| {
+                    runner(self, id, m)
+                });
+            });
         }
     }
 

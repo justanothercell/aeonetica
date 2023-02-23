@@ -6,6 +6,15 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::client_runtime::ClientRuntime;
 
 impl ClientRuntime {
+    pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
+        self.nc.queued_packets().into_iter().map(|packet| self.handle_packet(&packet))
+        .reduce(|acc, r| {
+            acc?;
+            r?;
+            Ok(())
+        }).unwrap_or(Ok(()))
+    }
+
     pub(crate) fn handle_packet(&mut self, packet: &ServerPacket) -> Result<(), AError>{
         if let Some(handler) = self.awaiting_replies.remove(&packet.conv_id) {
             handler(self, packet);
@@ -14,7 +23,7 @@ impl ClientRuntime {
         match &packet.message {
             ServerMessage::Ping(msg) => self.nc.send(&ClientPacket{
                 client_id: self.client_id,
-                conv_id: packet.conv_id.clone(),
+                conv_id: packet.conv_id,
                 message: ClientMessage::Pong(msg.clone()),
             })?,
             ServerMessage::Unregister(reason) => {

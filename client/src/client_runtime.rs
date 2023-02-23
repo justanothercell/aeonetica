@@ -47,6 +47,7 @@ pub(crate) enum ClientState {
     Start,
     Registered,
     DownloadedMods,
+    LoggedIn,
 }
 
 pub(crate) struct ClientRuntime {
@@ -105,8 +106,9 @@ impl ClientRuntime {
             }
         });
         log!("started timeout preventer");
-        client.download_mods(&mut mod_list).map_err(|e| client.gracefully_abort(e));
-        client.enable_mods(&mut mod_list).map_err(|e| client.gracefully_abort(e));
+        let _ = client.download_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
+        let _ = client.enable_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
+        let _ = client.login().map_err(|e| client.gracefully_abort(e));
         Ok(client)
     }
 
@@ -254,6 +256,13 @@ impl ClientRuntime {
             }
         }
         log!("downloaded all missing mods");
+        Ok(())
+    }
+
+    fn login(&mut self) -> Result<(), AError>{
+        while self.state != ClientState::LoggedIn {
+            self.handle_queued()?;
+        }
         Ok(())
     }
 

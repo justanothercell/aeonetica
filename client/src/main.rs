@@ -23,18 +23,16 @@ fn main() {
 
     let client_id = Id::new();
 
-    let window = window::Window::new(context::Context::new()).expect("error creating main window");
-    window.run();
+    //let window = window::Window::new(context::Context::new()).expect("error creating main window");
+    //window.run();
     
     let mut client = ClientRuntime::create(client_id, &args[0], &args[1]).map_err(|e| {
         e.log_exit();
     }).unwrap();
     
     loop {
-        for packet in client.nc.queued_packets() {
-            let _ = client.handle_packet(&packet).map_err(|e| {
-                log_err!("{e}")
-            });
-        }
+        let _ = client.handle_queued().map_err(|e| {
+            log_err!("{e}")
+        });
     }
 }

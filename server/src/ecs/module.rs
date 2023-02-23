@@ -11,7 +11,7 @@ pub trait Module {
     fn remove(id: &Id, engine: &mut Engine) where Self: Sized {}
 }
 
-pub(crate) trait ModuleDyn {
+pub(crate) trait ModuleDyn: Module {
     fn start_dyn(&self, id: &Id, engine: &mut Engine);
     fn tick_dyn(&self, id: &Id, engine: &mut Engine);
     fn remove_dyn(&self, id: &Id, engine: &mut Engine);
