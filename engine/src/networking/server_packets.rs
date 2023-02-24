@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use uuid::Uuid;
@@ -25,6 +26,10 @@ pub enum ServerMessage {
     Ping(String),
     Pong(String),
     RawData(Vec<u8>),
+    /// Entity Id, client handle TypeId
+    AddClientHandle(Id, i64),
+    /// Entity Id
+    RemoveClientHandle(Id),
     ModMessages(u64, HashMap<Id, Vec<u8>>)
 }
 

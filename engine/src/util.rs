@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::fmt::Display;
 use std::path::Path;
 use std::fs::File;
@@ -25,4 +26,12 @@ pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>
         }
     }
     Ok(())
+}
+
+pub unsafe fn typeid_to_i64(id: TypeId) -> i64{
+    std::mem::transmute(id)
+}
+
+pub unsafe fn i64_to_typeid(id: i64) -> TypeId{
+    std::mem::transmute(id)
 }

@@ -2,6 +2,7 @@
 
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log, log_err};
+use crate::client_engine::ClientEngine;
 use crate::client_runtime::ClientRuntime;
 
 mod networking;
@@ -23,13 +24,13 @@ fn main() {
 
     let client_id = Id::new();
 
-    //let window = window::Window::new(context::Context::new()).expect("error creating main window");
+    let window = window::Window::new(context::Context::new()).expect("error creating main window");
     //window.run();
-    
+
     let mut client = ClientRuntime::create(client_id, &args[0], &args[1]).map_err(|e| {
         e.log_exit();
     }).unwrap();
-    
+
     loop {
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")

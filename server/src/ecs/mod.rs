@@ -30,7 +30,7 @@ impl Engine {
         Self {
             entites: Default::default(),
             tagged: Default::default(),
-            ms: Rc::new(RefCell::new(MessagingSystem::new())),
+            ms: Rc::new(RefCell::new(MessagingSystem::new(&runtime.ns))),
             clients: Default::default(),
             runtime
         }

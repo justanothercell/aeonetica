@@ -3,6 +3,7 @@ use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use aeonetica_engine::util::i64_to_typeid;
 use crate::client_runtime::ClientRuntime;
 
 impl ClientRuntime {
@@ -29,6 +30,18 @@ impl ClientRuntime {
             ServerMessage::Unregister(reason) => {
                 log!("server unregistered client: {reason}");
                 exit(0)
+            }
+            ServerMessage::AddClientHandle(id, handle_id) => {
+                self.registered_handles.get(unsafe { &i64_to_typeid(*handle_id) }).map(|creator| {
+                    let mut handle = creator();
+                    handle.init();
+                    self.handles.insert(*id, handle)
+                });
+            }
+            ServerMessage::RemoveClientHandle(id) => {
+                self.handles.remove(id).map(|h| {
+                    h.remove()
+                });
             }
             _ => ()
         }

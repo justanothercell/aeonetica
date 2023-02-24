@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::cell::{RefCell};
 use std::collections::HashMap;
 use std::fs::File;
@@ -13,6 +14,7 @@ use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
+use aeonetica_engine::networking::messaging::ClientHandle;
 use aeonetica_engine::util::unzip_archive;
 use client::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -57,6 +59,8 @@ pub(crate) struct ClientRuntime {
     pub(crate) nc: NetworkClient,
     pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
+    pub(crate) registered_handles: HashMap<TypeId, fn() -> Box<dyn ClientHandle>>,
+    pub(crate) handles: HashMap<Id, Box<dyn ClientHandle>>,
     pub(crate) state: ClientState
 }
 
@@ -85,6 +89,8 @@ impl ClientRuntime {
             mod_profile: String::new(),
             mod_profile_version: String::new(),
             awaiting_replies: Default::default(),
+            registered_handles: Default::default(),
+            handles: Default::default(),
             loaded_mods: vec![],
             state: ClientState::Start
         };
@@ -271,6 +277,9 @@ impl ClientRuntime {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
             loaded_mod.init(&lm.borrow().flags);
+            let mut handles = Default::default();
+            loaded_mod.register_handlers(&mut handles);
+            self.registered_handles.extend(handles);
             self.loaded_mods.push(loaded_mod);
             log!("loaded mod {} ...", name_path);
         }
