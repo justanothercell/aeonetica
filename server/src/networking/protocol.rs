@@ -6,7 +6,7 @@ use std::rc::Rc;
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
-use aeonetica_engine::{ENGINE_VERSION};
+use aeonetica_engine::{ENGINE_VERSION, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::{log, Id};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
 use aeonetica_engine::sha2;
@@ -18,12 +18,32 @@ use crate::server_runtime::ServerRuntime;
 
 impl Engine {
     pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
-        self.runtime.ns.queued_packets().into_iter().map(|addr, packet| self.handle_packet(&addr, &packet))
+        self.runtime.ns.queued_packets().into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
         .reduce(|acc, r| {
             acc?;
             r?;
             Ok(())
         }).unwrap_or(Ok(()))
+    }
+
+    pub(crate) fn timeout_inactive(&mut self) {
+        let mut_self_ref_ptr = self as *mut Self;
+        for id in self.runtime.ns.clients.keys().clone() {
+            let mut_self_ref = unsafe { &mut *mut_self_ref_ptr };
+            self.runtime.ns.clients.get(id).map(|client| {
+                if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
+                    true
+                } else {
+                    mut_self_ref.kick_client(id, "TIMEOUT");
+                    let _ = mut_self_ref.runtime.ns.send(id, &ServerPacket {
+                        conv_id: Id::new(),
+                        message: ServerMessage::Unregister("TIMEOUT".to_string()),
+                    });
+                    log!("timed out client ip {}", client.client_addr);
+                    false
+                }
+            });
+        }
     }
 
     pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> Result<(), AError>{

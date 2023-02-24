@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use uuid::Uuid;
 use crate::Id;
@@ -23,7 +24,8 @@ pub enum ServerMessage {
     Logout(Id, String),
     Ping(String),
     Pong(String),
-    RawData(Vec<u8>)
+    RawData(Vec<u8>),
+    ModMessages(u64, HashMap<Id, Vec<u8>>)
 }
 
 /// mods: Vec<(ModName, ModFlags, ZipHash, FileSize)>

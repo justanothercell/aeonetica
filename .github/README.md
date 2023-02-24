@@ -33,6 +33,20 @@
 - can communicate with client via packets (communication event function)<br>
   -> the renderer can take simple actions, such as interpolation of position
 to ease the load on the network
+
+### Important note for adding ECS functionality:
+Every time you need to make `&mut Engine` available while iterating over ECS components,
+do `.cloned().collect::<Vec<_>>()` to whatever you're iterating (best Id or TypeId and not the actual object)
+to make the iterator not be invalid when the body of the loop changes it.
+This way some keys might return `None` and new elements will not be called,
+but the iterator does not crash.
+
+This is only needed when the body of the loop is capable of changing the structure
+you are looping over. An example of that would be iterating over entity id's 
+and calling a mod function, which could add or remove entites since it has access to `&mut Engine`.
+
+Background: Changing the size of a collection such as a vector while iterating 
+causes undefined behaviour, (most likely STATUS_ACCESS VIOLATION)
 ---
 # Some thoughts below:
 # ecs networking system

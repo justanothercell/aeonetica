@@ -1,16 +1,16 @@
-use std::fmt::{Debug, Formatter};
-use aeonetica_engine::nanoserde::{DeBin, DeBinErr, SerBin};
-use aeonetica_client::messaging::ClientHandle;
+use std::fmt::{Debug,};
+use aeonetica_engine::nanoserde::{DeBin, SerBin};
+use aeonetica_engine::networking::messaging::ClientHandle;
 use aeonetica_server::ecs::messaging::Message;
 use aeonetica_engine::{log, nanoserde};
 
-pub(crate) struct MyHandle {
+pub(crate) struct MyClientHandle {
 
 }
 
-impl ClientHandle for MyHandle {
+impl ClientHandle for MyClientHandle {
     fn receive_data(&mut self, data: &Vec<u8>) {
-        let broadcastings: Broadcastings = Broadcastings::deserialize_bin(data).unwrap()
+        let broadcastings: Broadcastings = Broadcastings::deserialize_bin(data).unwrap();
         if broadcastings.0.len() > 0 {
             log!("Server says:");
             for msg in broadcastings.0 {

@@ -1,22 +1,19 @@
 use std::any::TypeId;
 use std::collections::{hash_map, HashMap};
 use aeonetica_engine::Id;
+use crate::ecs::Engine;
 use crate::ecs::module::{Module, ModuleDyn};
 
 pub struct Entity {
+    engine: *mut Engine, // Only use for add/removal events!!! DO NOT use for any other purpose!!!
     pub(crate) entity_id: Id,
     pub(crate) modules: HashMap<TypeId, Box<dyn ModuleDyn>>
 }
 
-impl Default for Entity {
-    fn default() -> Self {
-        Entity::new()
-    }
-}
-
 impl Entity {
-    pub fn new() -> Self {
+    pub(crate) fn new(engine: &Engine) -> Self {
         Self {
+            engine: engine as *const Engine as *mut Engine,
             entity_id: Id::new(),
             modules: Default::default()
         }
@@ -26,6 +23,7 @@ impl Entity {
         module.init();
         if let hash_map::Entry::Vacant(e) = self.modules.entry(TypeId::of::<T>()) {
             e.insert(Box::new(module));
+            self.modules.get(&TypeId::of::<T>()).map(|m| m.start_dyn(&self.entity_id, unsafe {&mut *self.engine}));
             true
         } else {
             false
@@ -36,8 +34,9 @@ impl Entity {
         self.modules.keys().copied().collect()
     }
 
-    pub fn remove_module<T: Module + Sized + 'static>(&mut self) {
-        self.modules.remove(&TypeId::of::<T>());
+    pub fn remove_module<T: Module + Sized + 'static>(&mut self) -> bool{
+        self.modules.get(&TypeId::of::<T>()).map(|m| m.remove_dyn(&self.entity_id, unsafe {&mut *self.engine}));
+        self.modules.remove(&TypeId::of::<T>()).is_some()
     }
 
     pub fn get_module<T: Module + Sized + 'static>(&self) -> Option<&T> {

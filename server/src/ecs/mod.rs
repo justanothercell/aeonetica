@@ -1,12 +1,14 @@
 use std::cell::{RefCell};
 use std::collections::{HashMap, HashSet};
+use std::collections::hash_set;
 use std::collections::hash_map::{Iter, IterMut, Keys};
 use std::iter::{FilterMap};
 use std::rc::Rc;
-use std::task::ready;
 use crate::ecs::entity::Entity;
 use aeonetica_engine::Id;
-use crate::ecs::messaging::MessagingSystem;
+use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use crate::ecs::events::ConnectionListener;
+use crate::ecs::messaging::{MessagingSystem, Messenger};
 use crate::ecs::module::{Module, ModuleDyn};
 use crate::server_runtime::ServerRuntime;
 
@@ -18,7 +20,7 @@ pub mod messaging;
 pub struct Engine {
     entites: HashMap<Id, Entity>,
     tagged: HashMap<String, Id>,
-    ms: Rc<RefCell<MessagingSystem>>,
+    pub(crate) ms: Rc<RefCell<MessagingSystem>>,
     pub(crate) clients: HashSet<Id>,
     pub(crate) runtime: ServerRuntime
 }
@@ -34,42 +36,86 @@ impl Engine {
         }
     }
 
+    pub fn new_entity(&mut self) -> Id {
+        let e = Entity::new(self);
+        let id = e.entity_id;
+        self.entites.insert(id, e);
+        id
+    }
+
+    /// Retuns true if user got successfully kicked.
+    /// Kick fails if the client is not joined.
+    /// Kicking will also unregister the client.
+    ///
+    /// Note: The user might be registered but not logged in.
+    /// In that case kicking fails and the client will not be unregistered.
+    ///
+    /// Since the registration of clients is purely network related it can be
+    /// disregarded for most use cases.
+    pub fn kick_client(&mut self, id: &Id, reason: &str) -> bool {
+        if self.clients.contains(id) {
+            self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m|
+                (m.on_leave)(eid, id, engine));
+            let _ = self.runtime.ns.send(id, &ServerPacket {
+                conv_id: Id::new(),
+                message: ServerMessage::Kick(reason.to_string()),
+            });
+            true
+        } else { false }
+    }
+
+    pub fn is_client_logged_in(&self, id: &Id) -> bool {
+        self.clients.contains(id)
+    }
+
+    pub fn client(&self) -> hash_set::Iter<Id> {
+        self.clients.iter()
+    }
+
+    pub(crate) fn send_messages(&mut self) {
+        let mut_self_ref_ptr = self as *mut Self;
+        let messages = self.ms.borrow().messengers.iter().cloned().collect::<Vec<_>>().into_iter()
+            .filter_map(|id| self.get_module_of::<Messenger>(&id)
+                .map(|sm| {
+                    let mut sending = vec![];
+                    (sm.on_send)(&id, unsafe{ &mut *mut_self_ref_ptr }, &mut sending);
+                    (id, sending)
+                })).filter(|i| !i.1.is_empty()).collect::<HashMap<_, _>>();
+    }
+
     pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
-        for id in self.entites.keys().collect::<Vec<_>>() {
-            self.entites.get(id).map(|e| {
-                for mid in e.modules.keys().collect::<Vec<_>>() {
-                    e.modules.get_mut(mid).map(|m| {
-                        runner(self, id,  m)
-                    });
+        let mut_self_ref_ptr = self as *mut Self;
+        for id in self.entites.keys().cloned().collect::<Vec<_>>() {
+            if let Some(e) = self.entites.get_mut(&id) {
+                for mid in e.modules.keys().cloned().collect::<Vec<_>>() {
+                    if let Some(m) = e.modules.get_mut(&mid) {
+                        runner(unsafe{ &mut *mut_self_ref_ptr }, &id,  m)
+                    }
                 }
-            });
+            };
         }
     }
 
-    pub(crate) fn for_each_module_of_type<T: Module, F: Fn(&mut Self, &Id, &mut T)>(&mut self, runner: F) {
-        for id in self.entites.keys().collect::<Vec<_>>() {
-            self.entites.get(id).map(|e| {
-                e.mut_module::<T>().map(|m| {
-                    runner(self, id, m)
-                });
-            });
-        }
-    }
-
-    pub fn add_entity(&mut self, entity: Entity) {
-        let id = entity.entity_id;
-        self.entites.insert(entity.id(), entity);
-        let mut_self_ref= unsafe { &mut *(self as *mut Engine) };
-        let modules = &self.get_entity(&id).unwrap().modules;
-        let keys = modules.keys().clone();
-        for ty in keys{
-            if let Some(m) = self.get_entity(&id).unwrap().modules.get(ty) {
-                m.start_dyn(&id, mut_self_ref)
+    pub(crate) fn for_each_module_of_type<T: Module + Sized + 'static, F: Fn(&mut Self, &Id, &mut T)>(&mut self, runner: F) {
+        let mut_self_ref_ptr = self as *mut Self;
+        for id in self.entites.keys().cloned().collect::<Vec<_>>() {
+            if let Some(e) = self.entites.get_mut(&id) {
+                if let Some(m) = e.mut_module::<T>() {
+                    runner(unsafe{ &mut *mut_self_ref_ptr }, &id, m)
+                }
             }
-        };
+        }
     }
 
     pub fn remove_entity(&mut self, id: &Id) -> bool {
+        let mut_self_ref_ptr = self as *mut Self;
+        if let Some(e) = self.entites.get_mut(id) {
+            for mid in e.modules.keys().cloned().collect::<Vec<_>>() {
+                if let Some(m) = e.modules.get(&mid) {
+                    m.remove_dyn(id, unsafe { &mut *mut_self_ref_ptr})
+                }
+            }
+        };
         self.entites.remove(id).is_some()
     }
 
@@ -93,7 +139,7 @@ impl Engine {
     /// Returns `true` if tag existed.
     /// Removal fails if `tag_exists(tag)` returns false.
     pub fn remove_tag(&mut self, tag: &str) -> bool {
-        if self.tag_exists(&tag) {
+        if self.tag_exists(tag) {
             self.tagged.remove(tag);
             true
         } else {

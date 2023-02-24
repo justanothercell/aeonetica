@@ -1,12 +1,10 @@
-use std::net::UdpSocket;
-use aeonetica_engine::error::{AET};
-use aeonetica_engine::{Id, log, log_err, MAX_CLIENT_TIMEOUT};
-use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use std::time::Instant;
+use aeonetica_engine::{log, log_err};
 use crate::ecs::Engine;
 use crate::server_runtime::ServerRuntime;
 
 pub const TPS: usize = 20;
-pub const SNG_EVERY_N_TICKS: usize = 2;
+pub const MSG_EVERY_N_TICKS: usize = 2;
 
 pub fn run(ip: &str) {
     let runtime = ServerRuntime::create(&ip).map_err(|e| {
@@ -20,27 +18,28 @@ pub fn run(ip: &str) {
         m.start(mut_engine_ref);
     });
 
+    let mut tick_count = 0usize;
 
+    let mut time = 0;
 
     loop {
+        let t = Instant::now();
+
         let _ = engine.handle_queued().map_err(|e| {
             log_err!("{e}")
-        })
-        let mut removed = vec![];
-        engine.runtime.ns.clients.retain(|id, client| {
-            if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
-                true
-            } else {
-                removed.push(*id);
-                log!("timed out client ip {}", client.client_addr);
-                false
-            }
         });
-        for r in removed {
-            let _ = engine.runtime.ns.send(&r, &ServerPacket {
-                conv_id: Id::new(),
-                message: ServerMessage::Unregister("TIMEOUT".to_string()),
-            });
+        engine.timeout_inactive();
+
+        if time > 1000 / TPS {
+            time -= 1000 / TPS;
+
+            engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
+            if tick_count % MSG_EVERY_N_TICKS == 0 {
+                engine.send_messages();
+            }
+            tick_count = tick_count.wrapping_add(1);
         }
+
+        time += t.elapsed().as_millis() as usize;
     }
 }

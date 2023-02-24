@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::collections::hash_set::Iter;
@@ -6,102 +7,71 @@ use std::net::UdpSocket;
 use std::rc::Rc;
 use aeonetica_engine::Id;
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
+use aeonetica_engine::networking::messaging::ClientHandle;
 use crate::ecs::{Module, Engine};
 
 pub(crate) struct MessagingSystem {
-    client_interfaces: HashSet<Id>,
-    is_sending_tick: bool,
-    is_receiving_tick: bool
+    pub(crate) messengers: HashSet<Id>
 }
 
 impl MessagingSystem {
     pub(crate) fn new() -> Self {
         Self {
-            client_interfaces: Default::default(),
-            is_sending_tick: false,
-            is_receiving_tick: false,
+            messengers: Default::default()
         }
     }
 }
 
 pub trait Message: SerBin + DeBin + Debug {}
 
-pub struct ServerMessenger {
+pub struct Messenger {
     ms: Rc<RefCell<MessagingSystem>>,
-    receivers: HashSet<Id>,
-    sending: Option<Vec<u8>>,
-    received: Option<HashMap<Id, Vec<u8>>>
+    handle_type: TypeId,
+    pub(crate) receivers: HashSet<Id>,
+    pub(crate) on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>),
+    pub(crate) on_receive: fn(id: &Id, user: &Id, engine: &mut Engine),
 }
 
-impl Module for ServerMessenger {
+impl Module for Messenger {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
-        engine.ms.borrow_mut().client_interfaces.insert(*id);
+        engine.ms.borrow_mut().messengers.insert(*id);
     }
 
     fn remove(id: &Id, engine: &mut Engine) where Self: Sized {
-        engine.ms.borrow_mut().client_interfaces.remove(id);
+        engine.ms.borrow_mut().messengers.remove(id);
     }
 }
 
-impl ServerMessenger {
-    pub fn new(engine: &Engine) -> Self {
+impl Messenger {
+    pub fn new<H: ClientHandle + Sized + 'static>(engine: &Engine, on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, user: &Id, engine: &mut Engine)) -> Self {
         Self {
             ms: engine.ms.clone(),
             receivers: Default::default(),
-            sending: None,
-            received: None,
+            handle_type: TypeId::of::<H>(),
+            on_send,
+            on_receive
         }
     }
 
-    pub fn receivers(&self) -> Iter<Id> {
+    pub fn clients(&self) -> Iter<Id> {
         self.receivers.iter()
     }
 
-    pub fn has_receiver(&self, user: &Id) -> bool {
-        self.receivers.contains(user)
+    pub fn has_client(&self, id: &Id) -> bool {
+        self.receivers.contains(id)
     }
 
-    pub fn add_receiver(&mut self, user: Id) -> bool {
-        if !self.receivers.contains(&user) {
-            self.receivers.insert(user);
+    pub fn add_client(&mut self, id: Id) -> bool {
+        if !self.receivers.contains(&id) {
+            self.receivers.insert(id);
             true
         } else { false }
     }
 
-    pub fn remove_receiver(&mut self, user: &Id) -> bool {
-        if self.receivers.contains(user) {
-            self.receivers.remove(user);
+    pub fn remove_client(&mut self, id: &Id) -> bool {
+        if self.receivers.contains(id) {
+            self.receivers.remove(id);
             true
         } else { false }
-    }
-
-    pub fn is_sending_tick(&self) -> bool {
-        self.ms.borrow().is_sending_tick
-    }
-
-    pub fn is_receiving_tick(&self) -> bool {
-        self.ms.borrow().is_receiving_tick
-    }
-
-    pub fn is_sending_data_set(&self) -> bool {
-        self.sending.is_some()
-    }
-
-    pub fn set_sending_data<T: Message>(&mut self, data: &T) {
-        self.sending = Some(SerBin::serialize_bin(data))
-    }
-
-    pub fn get_received_data<T: Message>(&self) -> Option<HashMap<Id, T>> {
-        self.received.as_ref()
-            .map(|v| v.iter()
-                .map(|(k, v)| T::deserialize_bin(v).ok()
-                    .map(|t| (*k, t))))
-            .into_iter()
-            .flatten()
-            .collect::<Option<HashMap<_, _>>>()
-    }
-
-    pub fn has_received_data(&self) -> bool {
-        self.received.is_some()
     }
 }

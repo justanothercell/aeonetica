@@ -4,6 +4,6 @@ use aeonetica_engine::register;
 pub mod client;
 #[cfg(feature = "server")]
 pub mod server;
-pub mod common;
+pub mod common_client;
 
 register!(client::CoreModClient{}, server::CoreModServer{});
