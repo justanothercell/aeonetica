@@ -54,7 +54,11 @@ impl NetworkClient {
         if data.len() > MAX_PACKET_SIZE {
             return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
         }
-        self.socket.send(data.as_slice())?;
+        let sock = self.socket.try_clone()?;
+        std::thread::spawn(move || sock.send(&data[..]).map_err(|e| {
+            let e: AError = e.into();
+            e.log();
+        }));
         Ok(())
     }
 }

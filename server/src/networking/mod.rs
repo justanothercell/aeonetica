@@ -42,9 +42,7 @@ impl NetworkServer {
                             Err(e) => log_err!("invalid client packet from {src}: {e}")
                         }
                     },
-                    Err(e) => {
-                        log_err!("couldn't recieve a datagram: {}", e);
-                    }
+                    Err(e) => {}
                 }
             }
         });
@@ -62,21 +60,24 @@ impl NetworkServer {
     }
 
     pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket) -> Result<(), AError>{
-        let data = SerBin::serialize_bin(packet);
-        if data.len() > MAX_PACKET_SIZE {
-            return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
-        }
-        let _ = self.clients.get(client_id).map(|client| {
-            self.socket.send_to(&data[..], client.client_addr)?;
-            Ok(())
-        }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {} does not exist", client_id)))));
+        self.clients.get(client_id).map(|client| {
+            self.send_raw(client.client_addr, packet)
+        }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {client_id} does not exist")))))?;
 
         Ok(())
     }
 
-    pub(crate) fn send_raw(&self, ip_addr: &str, packet: &ServerPacket) -> Result<(), AError>{
+    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket) -> Result<(), AError>{
         let data = SerBin::serialize_bin(packet);
-        self.socket.send_to(&data[..], ip_addr)?;
+        if data.len() > MAX_PACKET_SIZE {
+            return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
+        }
+        let data = SerBin::serialize_bin(packet);
+        let sock = self.socket.try_clone()?;
+        std::thread::spawn(move || sock.send_to(&data[..], ip_addr).map_err(|e| {
+            let e: AError = e.into();
+            e.log();
+        }));
         Ok(())
     }
 }

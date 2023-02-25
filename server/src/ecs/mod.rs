@@ -27,7 +27,6 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(runtime: ServerRuntime) -> Self {
-        log!("{} {}", runtime.ns.try_borrow().is_ok(), runtime.ns.try_borrow_mut().is_ok());
         Self {
             entites: Default::default(),
             tagged: Default::default(),

@@ -29,7 +29,6 @@ impl Engine {
     pub(crate) fn timeout_inactive(&mut self) {
         let mut_self_ref_ptr = self as *mut Self;
         let clients = self.runtime.ns.borrow().clients.keys().cloned().collect::<Vec<_>>();
-        log!();
         for id in clients {
             let mut_self_ref = unsafe { &mut *mut_self_ref_ptr };
             if self.runtime.ns.borrow().clients.get(&id).map(|client| {
@@ -46,7 +45,6 @@ impl Engine {
                 }
             }).unwrap_or(true) {
                 mut_self_ref.runtime.ns.borrow_mut().clients.remove(&id);
-                exit(0);
             }
         }
     }
@@ -76,7 +74,7 @@ impl Engine {
                             mod_profile: self.runtime.mod_profile.profile.clone(),
                             mod_version: self.runtime.mod_profile.version.clone(),
                             mods: self.runtime.mod_profile.modstack.iter().map(|(name_path, flags)| {
-                                let (name, path) = name_path.split_once(":").unwrap();
+                                let (name, path) = name_path.split_once(':').unwrap();
                                 let client_path = format!("runtime/{path}/{name}_client.zip");
                                 let size = std::fs::metadata(&client_path).unwrap().len();
                                 let mut file = File::open(&client_path).unwrap();
@@ -89,7 +87,7 @@ impl Engine {
                     })?;
                     log!("registered client ip {addr} with id {}", packet.client_id);
                 } else {
-                    self.runtime.ns.borrow().send_raw(&addr.to_string(), &ServerPacket{
+                    self.runtime.ns.borrow().send_raw(*addr, &ServerPacket{
                         conv_id: packet.conv_id,
                         message: ServerMessage::RegisterResponse(NetResult::Err(
                             format!("client and server engine versions do not match: {} != {}", client_info.client_version, ENGINE_VERSION)
@@ -102,7 +100,7 @@ impl Engine {
                 message: ServerMessage::Pong(msg.clone()),
             })?,
             ClientMessage::DownloadMod(name_path, offset) => {
-                let (name, path) = name_path.split_once(":").unwrap();
+                let (name, path) = name_path.split_once(':').unwrap();
                 let client_path = format!("runtime/{path}/{name}_client.zip");
                 let mut file = File::open(client_path)?;
                 let mut buffer = [0;MAX_RAW_DATA_SIZE];
