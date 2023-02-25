@@ -1,8 +1,11 @@
 #![feature(int_roundings)]
 
+use std::collections::HashMap;
+use std::time::Instant;
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
+use client::MSG_PER_SECOND;
 use crate::client_runtime::ClientRuntime;
 
 mod networking;
@@ -39,9 +42,26 @@ fn main() {
 
     log!("sent login");
 
+    let mut time = 0;
+
     loop {
+        let t = Instant::now();
+
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")
         });
+
+        if time > 10000000 / MSG_PER_SECOND {
+            time -= 10000000 / MSG_PER_SECOND;
+            let mut messages = HashMap::new();
+            for (id, handle) in &mut client.handles {
+                let data = handle.send_data();
+                if !data.is_empty() {
+                    messages.insert(id, data);
+                }
+            }
+        }
+
+        time += t.elapsed().as_nanos() as usize;
     }
 }

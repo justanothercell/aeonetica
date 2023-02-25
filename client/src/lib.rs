@@ -7,6 +7,8 @@ use aeonetica_engine::networking::messaging::ClientHandle;
 pub mod events;
 pub mod layers;
 
+pub const MSG_PER_SECOND: usize = 10;
+
 pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}

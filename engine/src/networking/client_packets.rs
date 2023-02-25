@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
 use uuid::Uuid;
 use crate::Id;
@@ -22,7 +23,8 @@ pub enum ClientMessage {
     Acknowlege(Id),
     Ping(String),
     Pong(String),
-    RawData(Vec<u8>)
+    RawData(Vec<u8>),
+    ModMessage(u128, HashMap<Id, Vec<u8>>)
 }
 
 #[derive(Debug, SerBin, DeBin)]

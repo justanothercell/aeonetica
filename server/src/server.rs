@@ -3,8 +3,8 @@ use aeonetica_engine::{log, log_err};
 use crate::ecs::Engine;
 use crate::server_runtime::ServerRuntime;
 
-pub const TPS: usize = 20;
-pub const MSG_EVERY_N_TICKS: usize = 2;
+const TPS: usize = 20;
+const MSG_EVERY_N_TICKS: usize = 2;
 
 pub fn run(ip: &str) {
     let runtime = ServerRuntime::create(ip).map_err(|e| {
