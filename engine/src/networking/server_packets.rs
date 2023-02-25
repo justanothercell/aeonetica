@@ -27,10 +27,11 @@ pub enum ServerMessage {
     Pong(String),
     RawData(Vec<u8>),
     /// Entity Id, client handle TypeId
-    AddClientHandle(Id, i64),
+    AddClientHandle(Id, Id),
     /// Entity Id
     RemoveClientHandle(Id),
-    ModMessages(u64, HashMap<Id, Vec<u8>>)
+    /// timestamp, Entity Id, data
+    ModMessage(u128, Id, Vec<u8>)
 }
 
 /// mods: Vec<(ModName, ModFlags, ZipHash, FileSize)>

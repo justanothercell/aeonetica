@@ -48,18 +48,18 @@ use crate::client_runtime::paths_util_common::mod_hash;
 pub(crate) enum ClientState {
     Start,
     Registered,
-    DownloadedMods,
-    LoggedIn,
+    DownloadedMods
 }
 
 pub(crate) struct ClientRuntime {
+    pub(crate) last_server_msg: u128,
     pub(crate) client_id: Id,
     pub(crate) mod_profile: String,
     pub(crate) mod_profile_version: String,
     pub(crate) nc: NetworkClient,
     pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
-    pub(crate) registered_handles: HashMap<TypeId, fn() -> Box<dyn ClientHandle>>,
+    pub(crate) registered_handles: HashMap<Id, fn() -> Box<dyn ClientHandle>>,
     pub(crate) handles: HashMap<Id, Box<dyn ClientHandle>>,
     pub(crate) state: ClientState
 }
@@ -84,6 +84,7 @@ impl ClientRuntime {
         }).unwrap();
         log!("started client {addr} and initiating handshake to {server_addr}");
         let mut client = Self {
+            last_server_msg: 0,
             client_id,
             nc,
             mod_profile: String::new(),
@@ -94,12 +95,12 @@ impl ClientRuntime {
             loaded_mods: vec![],
             state: ClientState::Start
         };
-        let mut mod_list = client.register()?;
+        let mod_list = client.register()?;
         let timeout_socket = client.nc.socket.try_clone()?;
         thread::spawn(move || {
             loop {
                 let data = SerBin::serialize_bin(&ClientPacket {
-                    client_id: client_id.clone(),
+                    client_id,
                     conv_id: Id::new(),
                     message: ClientMessage::KeepAlive,
                 });
@@ -114,7 +115,7 @@ impl ClientRuntime {
         log!("started timeout preventer");
         let _ = client.download_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
         let _ = client.enable_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
-        let _ = client.login().map_err(|e| client.gracefully_abort(e));
+        log!("finished client creation");
         Ok(client)
     }
 
@@ -262,13 +263,6 @@ impl ClientRuntime {
             }
         }
         log!("downloaded all missing mods");
-        Ok(())
-    }
-
-    fn login(&mut self) -> Result<(), AError>{
-        while self.state != ClientState::LoggedIn {
-            self.handle_queued()?;
-        }
         Ok(())
     }
 

@@ -1,6 +1,6 @@
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
+use aeonetica_engine::Id;
 use aeonetica_engine::libloading::Library;
 use aeonetica_engine::networking::messaging::ClientHandle;
 
@@ -11,7 +11,7 @@ pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
     #[allow(unused_variables)]
-    fn register_handlers(&self, handlers: &mut HashMap<TypeId, fn() -> Box<dyn ClientHandle>>) {}
+    fn register_handlers(&self, handlers: &mut HashMap<Id, fn() -> Box<dyn ClientHandle>>) {}
 }
 
 pub struct ClientModBox {

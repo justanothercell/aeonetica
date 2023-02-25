@@ -1,8 +1,12 @@
-use std::any::TypeId;
+use std::any::{type_name, TypeId};
+use std::collections::hash_map::DefaultHasher;
 use std::fmt::Display;
 use std::path::Path;
 use std::fs::File;
+use core::hash::Hasher;
+use std::hash::SipHasher13;
 use crate::error::{AError, AET};
+use crate::Id;
 
 
 pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), AError>{
@@ -28,10 +32,12 @@ pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>
     Ok(())
 }
 
-pub unsafe fn typeid_to_i64(id: TypeId) -> i64{
-    std::mem::transmute(id)
-}
-
-pub unsafe fn i64_to_typeid(id: i64) -> TypeId{
-    std::mem::transmute(id)
+pub const fn type_to_id<T>() -> Id {
+    #[allow(deprecated)]
+    let mut s = SipHasher13::new();
+    s.write(type_name::<T>().as_bytes());
+    let [a, b, c, d,e , f, g, h] = s.finish().to_be_bytes();
+    s.write(type_name::<T>().as_bytes());
+    let [i, j, k, l, m, n, o, p] = s.finish().to_be_bytes();
+    Id::from_bytes([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p])
 }

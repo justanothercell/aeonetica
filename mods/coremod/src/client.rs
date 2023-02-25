@@ -1,8 +1,8 @@
-use std::any::TypeId;
 use std::collections::HashMap;
 use aeonetica_client::ClientMod;
-use aeonetica_engine::log;
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::networking::messaging::ClientHandle;
+use aeonetica_engine::util::type_to_id;
 use crate::common_client::MyClientHandle;
 
 pub struct CoreModClient {
@@ -14,7 +14,8 @@ impl ClientMod for CoreModClient {
         log!("hello from client core!")
     }
 
-    fn register_handlers(&self, handlers: &mut HashMap<TypeId, fn() -> Box<dyn ClientHandle>>) {
-        handlers.insert(TypeId::of::<MyClientHandle>(), || Box::new(MyClientHandle {}));
+    fn register_handlers(&self, handlers: &mut HashMap<Id, fn() -> Box<dyn ClientHandle>>) {
+        log!("handles registered");
+        handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle {}));
     }
 }

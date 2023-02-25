@@ -30,9 +30,9 @@ impl Engine {
         let mut_self_ref_ptr = self as *mut Self;
         for id in self.runtime.ns.clients.keys().clone() {
             let mut_self_ref = unsafe { &mut *mut_self_ref_ptr };
-            self.runtime.ns.clients.get(id).map(|client| {
+            if self.runtime.ns.clients.get(id).map(|client| {
                 if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
-                    true
+                    false
                 } else {
                     mut_self_ref.kick_client(id, "TIMEOUT");
                     let _ = mut_self_ref.runtime.ns.send(id, &ServerPacket {
@@ -40,9 +40,11 @@ impl Engine {
                         message: ServerMessage::Unregister("TIMEOUT".to_string()),
                     });
                     log!("timed out client ip {}", client.client_addr);
-                    false
+                    true
                 }
-            });
+            }).unwrap_or(true) {
+                mut_self_ref.runtime.ns.clients.remove(id);
+            }
         }
     }
 
@@ -116,14 +118,14 @@ impl Engine {
                 })?;
             },
             ClientMessage::Login => {
+                log!("client logged in: {}", packet.client_id);
                 self.clients.insert(packet.client_id);
-                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m|
-                    (m.on_join)(id, &packet.client_id, engine))
+                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m| (m.on_join)(id, &packet.client_id, engine))
             }
             ClientMessage::Logout => {
+                log!("client logged out: {}", packet.client_id);
                 self.clients.remove(&packet.client_id);
-                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m|
-                    (m.on_leave)(id, &packet.client_id, engine))
+                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m| (m.on_leave)(id, &packet.client_id, engine))
             }
             _ => ()
         }

@@ -3,7 +3,6 @@ use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use aeonetica_engine::util::i64_to_typeid;
 use crate::client_runtime::ClientRuntime;
 
 impl ClientRuntime {
@@ -32,16 +31,27 @@ impl ClientRuntime {
                 exit(0)
             }
             ServerMessage::AddClientHandle(id, handle_id) => {
-                self.registered_handles.get(unsafe { &i64_to_typeid(*handle_id) }).map(|creator| {
+                log!("added client handle");
+                self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
                     self.handles.insert(*id, handle)
                 });
             }
             ServerMessage::RemoveClientHandle(id) => {
-                self.handles.remove(id).map(|h| {
+                log!("remove client handle");
+                if let Some(mut h) = self.handles.remove(id) {
                     h.remove()
-                });
+                }
+            }
+            ServerMessage::ModMessage(timestamp, id, message) => {
+                log!("mod message");
+                if timestamp > &self.last_server_msg {
+                    self.last_server_msg = *timestamp;
+                    if let Some(h) = self.handles.get_mut(id) {
+                        h.receive_data(message)
+                    }
+                }
             }
             _ => ()
         }

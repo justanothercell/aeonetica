@@ -7,7 +7,7 @@ pub const TPS: usize = 20;
 pub const MSG_EVERY_N_TICKS: usize = 2;
 
 pub fn run(ip: &str) {
-    let runtime = ServerRuntime::create(&ip).map_err(|e| {
+    let runtime = ServerRuntime::create(ip).map_err(|e| {
         e.log_exit();
     }).unwrap();
 
@@ -28,11 +28,11 @@ pub fn run(ip: &str) {
         let _ = engine.handle_queued().map_err(|e| {
             log_err!("{e}")
         });
+
         engine.timeout_inactive();
 
-        if time > 1000 / TPS {
-            time -= 1000 / TPS;
-
+        if time > 10000000 / TPS {
+            time -= 10000000 / TPS;
             engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
             if tick_count % MSG_EVERY_N_TICKS == 0 {
                 engine.send_messages();
@@ -40,6 +40,6 @@ pub fn run(ip: &str) {
             tick_count = tick_count.wrapping_add(1);
         }
 
-        time += t.elapsed().as_millis() as usize;
+        time += t.elapsed().as_nanos() as usize;
     }
 }

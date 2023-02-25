@@ -5,6 +5,7 @@ use std::panic::Location;
 use std::process::exit;
 use crate::{log_err, log_raw};
 
+#[derive(Debug)]
 pub struct AError {
     et: AET,
     pub additional_info: Vec<String>,
@@ -35,6 +36,7 @@ impl AError {
     }
 }
 
+#[derive(Debug)]
 pub enum AET {
     ValueError(String),
     DataError(String),

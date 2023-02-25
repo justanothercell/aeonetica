@@ -2,11 +2,12 @@ use std::cell::{RefCell};
 use std::collections::{HashMap, HashSet};
 use std::collections::hash_set;
 use std::collections::hash_map::{Iter, IterMut, Keys};
-use std::iter::{FilterMap};
 use std::rc::Rc;
+use std::time::SystemTime;
 use crate::ecs::entity::Entity;
-use aeonetica_engine::Id;
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use aeonetica_engine::util::type_to_id;
 use crate::ecs::events::ConnectionListener;
 use crate::ecs::messaging::{MessagingSystem, Messenger};
 use crate::ecs::module::{Module, ModuleDyn};
@@ -54,12 +55,15 @@ impl Engine {
     /// disregarded for most use cases.
     pub fn kick_client(&mut self, id: &Id, reason: &str) -> bool {
         if self.clients.contains(id) {
-            self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m|
-                (m.on_leave)(eid, id, engine));
+            self.clients.remove(id);
+            self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m| {
+                (m.on_leave)(eid, id, engine);
+            });
             let _ = self.runtime.ns.send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::Kick(reason.to_string()),
             });
+            log!("kicked client {id}");
             true
         } else { false }
     }
@@ -74,13 +78,24 @@ impl Engine {
 
     pub(crate) fn send_messages(&mut self) {
         let mut_self_ref_ptr = self as *mut Self;
-        let messages = self.ms.borrow().messengers.iter().cloned().collect::<Vec<_>>().into_iter()
-            .filter_map(|id| self.get_module_of::<Messenger>(&id)
-                .map(|sm| {
+        self.ms.borrow().messengers.iter().cloned().collect::<Vec<_>>().into_iter()
+            .for_each(|id| {
+                if let Some(sm) = self.get_module_of::<Messenger>(&id) {
                     let mut sending = vec![];
                     (sm.on_send)(&id, unsafe{ &mut *mut_self_ref_ptr }, &mut sending);
-                    (id, sending)
-                })).filter(|i| !i.1.is_empty()).collect::<HashMap<_, _>>();
+                    if !sending.is_empty() {
+                        for cid in sm.clients() {
+                            let _ = self.runtime.ns.send(cid, &ServerPacket {
+                                conv_id: Id::new(),
+                                message: ServerMessage::ModMessage(SystemTime::now()
+                                                                       .duration_since(SystemTime::UNIX_EPOCH)
+                                                                       .unwrap().as_millis(), id, sending.clone()),
+                            });
+                        }
+                    }
+                }
+            });
+
     }
 
     pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
@@ -196,12 +211,12 @@ impl Engine {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn id_find_with<'a, T: Module + Sized + 'static>(&'a self) -> FilterMap<Iter<Id, Entity>, fn((&'a Id, &Entity)) -> Option<&'a Id>>{
+    pub fn id_find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = &Id>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some(id)} else { None })
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn find_with<'a, T: Module + Sized + 'static>(&'a self) -> FilterMap<Iter<Id, Entity>, fn((&'a Id, &'a Entity)) -> Option<(&'a Id, &'a dyn Module)>>{
+    pub fn find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = (&Id, &T)>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>()?))} else { None })
     }
 }

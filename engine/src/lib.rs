@@ -1,3 +1,9 @@
+#![feature(const_hash)]
+#![feature(const_type_name)]
+#![feature(hashmap_internals)]
+#![feature(const_mut_refs)]
+#![feature(const_trait_impl)]
+
 use std::fmt::{Debug, Display, Formatter};
 pub use nanoserde;
 pub use libloading;
@@ -18,11 +24,11 @@ impl Id {
         Self(Uuid::new_v4().into_bytes())
     }
 
-    pub fn from_bytes(b: [u8;16]) -> Self {
+    pub const fn from_bytes(b: [u8;16]) -> Self {
         Self(b)
     }
 
-    pub fn into_bytes(self) -> [u8;16] {
+    pub const fn into_bytes(self) -> [u8;16] {
         self.0
     }
 }

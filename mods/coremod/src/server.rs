@@ -1,3 +1,4 @@
+use std::any::{type_name, TypeId};
 use aeonetica_engine::{Id, log};
 use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_server::ecs::module::Module;
@@ -22,16 +23,17 @@ impl Module for MyModule {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
         log!("mymodule started. entity id: {id:?}");
         log!("registering messenger");
-        engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>(engine,
-                                                                                   |id, engine, sending| {
+        engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>(|id, engine, sending| {
             let mut messages = vec![];
             std::mem::swap(&mut messages, &mut engine.mut_module_of::<Self>(id).unwrap().broadcastings);
+            messages.push("foo!".to_string());
             *sending = Broadcastings(messages).serialize_bin()
         },
-                                                                                   |id, client, engine| {
+        |_id, _client, _engine| {
             // currently not receiving any data from client
         }));
         log!("registering client loginout listener");
+        log!("ConnectionListener: {:?}", type_name::<ConnectionListener>());
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
             |id, user, engine| {
                 log!("user joined: {user}");
@@ -47,6 +49,7 @@ impl Module for MyModule {
             }));
     }
     fn tick(id: &Id, engine: &mut Engine) where Self: Sized {
+
     }
 }
 
@@ -56,7 +59,7 @@ impl ServerMod for CoreModServer {
     }
     fn start(&mut self, engine: &mut Engine) {
         log!("server core start");
-        let mut eid = engine.new_entity();
+        let eid = engine.new_entity();
         engine.mut_entity(&eid).unwrap().add_module(MyModule {
             broadcastings: vec![],
         });

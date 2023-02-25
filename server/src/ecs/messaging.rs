@@ -8,7 +8,7 @@ use aeonetica_engine::Id;
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::messaging::ClientHandle;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use aeonetica_engine::util::typeid_to_i64;
+use aeonetica_engine::util::type_to_id;
 use crate::ecs::{Module, Engine};
 use crate::networking::NetworkServer;
 
@@ -29,8 +29,8 @@ impl MessagingSystem {
 pub trait Message: SerBin + DeBin + Debug {}
 
 pub struct Messenger {
-    ms: Rc<RefCell<MessagingSystem>>,
-    handle_type: TypeId,
+    ms: Option<Rc<RefCell<MessagingSystem>>>,
+    handle_type: Id,
     entity_id: Id,
     pub(crate) receivers: HashSet<Id>,
     pub(crate) on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>),
@@ -39,6 +39,7 @@ pub struct Messenger {
 
 impl Module for Messenger {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
+        engine.mut_module_of::<Self>(id).unwrap().ms = Some(engine.ms.clone());
         engine.mut_module_of::<Self>(id).unwrap().entity_id = *id;
         engine.ms.borrow_mut().messengers.insert(*id);
     }
@@ -49,11 +50,11 @@ impl Module for Messenger {
 }
 
 impl Messenger {
-    pub fn new<H: ClientHandle + Sized + 'static>(engine: &Engine, on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, user: &Id, engine: &mut Engine)) -> Self {
+    pub fn new<H: ClientHandle + Sized + 'static>(on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, user: &Id, engine: &mut Engine)) -> Self {
         Self {
-            ms: engine.ms.clone(),
+            ms: None,
             receivers: Default::default(),
-            handle_type: TypeId::of::<H>(),
+            handle_type: type_to_id::<H>(),
             entity_id: Id::new(),
             on_send,
             on_receive
@@ -69,11 +70,11 @@ impl Messenger {
     }
 
     pub fn add_client(&mut self, id: Id) -> bool {
-        if !self.receivers.contains(&id) && unsafe { &*self.ms.borrow().ns }.clients.contains_key(&id) {
+        if !self.receivers.contains(&id) && unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.clients.contains_key(&id) {
             self.receivers.insert(id);
-            let _ = unsafe { &*self.ms.borrow().ns }.send(&id, &ServerPacket {
+            let _ = unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.send(&id, &ServerPacket {
                 conv_id: Id::new(),
-                message: ServerMessage::AddClientHandle(self.entity_id, unsafe { typeid_to_i64(self.handle_type) }),
+                message: ServerMessage::AddClientHandle(self.entity_id, unsafe { self.handle_type }),
             });
             true
         } else { false }
@@ -82,7 +83,7 @@ impl Messenger {
     pub fn remove_client(&mut self, id: &Id) -> bool {
         if self.receivers.contains(id) {
             self.receivers.remove(id);
-            let _ = unsafe { &*self.ms.borrow().ns }.send(id, &ServerPacket {
+            let _ = unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::RemoveClientHandle(self.entity_id),
             });
