@@ -26,7 +26,7 @@ impl Module for MyModule {
         engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>(|id, engine, sending| {
             let mut messages = vec![];
             std::mem::swap(&mut messages, &mut engine.mut_module_of::<Self>(id).unwrap().broadcastings);
-            messages.push("foo!".to_string());
+            //messages.push("foo!".to_string());
             *sending = Broadcastings(messages).serialize_bin();
         },
         |_id, _client, _engine| {

@@ -1,8 +1,7 @@
-use std::cell::RefCell;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::net::SocketAddr;
-use std::rc::Rc;
+use std::process::exit;
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
@@ -29,7 +28,9 @@ impl Engine {
 
     pub(crate) fn timeout_inactive(&mut self) {
         let mut_self_ref_ptr = self as *mut Self;
-        for id in self.runtime.ns.borrow().clients.keys().cloned().clone() {
+        let clients = self.runtime.ns.borrow().clients.keys().cloned().collect::<Vec<_>>();
+        log!();
+        for id in clients {
             let mut_self_ref = unsafe { &mut *mut_self_ref_ptr };
             if self.runtime.ns.borrow().clients.get(&id).map(|client| {
                 if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
@@ -45,6 +46,7 @@ impl Engine {
                 }
             }).unwrap_or(true) {
                 mut_self_ref.runtime.ns.borrow_mut().clients.remove(&id);
+                exit(0);
             }
         }
     }
@@ -62,14 +64,9 @@ impl Engine {
         match &packet.message {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
-                    let sock = self.runtime.ns.borrow().socket.try_clone()?;
                     self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
                         last_seen: std::time::Instant::now(),
                         client_addr: *addr,
-                        socket: {
-                            sock.connect(addr)?;
-                            sock
-                        },
                         awaiting_replies: Default::default(),
                     });
                     self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{

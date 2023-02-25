@@ -45,7 +45,6 @@ impl ClientRuntime {
                 }
             }
             ServerMessage::ModMessage(timestamp, id, message) => {
-                log!("mod message");
                 if timestamp > &self.last_server_msg {
                     self.last_server_msg = *timestamp;
                     if let Some(h) = self.handles.get_mut(id) {

@@ -4,3 +4,4 @@ server/runtime/
 server/mods/**.zip
 .idea/
 .vscode/
+local_testing/

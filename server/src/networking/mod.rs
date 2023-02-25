@@ -23,7 +23,6 @@ pub(crate) struct NetworkServer {
 pub(crate) struct ClientHandle {
     pub(crate) last_seen: Instant,
     pub(crate) client_addr: SocketAddr,
-    socket: UdpSocket,
     awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>>
 }
 
@@ -68,7 +67,7 @@ impl NetworkServer {
             return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
         }
         let _ = self.clients.get(client_id).map(|client| {
-            let _ = client.socket.send(&data[..]);
+            self.socket.send_to(&data[..], client.client_addr)?;
             Ok(())
         }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {} does not exist", client_id)))));
 
@@ -77,9 +76,7 @@ impl NetworkServer {
 
     pub(crate) fn send_raw(&self, ip_addr: &str, packet: &ServerPacket) -> Result<(), AError>{
         let data = SerBin::serialize_bin(packet);
-        let sock = self.socket.try_clone()?;
-        sock.connect(ip_addr)?;
-        sock.send(&data[..])?;
+        self.socket.send_to(&data[..], ip_addr)?;
         Ok(())
     }
 }

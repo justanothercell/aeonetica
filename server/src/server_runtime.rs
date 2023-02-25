@@ -76,11 +76,7 @@ impl ServerRuntime {
         Ok(ServerRuntime {
             mod_profile: profile,
             loaded_mods: mods,
-            ns: {
-                let ns = Rc::new(RefCell::new(NetworkServer::start(addr)?));
-                log!("started server with ip {}", ns.borrow().socket.local_addr()?);
-                ns
-            }
+            ns: Rc::new(RefCell::new(NetworkServer::start(addr)?))
         })
     }
 }

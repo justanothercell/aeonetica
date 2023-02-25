@@ -13,8 +13,9 @@ pub fn run(ip: &str) {
 
     log!("running start for all mods");
     let mut engine = Engine::new(runtime);
+
     let mut_engine_ref = unsafe { &mut *(&mut engine as *mut Engine) };
-    engine.runtime.loaded_mods.iter_mut().fold((), |_, m| {
+    engine.runtime.loaded_mods.iter_mut().for_each(|m| {
         m.start(mut_engine_ref);
     });
 
