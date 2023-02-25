@@ -18,7 +18,8 @@ use crate::server_runtime::ServerRuntime;
 
 impl Engine {
     pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
-        self.runtime.ns.queued_packets().into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
+        let packets = self.runtime.ns.borrow_mut().queued_packets();
+        packets.into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
         .reduce(|acc, r| {
             acc?;
             r?;
@@ -28,14 +29,14 @@ impl Engine {
 
     pub(crate) fn timeout_inactive(&mut self) {
         let mut_self_ref_ptr = self as *mut Self;
-        for id in self.runtime.ns.clients.keys().clone() {
+        for id in self.runtime.ns.borrow().clients.keys().cloned().clone() {
             let mut_self_ref = unsafe { &mut *mut_self_ref_ptr };
-            if self.runtime.ns.clients.get(id).map(|client| {
+            if self.runtime.ns.borrow().clients.get(&id).map(|client| {
                 if client.last_seen.elapsed().as_millis() < MAX_CLIENT_TIMEOUT {
                     false
                 } else {
-                    mut_self_ref.kick_client(id, "TIMEOUT");
-                    let _ = mut_self_ref.runtime.ns.send(id, &ServerPacket {
+                    mut_self_ref.kick_client(&id, "TIMEOUT");
+                    let _ = mut_self_ref.runtime.ns.borrow().send(&id, &ServerPacket {
                         conv_id: Id::new(),
                         message: ServerMessage::Unregister("TIMEOUT".to_string()),
                     });
@@ -43,33 +44,35 @@ impl Engine {
                     true
                 }
             }).unwrap_or(true) {
-                mut_self_ref.runtime.ns.clients.remove(id);
+                mut_self_ref.runtime.ns.borrow_mut().clients.remove(&id);
             }
         }
     }
 
     pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> Result<(), AError>{
-        if let Some(client) = self.runtime.ns.clients.get_mut(&packet.client_id) {
+        let mut_ref_ptr = &mut self.runtime as *mut ServerRuntime;
+        if let Some(client) = self.runtime.ns.borrow_mut().clients.get_mut(&packet.client_id) {
             client.last_seen = std::time::Instant::now();
             if let Some(handler) = client.awaiting_replies.remove(&packet.conv_id) {
-                handler(&mut self.runtime, packet);
+                let mut_ref = unsafe { &mut *mut_ref_ptr };
+                handler(mut_ref, packet);
                 return Ok(())
             }
         }
         match &packet.message {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
-                    self.runtime.ns.clients.insert(packet.client_id, ClientHandle {
+                    let sock = self.runtime.ns.borrow().socket.try_clone()?;
+                    self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
                         last_seen: std::time::Instant::now(),
                         client_addr: *addr,
                         socket: {
-                            let sock = self.runtime.ns.socket.try_clone()?;
                             sock.connect(addr)?;
                             sock
                         },
                         awaiting_replies: Default::default(),
                     });
-                    self.runtime.ns.send(&packet.client_id, &ServerPacket{
+                    self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                         conv_id: packet.conv_id,
                         message: ServerMessage::RegisterResponse(NetResult::Ok(ServerInfo {
                             server_version: ENGINE_VERSION.to_string(),
@@ -87,9 +90,9 @@ impl Engine {
                             }).collect(),
                         }))
                     })?;
-                    log!("registered client ip {}", addr);
+                    log!("registered client ip {addr} with id {}", packet.client_id);
                 } else {
-                    self.runtime.ns.send_raw(&addr.to_string(), &ServerPacket{
+                    self.runtime.ns.borrow().send_raw(&addr.to_string(), &ServerPacket{
                         conv_id: packet.conv_id,
                         message: ServerMessage::RegisterResponse(NetResult::Err(
                             format!("client and server engine versions do not match: {} != {}", client_info.client_version, ENGINE_VERSION)
@@ -97,11 +100,7 @@ impl Engine {
                     })?;
                 }
             }
-            ClientMessage::Unregister => {
-                log!("unregistered client ip {}", addr);
-                self.runtime.ns.clients.remove(&packet.client_id);
-            }
-            ClientMessage::Ping(msg) => self.runtime.ns.send(&packet.client_id, &ServerPacket{
+            ClientMessage::Ping(msg) => self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                 conv_id: packet.conv_id,
                 message: ServerMessage::Pong(msg.clone()),
             })?,
@@ -112,13 +111,12 @@ impl Engine {
                 let mut buffer = [0;MAX_RAW_DATA_SIZE];
                 file.seek(SeekFrom::Start(*offset))?;
                 let len = file.read(&mut buffer[..])?;
-                self.runtime.ns.send(&packet.client_id, &ServerPacket{
+                self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                     conv_id: packet.conv_id,
                     message: ServerMessage::RawData(buffer[..len].to_vec())
                 })?;
             },
             ClientMessage::Login => {
-                log!("client logged in: {}", packet.client_id);
                 self.clients.insert(packet.client_id);
                 self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m| (m.on_join)(id, &packet.client_id, engine))
             }
@@ -133,10 +131,10 @@ impl Engine {
     }
 
     pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F) -> Result<(), AError> {
-        match self.runtime.ns.clients.get_mut(client_id) {
+        match self.runtime.ns.borrow_mut().clients.get_mut(client_id) {
             Some(client) => {
                 client.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-                self.runtime.ns.send(client_id, packet)?;
+                self.runtime.ns.borrow().send(client_id, packet)?;
                 Ok(())
             }
             None => {

@@ -19,7 +19,6 @@ pub enum ClientMessage {
     KeepAlive,
     Register(ClientInfo),
     DownloadMod(String, u64),
-    Unregister,
     Acknowlege(Id),
     Ping(String),
     Pong(String),

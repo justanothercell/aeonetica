@@ -284,11 +284,6 @@ impl ClientRuntime {
     fn gracefully_abort<E: Into<AError>>(&self, e: E) -> !{
         let err = e.into();
         err.log();
-        let _ = self.nc.send(&ClientPacket {
-            client_id: self.client_id,
-            conv_id: Id::new(),
-            message: ClientMessage::Unregister,
-        });
         log_err!("gracefully aborted client");
         exit(1);
     }

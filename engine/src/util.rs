@@ -36,8 +36,8 @@ pub const fn type_to_id<T>() -> Id {
     #[allow(deprecated)]
     let mut s = SipHasher13::new();
     s.write(type_name::<T>().as_bytes());
-    let [a, b, c, d,e , f, g, h] = s.finish().to_be_bytes();
+    let [a, b, c, d,e , f, g, h] = s.finish().to_le_bytes();
     s.write(type_name::<T>().as_bytes());
-    let [i, j, k, l, m, n, o, p] = s.finish().to_be_bytes();
+    let [i, j, k, l, m, n, o, p] = s.finish().to_le_bytes();
     Id::from_bytes([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p])
 }

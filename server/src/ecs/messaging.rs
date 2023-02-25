@@ -4,7 +4,7 @@ use std::collections::{HashSet};
 use std::collections::hash_set::Iter;
 use std::fmt::Debug;
 use std::rc::Rc;
-use aeonetica_engine::Id;
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::messaging::ClientHandle;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
@@ -13,14 +13,14 @@ use crate::ecs::{Module, Engine};
 use crate::networking::NetworkServer;
 
 pub(crate) struct MessagingSystem {
-    ns: *const NetworkServer, // Only use for add/removal client notifications!!! DO NOT use for any other purpose!!!
+    pub(crate) ns: Rc<RefCell<NetworkServer>>,
     pub(crate) messengers: HashSet<Id>
 }
 
 impl MessagingSystem {
-    pub(crate) fn new(ns: &NetworkServer) -> Self {
+    pub(crate) fn new(ns: Rc<RefCell<NetworkServer>>) -> Self {
         Self {
-            ns: ns as *const NetworkServer,
+            ns,
             messengers: Default::default()
         }
     }
@@ -70,9 +70,10 @@ impl Messenger {
     }
 
     pub fn add_client(&mut self, id: Id) -> bool {
-        if !self.receivers.contains(&id) && unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.clients.contains_key(&id) {
+        log!("{id}, {:?}", self.ms.as_ref().unwrap().borrow().ns.borrow().clients.keys().collect::<Vec<_>>());
+        if !self.receivers.contains(&id) && self.ms.as_ref().unwrap().borrow().ns.borrow().clients.contains_key(&id) {
             self.receivers.insert(id);
-            let _ = unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.send(&id, &ServerPacket {
+            let _ = self.ms.as_ref().unwrap().borrow().ns.borrow().send(&id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::AddClientHandle(self.entity_id, unsafe { self.handle_type }),
             });
@@ -83,7 +84,7 @@ impl Messenger {
     pub fn remove_client(&mut self, id: &Id) -> bool {
         if self.receivers.contains(id) {
             self.receivers.remove(id);
-            let _ = unsafe { &*self.ms.as_ref().unwrap().borrow().ns }.send(id, &ServerPacket {
+            let _ = self.ms.as_ref().unwrap().borrow().ns.borrow().send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::RemoveClientHandle(self.entity_id),
             });

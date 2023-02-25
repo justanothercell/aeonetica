@@ -7,7 +7,6 @@ use std::time::SystemTime;
 use crate::ecs::entity::Entity;
 use aeonetica_engine::{Id, log};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use aeonetica_engine::util::type_to_id;
 use crate::ecs::events::ConnectionListener;
 use crate::ecs::messaging::{MessagingSystem, Messenger};
 use crate::ecs::module::{Module, ModuleDyn};
@@ -31,7 +30,7 @@ impl Engine {
         Self {
             entites: Default::default(),
             tagged: Default::default(),
-            ms: Rc::new(RefCell::new(MessagingSystem::new(&runtime.ns))),
+            ms: Rc::new(RefCell::new(MessagingSystem::new(runtime.ns.clone()))),
             clients: Default::default(),
             runtime
         }
@@ -59,7 +58,7 @@ impl Engine {
             self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m| {
                 (m.on_leave)(eid, id, engine);
             });
-            let _ = self.runtime.ns.send(id, &ServerPacket {
+            let _ = self.runtime.ns.borrow().send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::Kick(reason.to_string()),
             });
@@ -85,7 +84,7 @@ impl Engine {
                     (sm.on_send)(&id, unsafe{ &mut *mut_self_ref_ptr }, &mut sending);
                     if !sending.is_empty() {
                         for cid in sm.clients() {
-                            let _ = self.runtime.ns.send(cid, &ServerPacket {
+                            let _ = self.runtime.ns.borrow().send(cid, &ServerPacket {
                                 conv_id: Id::new(),
                                 message: ServerMessage::ModMessage(SystemTime::now()
                                                                        .duration_since(SystemTime::UNIX_EPOCH)

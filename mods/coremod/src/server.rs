@@ -27,13 +27,12 @@ impl Module for MyModule {
             let mut messages = vec![];
             std::mem::swap(&mut messages, &mut engine.mut_module_of::<Self>(id).unwrap().broadcastings);
             messages.push("foo!".to_string());
-            *sending = Broadcastings(messages).serialize_bin()
+            *sending = Broadcastings(messages).serialize_bin();
         },
         |_id, _client, _engine| {
             // currently not receiving any data from client
         }));
         log!("registering client loginout listener");
-        log!("ConnectionListener: {:?}", type_name::<ConnectionListener>());
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
             |id, user, engine| {
                 log!("user joined: {user}");
@@ -59,8 +58,8 @@ impl ServerMod for CoreModServer {
     }
     fn start(&mut self, engine: &mut Engine) {
         log!("server core start");
-        let eid = engine.new_entity();
-        engine.mut_entity(&eid).unwrap().add_module(MyModule {
+        let id = engine.new_entity();
+        engine.mut_entity(&id).unwrap().add_module(MyModule {
             broadcastings: vec![],
         });
     }

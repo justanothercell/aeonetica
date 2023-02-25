@@ -1,5 +1,6 @@
-use std::collections::{hash_map, HashMap};
-use aeonetica_engine::Id;
+use std::collections::{HashMap};
+use std::any::type_name;
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 use crate::ecs::module::{Module, ModuleDyn};
@@ -21,9 +22,12 @@ impl Entity {
 
     pub fn add_module<T: Module + Sized + 'static>(&mut self, mut module: T) -> bool {
         module.init();
-        if let hash_map::Entry::Vacant(e) = self.modules.entry(type_to_id::<T>()) {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.modules.entry(type_to_id::<T>()) {
             e.insert(Box::new(module));
-            self.modules.get(&type_to_id::<T>()).map(|m| m.start_dyn(&self.entity_id, unsafe {&mut *self.engine}));
+            if let Some(m) = self.modules.get(&type_to_id::<T>()) {
+                log!("starting {}", type_name::<T>());
+                m.start_dyn(&self.entity_id, unsafe {&mut *self.engine})
+            }
             true
         } else {
             false
@@ -35,7 +39,7 @@ impl Entity {
     }
 
     pub fn remove_module<T: Module + Sized + 'static>(&mut self) -> bool{
-        self.modules.get(&type_to_id::<T>()).map(|m| m.remove_dyn(&self.entity_id, unsafe {&mut *self.engine}));
+        if let Some(m) = self.modules.get(&type_to_id::<T>()) { m.remove_dyn(&self.entity_id, unsafe {&mut *self.engine}) }
         self.modules.remove(&type_to_id::<T>()).is_some()
     }
 

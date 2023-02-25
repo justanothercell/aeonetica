@@ -1,6 +1,8 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::rc::Rc;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::{log, nanoserde};
 use aeonetica_engine::error::{AError, AET};
@@ -43,7 +45,7 @@ pub(crate) use paths_util_common::*;
 pub struct ServerRuntime {
     pub(crate) mod_profile: ModProfile,
     pub(crate) loaded_mods: Vec<ServerModBox>,
-    pub(crate) ns: NetworkServer
+    pub(crate) ns: Rc<RefCell<NetworkServer>>
 }
 
 #[derive(SerRon, DeRon, SerBin, DeBin)]
@@ -75,8 +77,8 @@ impl ServerRuntime {
             mod_profile: profile,
             loaded_mods: mods,
             ns: {
-                let ns = NetworkServer::start(addr)?;
-                log!("started server with ip {}", ns.socket.local_addr()?);
+                let ns = Rc::new(RefCell::new(NetworkServer::start(addr)?));
+                log!("started server with ip {}", ns.borrow().socket.local_addr()?);
                 ns
             }
         })

@@ -69,7 +69,8 @@ impl NetworkServer {
         }
         let _ = self.clients.get(client_id).map(|client| {
             let _ = client.socket.send(&data[..]);
-        });
+            Ok(())
+        }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {} does not exist", client_id)))));
 
         Ok(())
     }
