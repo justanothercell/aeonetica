@@ -24,7 +24,7 @@ pub enum ClientMessage {
     Ping(String),
     Pong(String),
     RawData(Vec<u8>),
-    ModMessage(u128, HashMap<Id, Vec<u8>>)
+    ModMessages(u128, HashMap<Id, Vec<u8>>)
 }
 
 #[derive(Debug, SerBin, DeBin)]

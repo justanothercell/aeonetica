@@ -1,6 +1,5 @@
-use std::any::{type_name, TypeId};
 use aeonetica_engine::{Id, log};
-use aeonetica_engine::nanoserde::SerBin;
+use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_server::ecs::module::Module;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::events::ConnectionListener;
@@ -29,18 +28,19 @@ impl Module for MyModule {
             //messages.push("foo!".to_string());
             *sending = Broadcastings(messages).serialize_bin();
         },
-        |_id, _client, _engine| {
-            // currently not receiving any data from client
+        |_id, _engine, client, data| {
+            let msg = String::deserialize_bin(data).unwrap();
+            log!("received msg from client {}: {}", client, msg)
         }));
         log!("registering client loginout listener");
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
-            |id, user, engine| {
+            |id, engine, user| {
                 log!("user joined: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.add_client(*user);
                 engine.mut_module_of::<Self>(id).unwrap().broadcastings.push(format!("user joined: {user}"));
             },
-            |id, user, engine| {
+            |id, engine, user| {
                 log!("user left: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.remove_client(user);

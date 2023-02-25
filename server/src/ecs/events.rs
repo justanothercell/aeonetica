@@ -3,12 +3,12 @@ use crate::ecs::Engine;
 use crate::ecs::module::Module;
 
 pub struct ConnectionListener {
-    pub(crate) on_join: fn(id: &Id, user: &Id, engine: &mut Engine),
-    pub(crate) on_leave: fn(id: &Id, user: &Id, engine: &mut Engine),
+    pub(crate) on_join: fn(id: &Id, engine: &mut Engine, user: &Id),
+    pub(crate) on_leave: fn(id: &Id, engine: &mut Engine, user: &Id),
 }
 
 impl ConnectionListener {
-    pub fn new(on_join: fn(id: &Id, user: &Id, engine: &mut Engine), on_leave: fn(id: &Id, user: &Id, engine: &mut Engine)) -> Self {
+    pub fn new(on_join: fn(id: &Id, engine: &mut Engine, user: &Id), on_leave: fn(id: &Id, engine: &mut Engine, user: &Id)) -> Self {
         Self {
             on_join,
             on_leave,

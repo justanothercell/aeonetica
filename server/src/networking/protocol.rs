@@ -12,6 +12,7 @@ use aeonetica_engine::sha2;
 use aeonetica_engine::sha2::Digest;
 use crate::ecs::Engine;
 use crate::ecs::events::ConnectionListener;
+use crate::ecs::messaging::Messenger;
 use crate::networking::ClientHandle;
 use crate::server_runtime::ServerRuntime;
 
@@ -63,6 +64,7 @@ impl Engine {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
                     self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
+                        last_client_msg: 0,
                         last_seen: std::time::Instant::now(),
                         client_addr: *addr,
                         awaiting_replies: Default::default(),
@@ -112,13 +114,31 @@ impl Engine {
                 })?;
             },
             ClientMessage::Login => {
-                self.clients.insert(packet.client_id);
-                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m| (m.on_join)(id, &packet.client_id, engine))
+                if !self.clients.contains(&packet.client_id) {
+                    log!("client logged in: {}", packet.client_id);
+                    self.clients.insert(packet.client_id);
+                    self.for_each_module_of_type::<ConnectionListener, _>(|engine, id, m| (m.on_join)(id, engine, &packet.client_id))
+                }
             }
             ClientMessage::Logout => {
-                log!("client logged out: {}", packet.client_id);
-                self.clients.remove(&packet.client_id);
-                self.for_each_module_of_type::<ConnectionListener, _>(|engine, id,  m| (m.on_leave)(id, &packet.client_id, engine))
+                if self.clients.contains(&packet.client_id) {
+                    log!("client logged out: {}", packet.client_id);
+                    self.clients.remove(&packet.client_id);
+                    self.for_each_module_of_type::<ConnectionListener, _>(|engine, id, m| (m.on_leave)(id, engine, &packet.client_id))
+                }
+            }
+            ClientMessage::ModMessages(timestamp, messages) => {
+                let mut_self_ref_ptr = self as *mut Self;
+                if let Some(client) = self.ms.borrow_mut().ns.borrow_mut().clients.get_mut(&packet.client_id) {
+                    if timestamp > &client.last_client_msg {
+                        client.last_client_msg = *timestamp;
+                        for (id, msg) in messages {
+                            if let Some(m) = self.get_module_of::<Messenger>(id) {
+                                (m.on_receive)(id, unsafe { &mut *mut_self_ref_ptr }, &packet.client_id, msg)
+                            }
+                        }
+                    }
+                }
             }
             _ => ()
         }

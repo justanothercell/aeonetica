@@ -71,10 +71,10 @@ macro_rules! log_raw {
 #[macro_export]
 macro_rules! log_err {
     () => {
-        println!()
+        eprintln!()
     };
     ($($arg:tt)*) => {
-        println!("[@{}]\n{} [{} - ERR]: {}", format!("{}:{}:{}", file!(), line!(), column!()), $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
+        eprintln!("[@{}]\n{} [{} - ERR]: {}", format!("{}:{}:{}", file!(), line!(), column!()), $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
     };
 }
 

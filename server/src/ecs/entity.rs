@@ -1,6 +1,5 @@
 use std::collections::{HashMap};
-use std::any::type_name;
-use aeonetica_engine::{Id, log};
+use aeonetica_engine::{Id};
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 use crate::ecs::module::{Module, ModuleDyn};
@@ -25,7 +24,6 @@ impl Entity {
         if let std::collections::hash_map::Entry::Vacant(e) = self.modules.entry(type_to_id::<T>()) {
             e.insert(Box::new(module));
             if let Some(m) = self.modules.get(&type_to_id::<T>()) {
-                log!("starting {}", type_name::<T>());
                 m.start_dyn(&self.entity_id, unsafe {&mut *self.engine})
             }
             true

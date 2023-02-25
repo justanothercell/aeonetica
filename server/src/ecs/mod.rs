@@ -56,7 +56,7 @@ impl Engine {
         if self.clients.contains(id) {
             self.clients.remove(id);
             self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m| {
-                (m.on_leave)(eid, id, engine);
+                (m.on_leave)(eid, engine, id);
             });
             let _ = self.runtime.ns.borrow().send(id, &ServerPacket {
                 conv_id: Id::new(),

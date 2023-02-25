@@ -21,6 +21,7 @@ pub(crate) struct NetworkServer {
 }
 
 pub(crate) struct ClientHandle {
+    pub(crate) last_client_msg: u128,
     pub(crate) last_seen: Instant,
     pub(crate) client_addr: SocketAddr,
     awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>>

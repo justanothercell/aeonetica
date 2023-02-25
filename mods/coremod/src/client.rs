@@ -16,6 +16,6 @@ impl ClientMod for CoreModClient {
 
     fn register_handlers(&self, handlers: &mut HashMap<Id, fn() -> Box<dyn ClientHandle>>) {
         log!("handles registered");
-        handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle {}));
+        handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle { has_greeted: false }));
     }
 }

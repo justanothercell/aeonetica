@@ -34,7 +34,7 @@ pub struct Messenger {
     entity_id: Id,
     pub(crate) receivers: HashSet<Id>,
     pub(crate) on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>),
-    pub(crate) on_receive: fn(id: &Id, user: &Id, engine: &mut Engine),
+    pub(crate) on_receive: fn(id: &Id, engine: &mut Engine, user: &Id, receiving: &Vec<u8>),
 }
 
 impl Module for Messenger {
@@ -50,7 +50,7 @@ impl Module for Messenger {
 }
 
 impl Messenger {
-    pub fn new<H: ClientHandle + Sized + 'static>(on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, user: &Id, engine: &mut Engine)) -> Self {
+    pub fn new<H: ClientHandle + Sized + 'static>(on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, engine: &mut Engine, user: &Id, receiving: &Vec<u8>)) -> Self {
         Self {
             ms: None,
             receivers: Default::default(),
@@ -70,7 +70,6 @@ impl Messenger {
     }
 
     pub fn add_client(&mut self, id: Id) -> bool {
-        log!("{id}, {:?}", self.ms.as_ref().unwrap().borrow().ns.borrow().clients.keys().collect::<Vec<_>>());
         if !self.receivers.contains(&id) && self.ms.as_ref().unwrap().borrow().ns.borrow().clients.contains_key(&id) {
             self.receivers.insert(id);
             let _ = self.ms.as_ref().unwrap().borrow().ns.borrow().send(&id, &ServerPacket {

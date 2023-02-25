@@ -1,7 +1,7 @@
 #![feature(int_roundings)]
 
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
@@ -55,10 +55,20 @@ fn main() {
             time -= 10000000 / MSG_PER_SECOND;
             let mut messages = HashMap::new();
             for (id, handle) in &mut client.handles {
-                let data = handle.send_data();
+                let mut data = vec![];
+                handle.send_data(&mut data);
                 if !data.is_empty() {
-                    messages.insert(id, data);
+                    messages.insert(*id, data);
                 }
+            }
+            if !messages.is_empty() {
+                let _ = client.nc.send(&ClientPacket {
+                    client_id,
+                    conv_id: Id::new(),
+                    message: ClientMessage::ModMessages(SystemTime::now()
+                                                           .duration_since(SystemTime::UNIX_EPOCH)
+                                                           .unwrap().as_millis(), messages),
+                });
             }
         }
 

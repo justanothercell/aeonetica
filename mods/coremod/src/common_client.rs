@@ -5,12 +5,20 @@ use aeonetica_server::ecs::messaging::Message;
 use aeonetica_engine::{log, nanoserde};
 
 pub(crate) struct MyClientHandle {
-
+    pub(crate) has_greeted: bool
 }
 
 impl ClientHandle for MyClientHandle {
     fn init(&mut self) {
         log!("my client handle initialized")
+    }
+
+    fn send_data(&mut self, data: &mut Vec<u8>) {
+        if !self.has_greeted{
+            self.has_greeted = true;
+            *data = "Greetings from core mod client!".to_string().serialize_bin();
+            log!("sent client greetings to server");
+        }
     }
     
     fn receive_data(&mut self, data: &Vec<u8>) {
