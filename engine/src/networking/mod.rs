@@ -14,9 +14,9 @@ pub enum NetResult<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin>{
     Err(E)
 }
 
-impl<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin> Into<Result<T, E>> for NetResult<T, E> {
-    fn into(self) -> Result<T, E> {
-        match self {
+impl<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin> From<NetResult<T, E>> for Result<T, E> {
+    fn from(val: NetResult<T, E>) -> Self {
+        match val {
             NetResult::Ok(v) => Ok(v),
             NetResult::Err(e) => Err(e)
         }

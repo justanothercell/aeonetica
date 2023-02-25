@@ -1,5 +1,5 @@
-use std::any::{type_name, TypeId};
-use std::collections::hash_map::DefaultHasher;
+use std::any::{type_name};
+
 use std::fmt::Display;
 use std::path::Path;
 use std::fs::File;

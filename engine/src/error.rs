@@ -48,14 +48,14 @@ pub enum AET {
 
 impl Display for AError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}\n", match &self.et {
+        write!(f, "{}{}", match &self.et {
             AET::ValueError(e) => format!("ValueError: {e}"),
             AET::DataError(e) => format!("DataError: {e}"),
             AET::IOError(e) => format!("IOError: {e}"),
             AET::NetworkError(e) => format!("NetworkError: {e}"),
             AET::ModError(e) => format!("IOError: {e}"),
             AET::ModConflict(e) => format!("IOError: {e}"),
-        }, if self.additional_info.len() > 0 {
+        }, if !self.additional_info.is_empty() {
             format!("\n => {}", self.additional_info.join("\n => "))
         } else { String::new() })
     }

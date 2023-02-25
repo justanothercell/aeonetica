@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::fmt::{Debug, Formatter};
-use uuid::Uuid;
+use std::fmt::{Debug};
+
 use crate::Id;
 use crate::nanoserde;
 use crate::nanoserde::{SerBin, DeBin};
