@@ -56,7 +56,7 @@ impl Entity {
     }
 
     pub fn has_modul_type(&self, ty: &Id) -> bool {
-        self.modules.contains_key(&ty)
+        self.modules.contains_key(ty)
     }
 
     pub fn id(&self) -> Id {

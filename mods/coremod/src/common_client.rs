@@ -15,7 +15,7 @@ impl ClientHandle for MyClientHandle {
     
     fn receive_data(&mut self, data: &Vec<u8>) {
         let broadcastings: Broadcastings = Broadcastings::deserialize_bin(data).unwrap();
-        if broadcastings.0.len() > 0 {
+        if !broadcastings.0.is_empty() {
             log!("Server says:");
             for msg in broadcastings.0 {
                 log!("- {msg}")
