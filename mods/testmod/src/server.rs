@@ -54,7 +54,7 @@ impl Module for MyModule {
 
 impl ServerMod for CoreModServer {
     fn init(&mut self, _flags: &Vec<String>) {
-        log!("hello from server core init!");
+        log!("hello from server testmod init!");
     }
     fn start(&mut self, engine: &mut Engine) {
         log!("server core start");

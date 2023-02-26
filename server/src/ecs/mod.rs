@@ -94,7 +94,6 @@ impl Engine {
                     }
                 }
             });
-
     }
 
     pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
@@ -135,7 +134,7 @@ impl Engine {
 
     /// Returns `true` if tagging is successful.
     /// Tagging fails if `tag_exists(tag)` returns true or `entity_exists(id)` returns false.
-    pub fn tag_entity(&mut self, tag: String, id: Id) -> bool {
+    pub fn tag_entity(&mut self, id: Id, tag: String) -> bool {
         if !self.tag_exists(&tag) && self.entity_exists(&id) {
             self.tagged.insert(tag, id);
             true
