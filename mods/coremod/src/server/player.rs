@@ -7,8 +7,8 @@ pub(crate) struct Player {
 }
 
 impl Player {
-    pub(crate) fn new(id: &Id) {
-        
+    pub(crate) fn new(id: &Id) -> Self {
+        Self {}
     }
 }
 
