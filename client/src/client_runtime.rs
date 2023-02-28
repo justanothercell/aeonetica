@@ -151,6 +151,7 @@ impl ClientRuntime {
                                     let (name, path) = name_path.split_once(':').unwrap();
                                     let mut local_hash = String::new();
                                     let _ = File::open(mod_hash(path)).map(|mut f| f.read_to_string(&mut local_hash));
+                                    println!("A: {}\nB: {}", local_hash, hash);
                                     let available = local_hash.trim() == hash;
                                     log!("  - {name_path}");
                                     if !available {
@@ -209,7 +210,6 @@ impl ClientRuntime {
             if lmb.available {
                 continue
             }
-            log!("downloading mod {name_path} across {} packets", lmb.total_size.div_ceil(MAX_RAW_DATA_SIZE as u64));
             total += lmb.total_size;
             for i in (0..lmb.total_size).step_by(MAX_RAW_DATA_SIZE) {
                 let lm = lm.clone();
@@ -249,7 +249,7 @@ impl ClientRuntime {
                     if lm.size == lm.total_size {
                         lm.available = true;
                         unzip_archive(Cursor::new(&lm.data), &format!("runtime/{}", lm.path))?;
-                        File::create(mod_hash(&lm.path)).unwrap().write_all(lm.data.as_slice())?;
+                        File::create(mod_hash(&lm.path)).unwrap().write_all(lm.hash.as_bytes())?;
                         log!("finished downloading mod {}", key)
                     }
                 }
