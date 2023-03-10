@@ -12,7 +12,7 @@ pub struct CoreModServer {
 }
 
 pub struct MyModule {
-    broadcastings: Vec<String>
+
 }
 
 impl Module for MyModule {
@@ -22,32 +22,32 @@ impl Module for MyModule {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
         log!("mymodule started. entity id: {id:?}");
         log!("registering messenger");
-        engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>(|id, engine, sending| {
-            let mut messages = vec![];
-            std::mem::swap(&mut messages, &mut engine.mut_module_of::<Self>(id).unwrap().broadcastings);
-            //messages.push("foo!".to_string());
-            *sending = Broadcastings(messages).serialize_bin();
-        },
-        |_id, _engine, client, data| {
-            let msg = String::deserialize_bin(data).unwrap();
-            log!("received msg from client {}: {}", client, msg)
-        }));
+        engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>());
+        let mut messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
+        messenger.register_server_receiver(MyModule::receive_client_msg);
+
         log!("registering client loginout listener");
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
             |id, engine, user| {
                 log!("user joined: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.add_client(*user);
-                engine.mut_module_of::<Self>(id).unwrap().broadcastings.push(format!("user joined: {user}"));
+                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user joined: {user}"));
             },
             |id, engine, user| {
                 log!("user left: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.remove_client(user);
-                engine.mut_module_of::<Self>(id).unwrap().broadcastings.push(format!("user left: {user}"));
+                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user left: {user}"));
             }));
     }
     fn tick(id: &Id, engine: &mut Engine) where Self: Sized {
+
+    }
+}
+
+impl MyModule {
+    fn receive_client_msg(id: &Id, engine: &mut Engine, data: &Vec<u8>){
 
     }
 }
@@ -59,8 +59,6 @@ impl ServerMod for CoreModServer {
     fn start(&mut self, engine: &mut Engine) {
         log!("server core start");
         let id = engine.new_entity();
-        engine.mut_entity(&id).unwrap().add_module(MyModule {
-            broadcastings: vec![],
-        });
+        engine.mut_entity(&id).unwrap().add_module(MyModule {});
     }
 }

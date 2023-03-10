@@ -2,7 +2,7 @@ use std::fmt::{Debug,};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::messaging::ClientHandle;
 use aeonetica_server::ecs::messaging::Message;
-use aeonetica_engine::{log, nanoserde};
+use aeonetica_engine::{Id, log, nanoserde};
 
 pub(crate) struct MyClientHandle {
     pub(crate) has_greeted: bool
@@ -36,7 +36,8 @@ impl ClientHandle for MyClientHandle {
     }
 }
 
-#[derive(Debug, SerBin, DeBin)]
-pub struct Broadcastings(pub Vec<String>);
+impl MyClientHandle {
+    pub(crate) fn receive_server_msg(data: &Vec<u8>){
 
-impl Message for Broadcastings {}
+    }
+}

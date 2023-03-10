@@ -151,7 +151,6 @@ impl ClientRuntime {
                                     let (name, path) = name_path.split_once(':').unwrap();
                                     let mut local_hash = String::new();
                                     let _ = File::open(mod_hash(path)).map(|mut f| f.read_to_string(&mut local_hash));
-                                    println!("A: {}\nB: {}", local_hash, hash);
                                     let available = local_hash.trim() == hash;
                                     log!("  - {name_path}");
                                     if !available {

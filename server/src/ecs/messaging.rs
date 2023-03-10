@@ -1,6 +1,6 @@
 
 use std::cell::RefCell;
-use std::collections::{HashSet};
+use std::collections::{HashMap, HashSet};
 use std::collections::hash_set::Iter;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -33,8 +33,7 @@ pub struct Messenger {
     handle_type: Id,
     entity_id: Id,
     pub(crate) receivers: HashSet<Id>,
-    pub(crate) on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>),
-    pub(crate) on_receive: fn(id: &Id, engine: &mut Engine, user: &Id, receiving: &Vec<u8>),
+    pub(crate) receiver_functions: HashMap<Id, Box<dyn Fn(&Id, &mut Engine, &Vec<u8>)>>
 }
 
 impl Module for Messenger {
@@ -50,15 +49,23 @@ impl Module for Messenger {
 }
 
 impl Messenger {
-    pub fn new<H: ClientHandle + Sized + 'static>(on_send: fn(id: &Id, engine: &mut Engine, sending: &mut Vec<u8>), on_receive: fn(id: &Id, engine: &mut Engine, user: &Id, receiving: &Vec<u8>)) -> Self {
+    pub fn new<H: ClientHandle + Sized + 'static>() -> Self {
         Self {
             ms: None,
             receivers: Default::default(),
             handle_type: type_to_id::<H>(),
             entity_id: Id::new(),
-            on_send,
-            on_receive
+            receiver_functions: Default::default()
         }
+    }
+
+    pub fn register_server_receiver<F: Fn(&Id, &mut Engine, &Vec<u8>)>(&mut self, f: F) {
+        let id = type_to_id::<F>();
+        self.receiver_functions.insert(id, Box::new(f));
+    }
+
+    pub fn call_client_fn<F: Fn(&Vec<u8>), T: SerBin>(&mut self, f: F, data: T) {
+        let id = type_to_id::<F>();
     }
 
     pub fn clients(&self) -> Iter<Id> {

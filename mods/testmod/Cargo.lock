@@ -300,15 +300,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "coremod"
-version = "0.1.0"
-dependencies = [
- "client",
- "engine",
- "server",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1149,6 +1140,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be55cf8942feac5c765c2c993422806843c9a9a45d4d5c407ad6dd2ea95eb9b6"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "testmod"
+version = "0.1.0"
+dependencies = [
+ "client",
+ "engine",
+ "server",
 ]
 
 [[package]]
