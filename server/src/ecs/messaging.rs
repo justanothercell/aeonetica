@@ -12,24 +12,10 @@ use aeonetica_engine::util::type_to_id;
 use crate::ecs::{Module, Engine};
 use crate::networking::NetworkServer;
 
-pub(crate) struct MessagingSystem {
-    pub(crate) ns: Rc<RefCell<NetworkServer>>,
-    pub(crate) messengers: HashSet<Id>
-}
-
-impl MessagingSystem {
-    pub(crate) fn new(ns: Rc<RefCell<NetworkServer>>) -> Self {
-        Self {
-            ns,
-            messengers: Default::default()
-        }
-    }
-}
-
 pub trait Message: SerBin + DeBin + Debug {}
 
 pub struct Messenger {
-    ms: Option<Rc<RefCell<MessagingSystem>>>,
+    ms: Option<Rc<RefCell<NetworkServer>>>,
     handle_type: Id,
     entity_id: Id,
     pub(crate) receivers: HashSet<Id>,

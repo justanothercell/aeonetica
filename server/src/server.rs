@@ -4,7 +4,6 @@ use crate::ecs::Engine;
 use crate::server_runtime::ServerRuntime;
 
 const TPS: usize = 20;
-const MSG_EVERY_N_TICKS: usize = 2;
 
 pub fn run(ip: &str) {
     let runtime = ServerRuntime::create(ip).map_err(|e| {
@@ -35,9 +34,6 @@ pub fn run(ip: &str) {
         if time > 10000000 / TPS {
             time -= 10000000 / TPS;
             engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
-            if tick_count % MSG_EVERY_N_TICKS == 0 {
-                engine.send_messages();
-            }
             tick_count = tick_count.wrapping_add(1);
         }
 

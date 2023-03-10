@@ -8,7 +8,7 @@ use crate::ecs::entity::Entity;
 use aeonetica_engine::{Id, log};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::ecs::events::ConnectionListener;
-use crate::ecs::messaging::{MessagingSystem, Messenger};
+use crate::ecs::messaging::{Messenger};
 use crate::ecs::module::{Module, ModuleDyn};
 use crate::server_runtime::ServerRuntime;
 
@@ -20,7 +20,6 @@ pub mod messaging;
 pub struct Engine {
     entites: HashMap<Id, Entity>,
     tagged: HashMap<String, Id>,
-    pub(crate) ms: Rc<RefCell<MessagingSystem>>,
     pub(crate) clients: HashSet<Id>,
     pub(crate) runtime: ServerRuntime
 }
@@ -30,7 +29,6 @@ impl Engine {
         Self {
             entites: Default::default(),
             tagged: Default::default(),
-            ms: Rc::new(RefCell::new(MessagingSystem::new(runtime.ns.clone()))),
             clients: Default::default(),
             runtime
         }
@@ -73,27 +71,6 @@ impl Engine {
 
     pub fn client(&self) -> hash_set::Iter<Id> {
         self.clients.iter()
-    }
-
-    pub(crate) fn send_messages(&mut self) {
-        let mut_self_ref_ptr = self as *mut Self;
-        self.ms.borrow().messengers.iter().cloned().collect::<Vec<_>>().into_iter()
-            .for_each(|id| {
-                if let Some(sm) = self.get_module_of::<Messenger>(&id) {
-                    let mut sending = vec![];
-                    (sm.on_send)(&id, unsafe{ &mut *mut_self_ref_ptr }, &mut sending);
-                    if !sending.is_empty() {
-                        for cid in sm.clients() {
-                            let _ = self.runtime.ns.borrow().send(cid, &ServerPacket {
-                                conv_id: Id::new(),
-                                message: ServerMessage::ModMessage(SystemTime::now()
-                                                                       .duration_since(SystemTime::UNIX_EPOCH)
-                                                                       .unwrap().as_millis(), id, sending.clone()),
-                            });
-                        }
-                    }
-                }
-            });
     }
 
     pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
