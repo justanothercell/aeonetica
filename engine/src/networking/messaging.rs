@@ -23,5 +23,7 @@ impl ClientMessenger {
         let m = move |handle: &mut dyn ClientHandle, data: Vec<u8>|
             f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, M::deserialize_bin(&data).unwrap());
         self.client_receivers.insert(type_to_id::<F>(), Box::new(m));
+        let f = self.client_receivers.get(&type_to_id::<F>()).unwrap();
+        f(self., String::from("foo!").into_bytes());
     }
 }

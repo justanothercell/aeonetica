@@ -43,9 +43,10 @@ impl Messenger {
     }
 
     pub fn register_server_receiver<F: Fn(&Id, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
-        //let m = move |&Id, &mut Engine, &mut dyn |
-            //f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, M::deserialize_bin(&data).unwrap());
-        self.receiver_functions.insert(type_to_id::<F>(), Box::new(|_, _, _| ()));
+        let m = move |id, engine, data: &Vec<u8> |
+            f(id, engine, M::deserialize_bin(data).unwrap());
+//        self.receiver_functions.insert(type_to_id::<F>(),
+  //                                     unsafe { Box::new(*std::mem::transmute::<_, &(*mut Fn(&Id, &mut Engine, &Vec<u8>), usize)>(Box::new(m)).0) });
     }
 
     pub fn call_client_fn<F: Fn(&mut T, M), T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F, message: M) {
