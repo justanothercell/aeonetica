@@ -5,7 +5,6 @@ use std::time::{Instant, SystemTime};
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
-use client::MSG_PER_SECOND;
 use crate::client_runtime::ClientRuntime;
 
 mod networking;
@@ -50,27 +49,6 @@ fn main() {
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")
         });
-
-        if time > 10000000 / MSG_PER_SECOND {
-            time -= 10000000 / MSG_PER_SECOND;
-            let mut messages = HashMap::new();
-            for (id, handle) in &mut client.handles {
-                let mut data = vec![];
-                handle.send_data(&mut data);
-                if !data.is_empty() {
-                    messages.insert(*id, data);
-                }
-            }
-            if !messages.is_empty() {
-                let _ = client.nc.send(&ClientPacket {
-                    client_id,
-                    conv_id: Id::new(),
-                    message: ClientMessage::ModMessages(SystemTime::now()
-                                                           .duration_since(SystemTime::UNIX_EPOCH)
-                                                           .unwrap().as_millis(), messages),
-                });
-            }
-        }
 
         time += t.elapsed().as_nanos() as usize;
     }

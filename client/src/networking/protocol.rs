@@ -2,8 +2,9 @@ use std::process::exit;
 use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
+use aeonetica_engine::networking::messaging::ClientMessenger;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use crate::client_runtime::ClientRuntime;
+use crate::client_runtime::{ClientHandleBox, ClientRuntime};
 
 impl ClientRuntime {
     pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
@@ -35,20 +36,23 @@ impl ClientRuntime {
                 self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
-                    self.handles.insert(*id, handle)
+                    self.handles.insert(*id, ClientHandleBox {
+                        handle,
+                        messenger: ClientMessenger {},
+                    })
                 });
             }
             ServerMessage::RemoveClientHandle(id) => {
                 log!("remove client handle");
                 if let Some(mut h) = self.handles.remove(id) {
-                    h.remove()
+                    h.handle.remove(&mut h.messenger)
                 }
             }
             ServerMessage::ModMessage(timestamp, id, message) => {
                 if timestamp > &self.last_server_msg {
                     self.last_server_msg = *timestamp;
                     if let Some(h) = self.handles.get_mut(id) {
-                        h.receive_data(message)
+                        //h.handle.receive_data(message)
                     }
                 }
             }

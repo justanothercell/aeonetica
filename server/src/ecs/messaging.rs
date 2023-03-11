@@ -15,7 +15,7 @@ use crate::networking::NetworkServer;
 pub trait Message: SerBin + DeBin + Debug {}
 
 pub struct Messenger {
-    ms: Option<Rc<RefCell<NetworkServer>>>,
+    ns: Option<Rc<RefCell<NetworkServer>>>,
     handle_type: Id,
     entity_id: Id,
     pub(crate) receivers: HashSet<Id>,
@@ -24,20 +24,16 @@ pub struct Messenger {
 
 impl Module for Messenger {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
-        engine.mut_module_of::<Self>(id).unwrap().ms = Some(engine.ms.clone());
-        engine.mut_module_of::<Self>(id).unwrap().entity_id = *id;
-        engine.ms.borrow_mut().messengers.insert(*id);
-    }
-
-    fn remove(id: &Id, engine: &mut Engine) where Self: Sized {
-        engine.ms.borrow_mut().messengers.remove(id);
+        let module = engine.mut_module_of::<Self>(id).unwrap();
+        module.entity_id = *id;
+        module.ns = Some(engine.runtime.ns.clone())
     }
 }
 
 impl Messenger {
     pub fn new<H: ClientHandle + Sized + 'static>() -> Self {
         Self {
-            ms: None,
+            ns: None,
             receivers: Default::default(),
             handle_type: type_to_id::<H>(),
             entity_id: Id::new(),

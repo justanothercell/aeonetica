@@ -14,7 +14,7 @@ use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
-use aeonetica_engine::networking::messaging::ClientHandle;
+use aeonetica_engine::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::unzip_archive;
 use client::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -60,7 +60,7 @@ pub(crate) struct ClientRuntime {
     pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
     pub(crate) registered_handles: HashMap<Id, fn() -> Box<dyn ClientHandle>>,
-    pub(crate) handles: HashMap<Id, Box<dyn ClientHandle>>,
+    pub(crate) handles: HashMap<Id, ClientHandleBox>,
     pub(crate) state: ClientState
 }
 
@@ -73,6 +73,11 @@ pub(crate) struct LoadingMod{
     size: u64,
     data: Vec<u8>,
     available: bool
+}
+
+pub struct ClientHandleBox {
+    pub(crate) handle: Box<dyn ClientHandle>,
+    pub(crate) messenger: ClientMessenger
 }
 
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
