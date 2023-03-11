@@ -8,6 +8,7 @@ use aeonetica_engine::networking::client_packets::{ClientPacket};
 use aeonetica_engine::networking::server_packets::ServerPacket;
 
 mod protocol;
+pub mod messaging;
 
 pub(crate) struct NetworkClient {
     pub(crate) socket: UdpSocket,
