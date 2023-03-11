@@ -2,7 +2,7 @@ use std::process::exit;
 use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
-use aeonetica_engine::networking::messaging::ClientHandle;
+use aeonetica_engine::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::client_runtime::{ClientHandleBox, ClientRuntime};
 
@@ -38,7 +38,7 @@ impl ClientRuntime {
                     handle.init();
                     self.handles.insert(*id, ClientHandleBox {
                         handle,
-                        messenger: ClientMessenger {},
+                        messenger: ClientMessenger::new(),
                     })
                 });
             }

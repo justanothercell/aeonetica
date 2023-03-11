@@ -129,12 +129,12 @@ impl Engine {
             }
             ClientMessage::ModMessages(timestamp, messages) => {
                 let mut_self_ref_ptr = self as *mut Self;
-                if let Some(client) = self.ms.borrow_mut().ns.borrow_mut().clients.get_mut(&packet.client_id) {
+                if let Some(client) = self.runtime.ns.borrow_mut().clients.get_mut(&packet.client_id) {
                     if timestamp > &client.last_client_msg {
                         client.last_client_msg = *timestamp;
                         for (id, msg) in messages {
                             if let Some(m) = self.get_module_of::<Messenger>(id) {
-                                (m.on_receive)(id, unsafe { &mut *mut_self_ref_ptr }, &packet.client_id, msg)
+                                //(m.on_receive)(id, unsafe { &mut *mut_self_ref_ptr }, &packet.client_id, msg)
                             }
                         }
                     }

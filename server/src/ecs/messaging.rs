@@ -24,9 +24,10 @@ pub struct Messenger {
 
 impl Module for Messenger {
     fn start(id: &Id, engine: &mut Engine) where Self: Sized {
+        let ns = engine.runtime.ns.clone();
         let module = engine.mut_module_of::<Self>(id).unwrap();
         module.entity_id = *id;
-        module.ns = Some(engine.runtime.ns.clone())
+        module.ns = Some(ns)
     }
 }
 
@@ -41,12 +42,13 @@ impl Messenger {
         }
     }
 
-    pub fn register_server_receiver<F: Fn(&Id, &mut Engine, &Vec<u8>)>(&mut self, f: F) {
-        let id = type_to_id::<F>();
-        self.receiver_functions.insert(id, Box::new(f));
+    pub fn register_server_receiver<F: Fn(&Id, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
+        //let m = move |&Id, &mut Engine, &mut dyn |
+            //f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, M::deserialize_bin(&data).unwrap());
+        self.receiver_functions.insert(type_to_id::<F>(), Box::new(|_, _, _| ()));
     }
 
-    pub fn call_client_fn<F: Fn(&Vec<u8>), T: SerBin>(&mut self, f: F, data: T) {
+    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F, message: M) {
         let id = type_to_id::<F>();
     }
 
@@ -59,9 +61,9 @@ impl Messenger {
     }
 
     pub fn add_client(&mut self, id: Id) -> bool {
-        if !self.receivers.contains(&id) && self.ms.as_ref().unwrap().borrow().ns.borrow().clients.contains_key(&id) {
+        if !self.receivers.contains(&id) && self.ns.as_ref().unwrap().borrow().clients.contains_key(&id) {
             self.receivers.insert(id);
-            let _ = self.ms.as_ref().unwrap().borrow().ns.borrow().send(&id, &ServerPacket {
+            let _ = self.ns.as_ref().unwrap().borrow().send(&id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::AddClientHandle(self.entity_id, unsafe { self.handle_type }),
             });
@@ -72,7 +74,7 @@ impl Messenger {
     pub fn remove_client(&mut self, id: &Id) -> bool {
         if self.receivers.contains(id) {
             self.receivers.remove(id);
-            let _ = self.ms.as_ref().unwrap().borrow().ns.borrow().send(id, &ServerPacket {
+            let _ = self.ns.as_ref().unwrap().borrow().send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::RemoveClientHandle(self.entity_id),
             });

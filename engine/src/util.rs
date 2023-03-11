@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::path::Path;
 use std::fs::File;
 use core::hash::Hasher;
+#[allow(deprecated)]
 use std::hash::SipHasher13;
 use crate::error::{AError, AET};
 use crate::Id;

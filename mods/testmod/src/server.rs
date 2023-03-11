@@ -5,7 +5,6 @@ use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ServerMod;
 use crate::client::MyClientHandle;
-use crate::common_client::{Broadcastings, MyClientHandle};
 
 pub struct CoreModServer {
 
@@ -25,7 +24,6 @@ impl Module for MyModule {
         engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>());
         let mut messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
         messenger.register_server_receiver(MyModule::receive_client_msg);
-
         log!("registering client loginout listener");
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
             |id, engine, user| {
@@ -47,8 +45,8 @@ impl Module for MyModule {
 }
 
 impl MyModule {
-    fn receive_client_msg(id: &Id, engine: &mut Engine, data: &Vec<u8>){
-
+    fn receive_client_msg(_id: &Id, _engine: &mut Engine, msg: String){
+        log!("received client msg: {msg}")
     }
 }
 
