@@ -13,7 +13,7 @@ pub trait ServerMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
     #[allow(unused_variables)]
-    fn start(&mut self, world: &mut Engine) {}
+    fn start(&mut self, engine: &mut Engine) {}
 }
 
 pub struct ServerModBox {
