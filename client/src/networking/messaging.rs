@@ -10,7 +10,9 @@ use crate::networking::NetworkClient;
 
 pub trait ClientHandle {
     fn init(&mut self) {}
+	#[allow(unused_variables)]
     fn start(&mut self, messenger: &mut ClientMessenger) {}
+	#[allow(unused_variables)]
     fn remove(&mut self, messenger: &mut ClientMessenger) {}
 }
 
@@ -41,7 +43,7 @@ impl ClientMessenger {
         self.client_receivers.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, f: F, message: M) {
+    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _f: F, message: M) {
         let id = type_to_id::<F>();
         let _ = self.nc.borrow().send(&ClientPacket {
             client_id: self.client_id,

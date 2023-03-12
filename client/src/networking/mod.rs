@@ -1,7 +1,7 @@
 use std::net::{UdpSocket};
 use std::sync::{Arc, Mutex};
 use aeonetica_engine::error::{AError, AET};
-use aeonetica_engine::{ClientId, log_err};
+use aeonetica_engine::{log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::MAX_PACKET_SIZE;
 use aeonetica_engine::networking::client_packets::{ClientPacket};
