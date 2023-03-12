@@ -1,4 +1,4 @@
-use aeonetica_engine::{ClientId, EntityId, Id};
+use aeonetica_engine::{ClientId, EntityId};
 use crate::ecs::Engine;
 use crate::ecs::module::Module;
 

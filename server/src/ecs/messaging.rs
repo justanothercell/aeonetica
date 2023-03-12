@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::collections::hash_set::Iter;
 use std::fmt::Debug;
 use std::rc::Rc;
-use aeonetica_engine::{ClientId, EntityId, Id, log, TypeId};
+use aeonetica_engine::{ClientId, EntityId, Id, TypeId};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::util::type_to_id;
@@ -48,7 +48,7 @@ impl Messenger {
         self.receiver_functions.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F, message: M) {
+    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientHandle, M: SerBin + DeBin>(&mut self, _f: F, message: M) {
         let id = type_to_id::<F>();
         for client in &self.receivers {
             let _ = self.ns.as_ref().unwrap().borrow().send(client, &ServerPacket {
