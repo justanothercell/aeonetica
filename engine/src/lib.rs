@@ -19,6 +19,10 @@ pub mod util;
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
 pub struct Id([u8;16]);
 
+pub type ClientId = Id;
+pub type EntityId = Id;
+pub type TypeId = Id;
+
 impl Id {
     pub fn new() -> Self {
         Self(Uuid::new_v4().into_bytes())

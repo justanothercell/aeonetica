@@ -14,9 +14,9 @@ use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
-use aeonetica_engine::networking::messaging::{ClientHandle, ClientMessenger};
+use crate::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::unzip_archive;
-use client::{ClientMod, ClientModBox};
+use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
 
 #[cfg(target_os = "windows")]
@@ -52,11 +52,10 @@ pub(crate) enum ClientState {
 }
 
 pub(crate) struct ClientRuntime {
-    pub(crate) last_server_msg: u128,
     pub(crate) client_id: Id,
     pub(crate) mod_profile: String,
     pub(crate) mod_profile_version: String,
-    pub(crate) nc: NetworkClient,
+    pub(crate) nc: Rc<RefCell<NetworkClient>>,
     pub(crate) awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ClientRuntime, &ServerPacket)>>,
     pub(crate) loaded_mods: Vec<ClientModBox>,
     pub(crate) registered_handles: HashMap<Id, fn() -> Box<dyn ClientHandle>>,
@@ -89,9 +88,8 @@ impl ClientRuntime {
         }).unwrap();
         log!("started client {addr} and initiating handshake to {server_addr}");
         let mut client = Self {
-            last_server_msg: 0,
             client_id,
-            nc,
+            nc: Rc::new(RefCell::new(nc)),
             mod_profile: String::new(),
             mod_profile_version: String::new(),
             awaiting_replies: Default::default(),
@@ -101,7 +99,7 @@ impl ClientRuntime {
             state: ClientState::Start
         };
         let mod_list = client.register()?;
-        let timeout_socket = client.nc.socket.try_clone()?;
+        let timeout_socket = client.nc.borrow().socket.try_clone()?;
         thread::spawn(move || {
             loop {
                 let data = SerBin::serialize_bin(&ClientPacket {
@@ -126,7 +124,7 @@ impl ClientRuntime {
 
     pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F) -> Result<(), AError> {
         self.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-        self.nc.send(packet)?;
+        self.nc.borrow().send(packet)?;
         Ok(())
     }
 
@@ -198,7 +196,8 @@ impl ClientRuntime {
             }
         })?;
         while self.state != ClientState::Registered {
-            for packet in self.nc.queued_packets() {
+            let packets = self.nc.borrow_mut().queued_packets();
+            for packet in packets {
                 self.handle_packet(&packet)?;
             }
         }
@@ -241,7 +240,8 @@ impl ClientRuntime {
 
         let mut p = 0.0;
         while self.state != ClientState::DownloadedMods {
-            for packet in self.nc.queued_packets() {
+            let packets = self.nc.borrow_mut().queued_packets();
+            for packet in packets {
                 self.handle_packet(&packet)?;
             }
 

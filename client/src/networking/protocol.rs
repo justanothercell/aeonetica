@@ -2,13 +2,14 @@ use std::process::exit;
 use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
-use aeonetica_engine::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::client_runtime::{ClientHandleBox, ClientRuntime};
+use crate::networking::messaging::ClientMessenger;
 
 impl ClientRuntime {
     pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
-        self.nc.queued_packets().into_iter().map(|packet| self.handle_packet(&packet))
+        let packets = self.nc.borrow_mut().queued_packets();
+        packets.into_iter().map(|packet| self.handle_packet(&packet))
         .reduce(|acc, r| {
             acc?;
             r?;
@@ -22,7 +23,7 @@ impl ClientRuntime {
             return Ok(())
         }
         match &packet.message {
-            ServerMessage::Ping(msg) => self.nc.send(&ClientPacket{
+            ServerMessage::Ping(msg) => self.nc.borrow().send(&ClientPacket{
                 client_id: self.client_id,
                 conv_id: packet.conv_id,
                 message: ClientMessage::Pong(msg.clone()),
@@ -31,14 +32,14 @@ impl ClientRuntime {
                 log!("server unregistered client: {reason}");
                 exit(0)
             }
-            ServerMessage::AddClientHandle(id, handle_id) => {
+            ServerMessage::AddClientHandle(eid, handle_id) => {
                 log!("added client handle");
                 self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
-                    self.handles.insert(*id, ClientHandleBox {
+                    self.handles.insert(*eid, ClientHandleBox {
                         handle,
-                        messenger: ClientMessenger::new(),
+                        messenger: ClientMessenger::new(self.nc.clone(), self.client_id, *eid),
                     })
                 });
             }
@@ -48,11 +49,10 @@ impl ClientRuntime {
                     h.handle.remove(&mut h.messenger)
                 }
             }
-            ServerMessage::ModMessage(timestamp, id, message) => {
-                if timestamp > &self.last_server_msg {
-                    self.last_server_msg = *timestamp;
-                    if let Some(h) = self.handles.get_mut(id) {
-                        //h.handle.receive_data(message)
+            ServerMessage::ModMessage(eid, rid, data) => {
+                if let Some(h) = self.handles.get_mut(eid) {
+                    if let Some(f) = h.messenger.client_receivers.get(rid) {
+                        f(&mut *h.handle, data)
                     }
                 }
             }

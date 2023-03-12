@@ -2,7 +2,7 @@
 
 use std::fmt::{Debug};
 
-use crate::Id;
+use crate::{ClientId, EntityId, Id, TypeId};
 use crate::nanoserde;
 use crate::nanoserde::{SerBin, DeBin};
 use crate::networking::NetResult;
@@ -21,17 +21,14 @@ pub enum ServerMessage {
     Unregister(String),
     RegisterResponse(NetResult<ServerInfo, String>),
     Kick(String),
-    Login(Id, String),
-    Logout(Id, String),
+    Login(ClientId, String),
+    Logout(ClientId, String),
     Ping(String),
     Pong(String),
     RawData(Vec<u8>),
-    /// Entity Id, client handle TypeId
-    AddClientHandle(Id, Id),
-    /// Entity Id
-    RemoveClientHandle(Id),
-    /// timestamp, Entity Id, data
-    ModMessage(u128, Id, Vec<u8>)
+    AddClientHandle(EntityId, TypeId),
+    RemoveClientHandle(EntityId),
+    ModMessage(EntityId, TypeId, Vec<u8>)
 }
 
 /// mods: Vec<(ModName, ModFlags, ZipHash, FileSize)>

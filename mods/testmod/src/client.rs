@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use aeonetica_client::ClientMod;
 use aeonetica_engine::{Id, log};
-use aeonetica_engine::networking::messaging::{ClientHandle, ClientMessenger};
+use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::type_to_id;
 
 pub struct CoreModClient {

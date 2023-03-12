@@ -2,11 +2,12 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::Id;
 use aeonetica_engine::libloading::Library;
-use aeonetica_engine::networking::messaging::ClientHandle;
+use crate::networking::messaging::ClientHandle;
 
 pub mod events;
 pub mod layers;
-
+pub mod networking;
+pub mod client_runtime;
 
 pub trait ClientMod {
     #[allow(unused_variables)]

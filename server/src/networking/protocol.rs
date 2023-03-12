@@ -64,7 +64,6 @@ impl Engine {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
                     self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
-                        last_client_msg: 0,
                         last_seen: std::time::Instant::now(),
                         client_addr: *addr,
                         awaiting_replies: Default::default(),
@@ -127,16 +126,11 @@ impl Engine {
                     self.for_each_module_of_type::<ConnectionListener, _>(|engine, id, m| (m.on_leave)(id, engine, &packet.client_id))
                 }
             }
-            ClientMessage::ModMessages(timestamp, messages) => {
-                let mut_self_ref_ptr = self as *mut Self;
-                if let Some(client) = self.runtime.ns.borrow_mut().clients.get_mut(&packet.client_id) {
-                    if timestamp > &client.last_client_msg {
-                        client.last_client_msg = *timestamp;
-                        for (id, msg) in messages {
-                            if let Some(m) = self.get_module_of::<Messenger>(id) {
-                                //(m.on_receive)(id, unsafe { &mut *mut_self_ref_ptr }, &packet.client_id, msg)
-                            }
-                        }
+            ClientMessage::ModMessage(eid, rid, data) => {
+                let mut_engine_ref = unsafe { &mut *(self as *mut Self) };
+                if let Some(m) = self.get_module_of::<Messenger>(eid) {
+                    if let Some(f) = m.receiver_functions.get(rid) {
+                        f(eid, mut_engine_ref, data)
                     }
                 }
             }

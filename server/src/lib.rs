@@ -1,3 +1,5 @@
+#![feature(unboxed_closures)]
+
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
 use crate::ecs::Engine;

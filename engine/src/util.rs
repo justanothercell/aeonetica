@@ -7,7 +7,7 @@ use core::hash::Hasher;
 #[allow(deprecated)]
 use std::hash::SipHasher13;
 use crate::error::{AError, AET};
-use crate::Id;
+use crate::{Id, TypeId};
 
 
 pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), AError>{
@@ -33,7 +33,7 @@ pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>
     Ok(())
 }
 
-pub const fn type_to_id<T>() -> Id {
+pub const fn type_to_id<T>() -> TypeId {
     #[allow(deprecated)]
     let mut s = SipHasher13::new();
     s.write(type_name::<T>().as_bytes());

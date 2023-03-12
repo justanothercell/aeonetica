@@ -5,7 +5,7 @@ use std::collections::hash_map::{Iter, IterMut, Keys};
 use std::rc::Rc;
 use std::time::SystemTime;
 use crate::ecs::entity::Entity;
-use aeonetica_engine::{Id, log};
+use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::ecs::events::ConnectionListener;
 use crate::ecs::messaging::{Messenger};
@@ -18,9 +18,9 @@ pub mod events;
 pub mod messaging;
 
 pub struct Engine {
-    entites: HashMap<Id, Entity>,
-    tagged: HashMap<String, Id>,
-    pub(crate) clients: HashSet<Id>,
+    entites: HashMap<EntityId, Entity>,
+    tagged: HashMap<String, EntityId>,
+    pub(crate) clients: HashSet<ClientId>,
     pub(crate) runtime: ServerRuntime
 }
 
@@ -34,7 +34,7 @@ impl Engine {
         }
     }
 
-    pub fn new_entity(&mut self) -> Id {
+    pub fn new_entity(&mut self) -> EntityId {
         let e = Entity::new(self);
         let id = e.entity_id;
         self.entites.insert(id, e);
@@ -50,7 +50,7 @@ impl Engine {
     ///
     /// Since the registration of clients is purely network related it can be
     /// disregarded for most use cases.
-    pub fn kick_client(&mut self, id: &Id, reason: &str) -> bool {
+    pub fn kick_client(&mut self, id: &ClientId, reason: &str) -> bool {
         if self.clients.contains(id) {
             self.clients.remove(id);
             self.for_each_module_of_type::<ConnectionListener, _>(|engine, eid,  m| {
@@ -65,15 +65,15 @@ impl Engine {
         } else { false }
     }
 
-    pub fn is_client_logged_in(&self, id: &Id) -> bool {
+    pub fn is_client_logged_in(&self, id: &ClientId) -> bool {
         self.clients.contains(id)
     }
 
-    pub fn client(&self) -> hash_set::Iter<Id> {
+    pub fn client(&self) -> hash_set::Iter<ClientId> {
         self.clients.iter()
     }
 
-    pub(crate) fn for_each_module<F: Fn(&mut Self, &Id, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
+    pub(crate) fn for_each_module<F: Fn(&mut Self, &EntityId, &mut Box<dyn ModuleDyn>)>(&mut self, runner: F) {
         let mut_self_ref_ptr = self as *mut Self;
         for id in self.entites.keys().cloned().collect::<Vec<_>>() {
             if let Some(e) = self.entites.get_mut(&id) {
@@ -86,7 +86,7 @@ impl Engine {
         }
     }
 
-    pub(crate) fn for_each_module_of_type<T: Module + Sized + 'static, F: Fn(&mut Self, &Id, &mut T)>(&mut self, runner: F) {
+    pub fn for_each_module_of_type<T: Module + Sized + 'static, F: Fn(&mut Self, &EntityId, &mut T)>(&mut self, runner: F) {
         let mut_self_ref_ptr = self as *mut Self;
         for id in self.entites.keys().cloned().collect::<Vec<_>>() {
             if let Some(e) = self.entites.get_mut(&id) {
@@ -97,7 +97,7 @@ impl Engine {
         }
     }
 
-    pub fn remove_entity(&mut self, id: &Id) -> bool {
+    pub fn remove_entity(&mut self, id: &EntityId) -> bool {
         let mut_self_ref_ptr = self as *mut Self;
         if let Some(e) = self.entites.get_mut(id) {
             for mid in e.modules.keys().cloned().collect::<Vec<_>>() {
@@ -111,7 +111,7 @@ impl Engine {
 
     /// Returns `true` if tagging is successful.
     /// Tagging fails if `tag_exists(tag)` returns true or `entity_exists(id)` returns false.
-    pub fn tag_entity(&mut self, id: Id, tag: String) -> bool {
+    pub fn tag_entity(&mut self, id: EntityId, tag: String) -> bool {
         if !self.tag_exists(&tag) && self.entity_exists(&id) {
             self.tagged.insert(tag, id);
             true
@@ -145,23 +145,23 @@ impl Engine {
         self.entites.get_mut(self.tagged.get(tag)?)
     }
 
-    pub fn entity_exists(&self, id: &Id) -> bool {
+    pub fn entity_exists(&self, id: &EntityId) -> bool {
         self.entites.contains_key(id)
     }
 
-    pub fn get_entity(&self, id: &Id) -> Option<&Entity> {
+    pub fn get_entity(&self, id: &EntityId) -> Option<&Entity> {
         self.entites.get(id)
     }
 
-    pub fn mut_entity(&mut self, id: &Id) -> Option<&mut Entity> {
+    pub fn mut_entity(&mut self, id: &EntityId) -> Option<&mut Entity> {
         self.entites.get_mut(id)
     }
 
-    pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &Id) -> Option<&T> {
+    pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Option<&T> {
         self.entites.get(id)?.get_module()
     }
 
-    pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &Id) -> Option<&mut T> {
+    pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Option<&mut T> {
         self.entites.get_mut(id)?.mut_module()
     }
 
@@ -173,25 +173,25 @@ impl Engine {
         self.mut_entity_by_tag(tag)?.mut_module()
     }
 
-    pub fn ids(&self) -> Keys<Id, Entity>{
+    pub fn ids(&self) -> Keys<EntityId, Entity>{
         self.entites.keys()
     }
 
-    pub fn iter(&self) -> Iter<Id, Entity>{
+    pub fn iter(&self) -> Iter<EntityId, Entity>{
         self.entites.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<Id, Entity>{
+    pub fn iter_mut(&mut self) -> IterMut<EntityId, Entity>{
         self.entites.iter_mut()
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn id_find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = &Id>{
+    pub fn id_find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = &EntityId>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some(id)} else { None })
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = (&Id, &T)>{
+    pub fn find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = (&EntityId, &T)>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>()?))} else { None })
     }
 }
