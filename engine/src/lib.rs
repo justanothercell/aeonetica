@@ -43,6 +43,12 @@ impl Debug for Id {
     }
 }
 
+impl Default for Id {
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl Display for Id {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
