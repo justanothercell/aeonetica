@@ -8,6 +8,10 @@ pub mod events;
 pub mod layers;
 pub mod networking;
 pub mod client_runtime;
+pub mod client;
+
+mod window;
+mod context;
 
 pub trait ClientMod {
     #[allow(unused_variables)]

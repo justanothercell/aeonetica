@@ -1,15 +1,6 @@
-#![feature(int_roundings)]
-
-use std::time::{Instant};
 use aeonetica_engine::error::{AError, AET};
-use aeonetica_engine::{Id, log, log_err};
-use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
-use crate::client_runtime::ClientRuntime;
-
-mod window;
-mod layers;
-mod events;
-mod context;
+use aeonetica_engine::log;
+use client::client::run;
 
 fn main() {
     // nc -u 127.0.01 6090
@@ -21,32 +12,5 @@ fn main() {
         e.log_exit();
     }
 
-    let client_id = Id::new();
-
-    //let window = window::Window::new(context::Context::new()).expect("error creating main window");
-    //window.run();
-
-    let mut client = ClientRuntime::create(client_id, &args[0], &args[1]).map_err(|e| {
-        e.log_exit();
-    }).unwrap();
-
-    let _ = client.nc.send(&ClientPacket {
-        client_id,
-        conv_id: Id::new(),
-        message: ClientMessage::Login,
-    });
-
-    log!("sent login");
-
-    let mut time = 0;
-
-    loop {
-        let t = Instant::now();
-
-        let _ = client.handle_queued().map_err(|e| {
-            log_err!("{e}")
-        });
-
-        time += t.elapsed().as_nanos() as usize;
-    }
+    run(&args[0], &args[1])
 }

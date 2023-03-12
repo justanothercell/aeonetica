@@ -51,7 +51,7 @@ pub(crate) enum ClientState {
     DownloadedMods
 }
 
-pub(crate) struct ClientRuntime {
+pub struct ClientRuntime {
     pub(crate) client_id: Id,
     pub(crate) mod_profile: String,
     pub(crate) mod_profile_version: String,

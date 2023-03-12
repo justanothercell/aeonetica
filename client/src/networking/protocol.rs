@@ -37,9 +37,11 @@ impl ClientRuntime {
                 self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
+                    let mut messenger = ClientMessenger::new(self.nc.clone(), self.client_id, *eid);
+                    handle.start(&mut messenger);
                     self.handles.insert(*eid, ClientHandleBox {
                         handle,
-                        messenger: ClientMessenger::new(self.nc.clone(), self.client_id, *eid),
+                        messenger,
                     })
                 });
             }

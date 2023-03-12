@@ -10,7 +10,7 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::{Module, Engine};
 use crate::networking::NetworkServer;
-use aeonetica_engine::networking::messaging::ClientHandle;
+use aeonetica_engine::networking::messaging::ClientEntity;
 
 pub trait Message: SerBin + DeBin + Debug {}
 
@@ -32,7 +32,7 @@ impl Module for Messenger {
 }
 
 impl Messenger {
-    pub fn new<H: ClientHandle + Sized + 'static>() -> Self {
+    pub fn new<H: ClientEntity + Sized + 'static>() -> Self {
         Self {
             ns: None,
             receivers: Default::default(),
@@ -42,13 +42,17 @@ impl Messenger {
         }
     }
 
-    pub fn register_server_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
+    pub fn register_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
         let m = move |id: &Id, engine: &mut Engine, data: &Vec<u8>|
             f(id, engine, M::deserialize_bin(data).unwrap());
         self.receiver_functions.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientHandle, M: SerBin + DeBin>(&mut self, _f: F, message: M) {
+    pub fn unregister_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, _: F) {
+        self.receiver_functions.remove(&type_to_id::<F>());
+    }
+
+    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientEntity, M: SerBin + DeBin>(&mut self, _: F, message: M) {
         let id = type_to_id::<F>();
         for client in &self.receivers {
             let _ = self.ns.as_ref().unwrap().borrow().send(client, &ServerPacket {
@@ -56,6 +60,14 @@ impl Messenger {
                 message: ServerMessage::ModMessage(self.entity_id, id, message.serialize_bin()),
             });
         }
+    }
+
+    pub fn call_client_fn_for<F: Fn(&mut T, M), T: ClientEntity, M: SerBin + DeBin>(&mut self, _: F, client: &ClientId, message: M) {
+        let id = type_to_id::<F>();
+        let _ = self.ns.as_ref().unwrap().borrow().send(client, &ServerPacket {
+            conv_id: Id::new(),
+            message: ServerMessage::ModMessage(self.entity_id, id, message.serialize_bin()),
+        });
     }
 
     pub fn clients(&self) -> Iter<ClientId> {

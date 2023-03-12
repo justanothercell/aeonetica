@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use aeonetica_client::ClientMod;
 use aeonetica_engine::{Id, log};
+use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::type_to_id;
+use crate::server::MyModule;
 
 pub struct CoreModClient {
 
@@ -23,13 +25,17 @@ pub(crate) struct MyClientHandle {
 
 }
 
+impl ClientEntity for MyClientHandle {}
+
 impl ClientHandle for MyClientHandle {
     fn init(&mut self) {
         log!("my client handle initialized")
     }
 
     fn start(&mut self, messenger: &mut ClientMessenger) {
-        messenger.register_client_receiver(MyClientHandle::receive_server_msg)
+        messenger.register_receiver(MyClientHandle::receive_server_msg);
+        messenger.call_server_fn(MyModule::receive_client_msg, "Hello from client server call function".to_string());
+        log!("receive_server_msg registered in start");
     }
 
     fn remove(&mut self, _messenger: &mut ClientMessenger) {

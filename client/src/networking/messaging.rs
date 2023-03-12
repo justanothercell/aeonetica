@@ -4,19 +4,18 @@ use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, Id};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
+use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
 use crate::networking::NetworkClient;
 
-pub trait ClientHandle {
+pub trait ClientHandle: ClientEntity {
     fn init(&mut self) {}
 	#[allow(unused_variables)]
     fn start(&mut self, messenger: &mut ClientMessenger) {}
 	#[allow(unused_variables)]
     fn remove(&mut self, messenger: &mut ClientMessenger) {}
 }
-
-unsafe impl aeonetica_engine::networking::messaging::ClientHandle for dyn ClientHandle {}
 
 pub struct ClientMessenger {
     nc: Rc<RefCell<NetworkClient>>,
@@ -37,13 +36,17 @@ impl ClientMessenger {
 }
 
 impl ClientMessenger {
-    pub fn register_client_receiver<F: Fn(&mut T, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F) {
+    pub fn register_receiver<F: Fn(&mut T, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F) {
         let m = move |handle: &mut dyn ClientHandle, data: &Vec<u8>|
             f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, M::deserialize_bin(data).unwrap());
         self.client_receivers.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _f: F, message: M) {
+    pub fn unregister_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, _: F) {
+        self.client_receivers.remove(&type_to_id::<F>());
+    }
+
+    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _: F, message: M) {
         let id = type_to_id::<F>();
         let _ = self.nc.borrow().send(&ClientPacket {
             client_id: self.client_id,

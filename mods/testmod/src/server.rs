@@ -22,9 +22,9 @@ impl Module for MyModule {
         log!("mymodule started. entity id: {id:?}");
         log!("registering messenger");
         engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>());
-        let mut messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
-        messenger.register_server_receiver(MyModule::receive_client_msg);
-        log!("registering client loginout listener");
+        let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
+        messenger.register_receiver(MyModule::receive_client_msg);
+        log!("registering receive_client_msg");
         engine.mut_entity(id).unwrap().add_module(ConnectionListener::new(
             |id, engine, user| {
                 log!("user joined: {user}");
@@ -38,14 +38,15 @@ impl Module for MyModule {
                 messenger.remove_client(user);
                 messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user left: {user}"));
             }));
+        log!("registering client loginout listener");
     }
-    fn tick(id: &Id, engine: &mut Engine) where Self: Sized {
+    fn tick(_id: &Id, _engine: &mut Engine) where Self: Sized {
 
     }
 }
 
 impl MyModule {
-    fn receive_client_msg(_id: &Id, _engine: &mut Engine, msg: String){
+    pub(crate) fn receive_client_msg(_id: &Id, _engine: &mut Engine, msg: String){
         log!("received client msg: {msg}")
     }
 }
