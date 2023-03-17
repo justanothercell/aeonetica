@@ -18,8 +18,6 @@ pub fn run(ip: &str) {
         m.start(mut_engine_ref);
     });
 
-    let mut tick_count = 0usize;
-
     let mut time = 0;
 
     loop {
@@ -34,7 +32,8 @@ pub fn run(ip: &str) {
         if time > 10000000 / TPS {
             time -= 10000000 / TPS;
             engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
-            tick_count = tick_count.wrapping_add(1);
+            engine.run_tasks();
+            engine.tick += 1;
         }
 
         time += t.elapsed().as_nanos() as usize;

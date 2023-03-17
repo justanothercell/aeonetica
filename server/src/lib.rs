@@ -1,4 +1,6 @@
 #![feature(unboxed_closures)]
+#![feature(generators, generator_trait)]
+#![feature(trait_alias)]
 
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;

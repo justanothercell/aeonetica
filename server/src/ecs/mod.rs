@@ -10,18 +10,22 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::ecs::events::ConnectionListener;
 
 use crate::ecs::module::{Module, ModuleDyn};
+use crate::ecs::scheduling::TaskQueue;
 use crate::server_runtime::ServerRuntime;
 
 pub mod module;
 pub mod entity;
 pub mod events;
 pub mod messaging;
+pub mod scheduling;
 
 pub struct Engine {
     entites: HashMap<EntityId, Entity>,
     tagged: HashMap<String, EntityId>,
+    tasks: TaskQueue,
     pub(crate) clients: HashSet<ClientId>,
-    pub(crate) runtime: ServerRuntime
+    pub(crate) runtime: ServerRuntime,
+    pub(crate) tick: usize
 }
 
 impl Engine {
@@ -30,7 +34,9 @@ impl Engine {
             entites: Default::default(),
             tagged: Default::default(),
             clients: Default::default(),
-            runtime
+            tasks: TaskQueue::default(),
+            runtime,
+            tick: 0
         }
     }
 
