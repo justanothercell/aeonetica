@@ -1,3 +1,7 @@
+pub mod vector;
+pub mod axis;
+pub mod matrix;
+
 use std::any::{type_name};
 
 use std::fmt::Display;
@@ -8,7 +12,6 @@ use core::hash::Hasher;
 use std::hash::SipHasher13;
 use crate::error::{AError, AET};
 use crate::{Id, TypeId};
-
 
 pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), AError>{
     let mut archive = zip::read::ZipArchive::new(zip)

@@ -15,17 +15,18 @@ def pushd(new_dir):
     finally:
         chdir(previous_dir)
 
-mod_name = path.basename(path.dirname(path.abspath(__file__)))
+mod_name = None
 build_mode = 'debug'
 deploy_path = ''
 output_file = ''
 help_text = f"""Usage: ./build.py [options]
 Options:
-    -h, --help          | displays this help text
-    -r, --release       | build in release mode (default: {build_mode})
-    -d, --deploy <dir>  | deploy the mod to <dir>
-    -o, --output <file> | set the output file
-        --clean         | clean build files"""
+    -h, --help              | displays this help text
+    -r, --release           | build in release mode (default: {build_mode})
+    -d, --deploy <dir>      | deploy the mod to <dir>
+    -o, --output <file>     | set the output file
+    -w, --working-dir <dir> | set the working directory (default: script directory)
+        --clean             | clean build files"""
  
 def get_output_file(feature: str):
     if sys.platform == 'linux' or sys.platform == 'linux2':
@@ -70,17 +71,28 @@ def build(prefix: str, feature: str):
                 zipf.write(target_bin)
         return path.basename(archive)
 
-def deploy(archive):
+def deploy(archive: str):
     name = path.basename(archive)
     if not path.exists(deploy_path):
-            raise Exception(f'Error deploying \'{mod_name}\' to \'{deploy_path}\': No such file or directory')
+        raise Exception(f'Error deploying \'{mod_name}\' to \'{deploy_path}\': No such file or directory')
     print(f"Deploying {archive} to {deploy_path}...")
     shutil.copy(archive, deploy_path)
 
 def clean():
     system('cargo clean')
+    
+def compile_mod(prefix: str, archive: str):    
+    print(f'Building \'{mod_name}\' in {build_mode} mode...')
+    archives = [build(prefix, 'client'), build(prefix, 'server')]
+
+    # build the final zip file
+    with pushd(prefix):
+        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for a in archives:
+                zipf.write(a)
 
 if __name__ == '__main__':  
+    working_dir = path.dirname(path.abspath(__file__))
     if len(sys.argv) > 1:
         it = iter(sys.argv[1:])
         for arg in it:
@@ -93,26 +105,22 @@ if __name__ == '__main__':
                 build_mode = 'release'
             elif arg in ['--deploy', '-d']:
                 deploy_path = next(it)
+            elif arg in ['--working-dir', '-w']:
+                working_dir = next(it)
             elif arg == '--clean':
                 clean()
                 exit()
             else:
                 raise Exception(f'Unknown argument {arg}')
-    
-    prefix = f'target/{build_mode}'
-    
-    print(f'Building \'{mod_name}\' in {build_mode} mode...')
-    archives = [build(prefix, 'client'), build(prefix, 'server')]
 
-    # build the final zip file
-    with pushd(prefix):
-        archive = f'{mod_name}.zip'
-        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for a in archives:
-                zipf.write(a)
-                
+    mod_name = path.basename(working_dir)
+    prefix = f'target/{build_mode}'
+    archive = f'{mod_name}.zip'
+    with pushd(working_dir):
+        compile_mod(prefix, archive)
+        
     if len(output_file) > 0:
-        shutil.copy(f'{prefix}/{archive}', output_file)     
+        shutil.copy(f'{working_dir}/{prefix}/{archive}', output_file)     
     
     if len(deploy_path) > 0:
-        deploy(f'{prefix}/{archive}')
+        deploy(f'{working_dir}/{prefix}/{archive}')
