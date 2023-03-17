@@ -151,7 +151,7 @@ impl ClientRuntime {
                             log!("server has mod profile {} v{} with {} mod(s):", client.mod_profile, client.mod_profile_version, info.mods.len());
                             let local_mod_list: HashMap<_, _> = info.mods.clone().into_iter()
                                 .map(|(name_path, flags, hash, size)| {
-                                    let (name, path) = name_path.split_once(':').unwrap();
+                                    let (path, name) = name_path.split_once(':').unwrap();
                                     let mut local_hash = String::new();
                                     let _ = File::open(mod_hash(path)).map(|mut f| f.read_to_string(&mut local_hash));
                                     let available = local_hash.trim() == hash;
@@ -294,7 +294,7 @@ impl ClientRuntime {
 }
 
 pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
-    let (name, path) = name_path.split_once(':').unwrap();
+    let (path, name) = name_path.split_once(':').unwrap();
     let client_lib = unsafe { Library::new(client_lib(path, name))
         .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
     let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())
