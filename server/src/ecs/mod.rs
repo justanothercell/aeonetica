@@ -75,7 +75,7 @@ impl Engine {
         self.clients.contains(id)
     }
 
-    pub fn client(&self) -> hash_set::Iter<ClientId> {
+    pub fn clients(&self) -> hash_set::Iter<ClientId> {
         self.clients.iter()
     }
 

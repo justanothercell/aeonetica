@@ -1,13 +1,13 @@
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::collections::hash_map::Entry;
+use std::marker::PhantomData;
 use std::ops::{Generator, GeneratorState};
-use std::pin::Pin;
 use aeonetica_engine::Id;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 
-pub trait TaskFunc = Generator<Yield = WaitFor, Return = ()>;
+pub trait TaskFunc = for<'a> Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()>;
 
 pub(crate) struct Task {
     timestamp: usize,
@@ -23,9 +23,7 @@ impl Ord for Task {
 }
 
 impl PartialEq for Task {
-    fn eq(&self, other: &Self) -> bool {
-        self.timestamp == other.timestamp
-    }
+    fn eq(&self, other: &Self) -> bool { self.timestamp == other.timestamp }
 }
 
 pub trait Event {}
@@ -45,11 +43,27 @@ pub enum WaitFor {
     Event(EventId)
 }
 
+pub struct Yielder<'a>(PrivateYielder, PhantomData<&'a ()>, WaitFor);
+
+struct PrivateYielder;
+
+#[macro_export]
+macro_rules! yield_task {
+    ($e: ident, $wait: expr) => {
+        $e = yield $e.yield_fn($wait)
+    };
+}
+
 impl Engine {
-    pub fn queue_task(&mut self, task: impl TaskFunc + 'static) {
+    pub fn yield_fn<'a>(&'a mut self, waiter: WaitFor) -> Yielder<'a> {
+        Yielder(PrivateYielder, PhantomData::default(), waiter)
+    }
+
+    pub fn queue_task<'a>(&mut self, task: impl Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()> + 'static) {
+        let taskfn: Box<dyn Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()>> = Box::new(*Box::new(task));
         self.tasks.heap.push(Task {
             timestamp: self.tick,
-            func: Box::new(task),
+            func: unsafe { std::mem::transmute::<_, _>(taskfn) }
         });
     }
 
@@ -76,19 +90,19 @@ impl Engine {
         }
     }
 
-    pub(crate) fn run_task(&mut self, mut f: Box<dyn TaskFunc>) {
-        let fnpin: Pin<&mut dyn TaskFunc> = unsafe { Pin::new_unchecked(&mut *f) };
-        match fnpin.resume(()) {
-            GeneratorState::Yielded(delay) => match delay {
+    pub(crate) fn run_task(&mut self, f: Box<dyn TaskFunc>) {
+        let mut fnpin = Box::into_pin(f);
+        match fnpin.as_mut().resume(self) {
+            GeneratorState::Yielded(yielder) => match yielder.2 {
                 WaitFor::Ticks(t) => self.tasks.heap.push(Task {
-                    timestamp: self.tick + t,
-                    func: f,
+                    timestamp: { self.tick + t },
+                    func: Box::from(fnpin),
                 }),
                 WaitFor::Event(event) => {
                     if let Entry::Vacant(e) = self.tasks.event_queue.entry(event) {
-                        e.insert(vec![f]);
+                        e.insert(vec![Box::from(fnpin)]);
                     } else {
-                        self.tasks.event_queue.get_mut(&event).unwrap().push(f);
+                        self.tasks.event_queue.get_mut(&event).unwrap().push(Box::from(fnpin));
                     }
                 }
             }

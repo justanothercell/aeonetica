@@ -29,8 +29,8 @@ pub fn run(ip: &str) {
 
         engine.timeout_inactive();
 
-        if time > 10000000 / TPS {
-            time -= 10000000 / TPS;
+        if time > 1_000_000_000 / TPS {
+            time -= 1_000_000_000 / TPS;
             engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
             engine.run_tasks();
             engine.tick += 1;

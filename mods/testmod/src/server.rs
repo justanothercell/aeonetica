@@ -1,9 +1,12 @@
+use std::any::Any;
+use std::ops::{Generator};
 use aeonetica_engine::{Id, log};
 use aeonetica_server::ecs::module::Module;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
-use aeonetica_server::ServerMod;
+use aeonetica_server::ecs::scheduling::WaitFor;
+use aeonetica_server::{ServerMod, yield_task};
 use crate::client::MyClientHandle;
 
 pub struct CoreModServer {
@@ -38,7 +41,14 @@ impl Module for MyModule {
                 messenger.remove_client(user);
                 messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user left: {user}"));
             }));
-        log!("registering client loginout listener");
+        log!("registered client loginout listener");
+        engine.queue_task( |mut e: &mut Engine| {
+            for i in 1..11 {
+                yield_task!(e, WaitFor::Ticks(20));
+                log!("waited {i} seconds...")
+            }
+        });
+        log!("queued task");
     }
     fn tick(_id: &Id, _engine: &mut Engine) where Self: Sized {
 
