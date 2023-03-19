@@ -4,14 +4,11 @@ use aeonetica_engine::Id;
 use aeonetica_engine::libloading::Library;
 use crate::networking::messaging::ClientHandle;
 
-pub mod events;
-pub mod layers;
 pub mod networking;
 pub mod client_runtime;
 pub mod client;
 
-mod window;
-mod context;
+mod renderer;
 
 pub trait ClientMod {
     #[allow(unused_variables)]

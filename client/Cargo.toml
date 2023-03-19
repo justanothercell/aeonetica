@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 aeonetica_engine = { package="engine", path="../engine" }
 aeonetica_server = { package="server", path="../server" }
-winit = "0.28.1"
-glutin = "0.30.6"
+glfw = "0.51.0"
+gl = "0.14.0"
