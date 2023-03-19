@@ -3,11 +3,6 @@ use super::*;
 
 use regex::Regex;
 
-#[cfg(windows)]
-const LINE_ENDING: &'static str = "\r\n";
-#[cfg(not(windows))]
-const LINE_ENDING: &'static str = "\n";
-
 pub(super) enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize
@@ -136,7 +131,7 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    fn preprocess_sources(src: &str) -> Result<(&str, &str), String> {
+    fn preprocess_sources(src: &str) -> Result<(String, String), String> {
         // remove all block comments /* */
         let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();
         let src = comment_re.replace(src, "").to_string();
@@ -159,17 +154,17 @@ impl Program {
                 regions.insert(name, &src[m.end()..]);
             };
         }
-        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?,
-            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?))
+        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?.to_string(),
+            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?.to_string()))
     }
 
     pub fn from_source(src: &str) -> Result<Self, String> {
         // find first `#type`
         let (vertex_src, fragment_src) = Self::preprocess_sources(src)?;
         let p = Self::new().ok_or_else(|| "Couldn't allocate a program".to_string())?;
-        let v = Shader::from_source(ShaderType::Vertex, vertex_src)
+        let v = Shader::from_source(ShaderType::Vertex, &vertex_src)
             .map_err(|e| format!("Vertex Shader Compile Error: {e}"))?;
-        let f = Shader::from_source(ShaderType::Fragment, fragment_src)
+        let f = Shader::from_source(ShaderType::Fragment, &fragment_src)
             .map_err(|e| format!("Fragment Shader Compile Error: {e}"))?;
         p.attach_shader(&v);
         p.attach_shader(&f);
@@ -183,6 +178,59 @@ impl Program {
             let out = format!("Program Link Error: {}", p.info_log());
             p.delete();
             Err(out)
+        }
+    }
+}
+
+#[allow(unused)]
+pub(super) enum ShaderDataType {
+    Float = gl::FLOAT as isize,
+    Float2 = gl::FLOAT_VEC2 as isize,
+    Float3 = gl::FLOAT_VEC3 as isize,
+    Float4 = gl::FLOAT_VEC4 as isize,
+    Mat3 = gl::FLOAT_MAT3 as isize,
+    Mat4 = gl::FLOAT_MAT4 as isize,
+    Int = gl::INT as isize,
+    Int2 = gl::INT_VEC2 as isize,
+    Int3 = gl::INT_VEC3 as isize,
+    Int4 = gl::INT_VEC4 as isize,
+    Bool = gl::BOOL as isize
+}
+
+impl ShaderDataType {
+    pub(super) const fn size(&self) -> u32 {
+        use {std::mem::size_of, gl::types::*};
+        (match self {
+            Self::Float => size_of::<GLfloat>(),
+            Self::Float2 => size_of::<GLfloat>() * 2,
+            Self::Float3 => size_of::<GLfloat>() * 3,
+            Self::Float4 => size_of::<GLfloat>() * 4,
+            Self::Mat3 => size_of::<GLfloat>() * 9,
+            Self::Mat4 => size_of::<GLfloat>() * 16,
+            Self::Int => size_of::<GLint>(),
+            Self::Int2 => size_of::<GLint>() * 2,
+            Self::Int3 => size_of::<GLint>() * 3,
+            Self::Int4 => size_of::<GLint>() * 4,
+            Self::Bool => size_of::<GLboolean>()
+        }) as u32
+    }
+
+    pub(super) const fn component_count(&self) -> i32 {
+        match self {
+            Self::Float | Self::Int | Self::Bool => 1,
+            Self::Float2 | Self::Int2 => 2,
+            Self::Float3 | Self::Int3 => 3,
+            Self::Float4 | Self::Int4 => 4,
+            Self::Mat3 => 9,
+            Self::Mat4 => 16
+        }
+    }
+
+    pub(super) const fn base_type(&self) -> gl::types::GLenum {
+        match self {
+            Self::Float | Self::Float2 | Self::Float3 | Self::Float4 | Self::Mat3 | Self::Mat4 => gl::FLOAT,
+            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 => gl::INT,
+            Self::Bool => gl::BOOL
         }
     }
 }
