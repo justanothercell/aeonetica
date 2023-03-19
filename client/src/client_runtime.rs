@@ -238,7 +238,7 @@ impl ClientRuntime {
                 }).map_err(|e| {
                     e.log_exit();
                 }).unwrap();
-
+                std::thread::sleep(Duration::from_nanos(20));
                 let packets = self.nc.borrow_mut().queued_packets();
                 for packet in packets {
                     self.handle_packet(&packet)?;
