@@ -253,6 +253,7 @@ impl ClientRuntime {
                     downloaded += lm.size;
                     if lm.size == lm.total_size {
                         lm.available = true;
+                        log!("unzipping...");
                         unzip_archive(Cursor::new(&lm.data), &format!("runtime/{}", lm.path))?;
                         File::create(mod_hash(&lm.path)).unwrap().write_all(lm.hash.as_bytes())?;
                         log!("finished downloading mod {}", key)
@@ -261,9 +262,10 @@ impl ClientRuntime {
             }
             if downloaded as f32 / total as f32 - p > 0.2 {
                 p = downloaded as f32 / total as f32;
-                log!("progress: {p}")
+                log!("progress: {:02.1}%", p * 100.0);
             }
             if downloaded == total {
+                log!("progress: 100%");
                 self.state = ClientState::DownloadedMods
             }
         }
