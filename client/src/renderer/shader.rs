@@ -159,8 +159,8 @@ impl Program {
                 regions.insert(name, src.split_at(m.end()).1);
             };
         }
-        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string()),
-            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())))
+        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?,
+            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?))
     }
 
     pub fn from_source(src: &str) -> Result<Self, String> {
