@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use super::*;
 
-extern crate regex;
 use regex::Regex;
 
 #[cfg(windows)]
@@ -137,30 +137,29 @@ impl Program {
     }
 
     fn preprocess_sources(src: &str) -> Result<(&str, &str), String> {
-        let re = Regex::new(r"(#type)( )+([a-zA-Z]+)").unwrap();
-        let mut split = re.split(src).collect::<Vec<_>>();
-        if split.len() < 3 {
-            return Err(format!("Shaders have to be composed of both vertex and fragment shaders denoted with the `#type` directive; got: {split:?}"))
+        // remove all block comments /* */
+        let src = comment_re.replace(src, "").to_string();
+        // capture all #[<name>] at start of line
+        let region_re = Regex::new(r"(?m)^(?:^|\n)#\[(\w+)]").unwrap();
+        let mut start = 0;
+        let mut regions = HashMap::new();
+        let mut opt_match = region_re.find_at(&src, start);
+        while let Some(m) = opt_match {
+            let name = m.as_str().trim();
+            // remove the #[...]
+            let name = &name[2..name.len()-1];
+            start = m.end();
+            opt_match = region_re.find_at(&src, start);
+            if let Some(m2) = opt_match {
+                // is not last region
+                regions.insert(name, src.split_at(m.end()).1.split_at(m2.start()-m.end()).0);
+            } else {
+                // is last region
+                regions.insert(name, src.split_at(m.end()).1);
+            };
         }
-
-        let index = src.find("#type").ok_or_else(|| "Could not find mandatory `#type` directive in shader soures".to_string())? + 6;
-        let eol = src[index..].find(LINE_ENDING).ok_or_else(|| "`#type` cannot be on the last line".to_string())? + index;
-        let first = src[index..eol].trim();
-        
-        let second_offset = eol + LINE_ENDING.len();
-        let index = src[second_offset..].find("#type").ok_or_else(|| "Could not find mandatory `#type` directive in shader soures".to_string())? + 6 + second_offset;
-        let eol = src[index..].find(LINE_ENDING).ok_or_else(|| "`#type` cannot be on the last line".to_string())? + index;
-        let second = src[index..eol].trim();
-
-        if first == "vertex" && second == "fragment" {
-            Ok((split[1], split[2]))
-        }
-        else if first == "fragment" && second == "vertex" {
-            Ok((split[2], split[1]))
-        }
-        else {
-            Err("There has to be exactly one fragment and one vertex shader `#type` directive (got {first} and {second})".to_string())
-        }
+        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string()),
+            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())));
     }
 
     pub fn from_source(src: &str) -> Result<Self, String> {

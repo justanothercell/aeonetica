@@ -17,8 +17,6 @@ macro_rules! to_raw_byte_slice {
     };
 }
 
-extern crate gl;
-
 pub(self) type RenderID = gl::types::GLuint;
 
 pub(self) struct Renderer {
