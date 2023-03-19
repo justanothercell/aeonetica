@@ -138,6 +138,7 @@ impl Program {
 
     fn preprocess_sources(src: &str) -> Result<(&str, &str), String> {
         // remove all block comments /* */
+        let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();
         let src = comment_re.replace(src, "").to_string();
         // capture all #[<name>] at start of line
         let region_re = Regex::new(r"(?m)^(?:^|\n)#\[(\w+)]").unwrap();
