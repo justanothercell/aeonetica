@@ -136,7 +136,7 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    fn preprocess_sources(src: &str) -> Result<(&str, &str), String> {
+    fn preprocess_sources(src: &str) -> Result<(String, String), String> {
         // remove all block comments /* */
         let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();
         let src = comment_re.replace(src, "").to_string();
@@ -159,8 +159,8 @@ impl Program {
                 regions.insert(name, src.split_at(m.end()).1);
             };
         }
-        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?,
-            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?))
+        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?.to_string(),
+            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?.to_string()))
     }
 
     pub fn from_source(src: &str) -> Result<Self, String> {
