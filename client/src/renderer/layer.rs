@@ -1,4 +1,4 @@
-use crate::events::Event;
+use super::window::events::Event;
 
 pub trait Layer {
     fn on_attach(&self) where Self: Sized; // run on layer creation

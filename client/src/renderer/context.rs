@@ -1,8 +1,8 @@
-use std::{rc::Rc, vec};
+use std::{rc::Rc};
 
 use crate::{
-    window::{Window, self},
-    layers::Layer, events::Event
+    renderer::window::events::Event,
+    renderer::layer::Layer
 };
 
 struct LayerStack {
