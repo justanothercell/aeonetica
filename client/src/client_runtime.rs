@@ -214,8 +214,10 @@ impl ClientRuntime {
             if lmb.available {
                 continue
             }
-            total += lmb.total_size;
-            for i in (0..lmb.total_size).step_by(MAX_RAW_DATA_SIZE) {
+            let total_size = lmb.total_size;
+            drop(lmb);
+            total += total_size;
+            for i in (0..total_size).step_by(MAX_RAW_DATA_SIZE) {
                 let lm = lm.clone();
                 self.request_response(&ClientPacket {
                     client_id: self.client_id,
@@ -233,7 +235,6 @@ impl ClientRuntime {
                             exit(1);
                         }
                     }
-                    log!("{} / {} ({} / {})", lmb.size, lmb.total_size, lmb.size / MAX_RAW_DATA_SIZE, lmb.total_size / MAX_RAW_DATA_SIZE);
                 }).map_err(|e| {
                     e.log_exit();
                 }).unwrap();
