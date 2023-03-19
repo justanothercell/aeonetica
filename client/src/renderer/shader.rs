@@ -136,7 +136,7 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    fn preprocess_sources(src: &str) -> Result<(String, String), String> {
+    fn preprocess_sources(src: &str) -> Result<(&str, &str), String> {
         // remove all block comments /* */
         let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();
         let src = comment_re.replace(src, "").to_string();
@@ -153,14 +153,14 @@ impl Program {
             opt_match = region_re.find_at(&src, start);
             if let Some(m2) = opt_match {
                 // is not last region
-                regions.insert(name, src.split_at(m.end()).1.split_at(m2.start()-m.end()).0);
+                regions.insert(name, &src[m.end()..m2.start()]);
             } else {
                 // is last region
-                regions.insert(name, src.split_at(m.end()).1);
+                regions.insert(name, &src[m.end()..]);
             };
         }
-        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?.to_string(),
-            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?.to_string()))
+        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?,
+            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?))
     }
 
     pub fn from_source(src: &str) -> Result<Self, String> {
