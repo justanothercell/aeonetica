@@ -233,6 +233,7 @@ impl ClientRuntime {
                             exit(1);
                         }
                     }
+                    log!("{} / {} ({} / {})", lmb.size, lmb.total_size, lmb.size / MAX_RAW_DATA_SIZE, lmb.total_size / MAX_RAW_DATA_SIZE);
                 }).map_err(|e| {
                     e.log_exit();
                 }).unwrap();
