@@ -90,10 +90,7 @@ impl Window {
         }
         
         // render here
-        unsafe {
-            self.renderer.render();
-        }
-
+        self.renderer.render();
         self.glfw_window.swap_buffers();
     }
 

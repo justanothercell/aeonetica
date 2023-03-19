@@ -10,13 +10,6 @@ use buffer::*;
 mod shader;
 use shader::*;
 
-#[macro_export]
-macro_rules! to_raw_byte_slice {
-    ($value:expr) => {
-        unsafe { std::slice::from_raw_parts($value.as_ptr().cast(), std::mem::size_of_val(&$value)) }
-    };
-}
-
 pub(self) type RenderID = gl::types::GLuint;
 
 pub(self) struct Renderer {
@@ -43,15 +36,15 @@ impl Renderer {
             BufferElement::new(ShaderDataType::Float3), // color
         ]);
         
-        let vbo = Buffer::new(BufferType::Array, to_raw_byte_slice!(VERTICES), Some(layout))
+        let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(VERTICES), Some(layout))
             .expect("Error creating Vertex Buffer");
-        vao.add_vertex_buffer(vbo);
+        vao.add_vertex_buffer(vertex_buffer);
 
         const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-        let ibo = Buffer::new(BufferType::ElementArray, to_raw_byte_slice!(INDICES), None)
+        let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(INDICES), None)
             .expect("Error creating Index Buffer");
-      
-        vao.set_index_buffer(ibo);
+        vao.set_index_buffer(index_buffer);
+
         let shader_src = include_str!("../../assets/test_shader.glsl");
         let shader_program = Program::from_source(shader_src)
             .unwrap_or_else(|err| panic!("Error loading shader: {err}"));
@@ -62,7 +55,9 @@ impl Renderer {
         }
     }
 
-    pub unsafe fn render(&self) { 
-        gl::DrawElements(gl::TRIANGLES, self.vao.index_buffer().as_ref().unwrap().count() as i32, gl::UNSIGNED_INT, std::ptr::null())
+    pub fn render(&self) { 
+        unsafe {
+            gl::DrawElements(gl::TRIANGLES, self.vao.index_buffer().as_ref().unwrap().count() as i32, gl::UNSIGNED_INT, std::ptr::null())
+        }
     }
 }
