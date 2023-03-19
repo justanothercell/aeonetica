@@ -11,6 +11,7 @@ use aeonetica_engine::util::type_to_id;
 use crate::ecs::{Module, Engine};
 use crate::networking::NetworkServer;
 use aeonetica_engine::networking::messaging::ClientEntity;
+use aeonetica_engine::util::id_map::IdMap;
 
 pub trait Message: SerBin + DeBin + Debug {}
 
@@ -19,7 +20,7 @@ pub struct Messenger {
     handle_type: TypeId,
     entity_id: EntityId,
     pub(crate) receivers: HashSet<ClientId>,
-    pub(crate) receiver_functions: HashMap<TypeId, Box<dyn Fn(&EntityId, &mut Engine, &Vec<u8>)>>
+    pub(crate) receiver_functions: IdMap<Box<dyn Fn(&EntityId, &mut Engine, &Vec<u8>)>>
 }
 
 impl Module for Messenger {

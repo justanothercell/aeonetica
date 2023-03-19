@@ -1,5 +1,6 @@
 use std::collections::{HashMap};
 use aeonetica_engine::{EntityId, Id, TypeId};
+use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 use crate::ecs::module::{Module, ModuleDyn};
@@ -7,7 +8,7 @@ use crate::ecs::module::{Module, ModuleDyn};
 pub struct Entity {
     engine: *mut Engine, // Only use for add/removal events!!! DO NOT use for any other purpose!!!
     pub(crate) entity_id: EntityId,
-    pub(crate) modules: HashMap<TypeId, Box<dyn ModuleDyn>>
+    pub(crate) modules: IdMap<Box<dyn ModuleDyn>>
 }
 
 impl Entity {

@@ -5,6 +5,7 @@ use aeonetica_engine::{ClientId, EntityId, Id};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
+use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
 use crate::networking::NetworkClient;
@@ -21,7 +22,7 @@ pub struct ClientMessenger {
     nc: Rc<RefCell<NetworkClient>>,
     client_id: ClientId,
     entity_id: EntityId,
-    pub(crate) client_receivers: HashMap<Id, Box<dyn Fn(&mut dyn ClientHandle, &Vec<u8>)>>
+    pub(crate) client_receivers: IdMap<Box<dyn Fn(&mut dyn ClientHandle, &Vec<u8>)>>
 }
 
 impl ClientMessenger {

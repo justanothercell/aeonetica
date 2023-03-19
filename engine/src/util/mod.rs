@@ -1,6 +1,7 @@
 pub mod vector;
 pub mod axis;
 pub mod matrix;
+pub mod id_map;
 
 use std::any::{type_name};
 
@@ -9,7 +10,7 @@ use std::path::Path;
 use std::fs::File;
 use core::hash::Hasher;
 #[allow(deprecated)]
-use std::hash::SipHasher13;
+use std::hash::SipHasher;
 use crate::error::{AError, AET};
 use crate::{Id, TypeId};
 
@@ -38,10 +39,7 @@ pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>
 
 pub const fn type_to_id<T>() -> TypeId {
     #[allow(deprecated)]
-    let mut s = SipHasher13::new();
+    let mut s = SipHasher::new();
     s.write(type_name::<T>().as_bytes());
-    let [a, b, c, d,e , f, g, h] = s.finish().to_le_bytes();
-    s.write(type_name::<T>().as_bytes());
-    let [i, j, k, l, m, n, o, p] = s.finish().to_le_bytes();
-    Id::from_bytes([a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p])
+    Id::from_u64(s.finish())
 }

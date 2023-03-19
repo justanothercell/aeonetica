@@ -7,6 +7,7 @@ use std::collections::hash_map::{Iter, IterMut, Keys};
 use crate::ecs::entity::Entity;
 use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use aeonetica_engine::util::id_map::IdMap;
 use crate::ecs::events::ConnectionListener;
 
 use crate::ecs::module::{Module, ModuleDyn};
@@ -20,7 +21,7 @@ pub mod messaging;
 pub mod scheduling;
 
 pub struct Engine {
-    entites: HashMap<EntityId, Entity>,
+    entites: IdMap<Entity>,
     tagged: HashMap<String, EntityId>,
     tasks: TaskQueue,
     pub(crate) clients: HashSet<ClientId>,
@@ -40,6 +41,7 @@ impl Engine {
         }
     }
 
+    #[inline]
     pub fn new_entity(&mut self) -> EntityId {
         let e = Entity::new(self);
         let id = e.entity_id;
@@ -71,10 +73,12 @@ impl Engine {
         } else { false }
     }
 
+    #[inline]
     pub fn is_client_logged_in(&self, id: &ClientId) -> bool {
         self.clients.contains(id)
     }
 
+    #[inline]
     pub fn clients(&self) -> hash_set::Iter<ClientId> {
         self.clients.iter()
     }
@@ -117,6 +121,7 @@ impl Engine {
 
     /// Returns `true` if tagging is successful.
     /// Tagging fails if `tag_exists(tag)` returns true or `entity_exists(id)` returns false.
+    #[inline]
     pub fn tag_entity(&mut self, id: EntityId, tag: String) -> bool {
         if !self.tag_exists(&tag) && self.entity_exists(&id) {
             self.tagged.insert(tag, id);
@@ -128,12 +133,14 @@ impl Engine {
 
     /// Returns `true` if tag exists and `entity_exists(id)` returns true.
     /// Tags whose entity got removed are treated as nonexistent and can be overridden
+    #[inline]
     pub fn tag_exists(&self, tag: &str) -> bool {
        self.tagged.get(tag).map(|id| self.entity_exists(id)).unwrap_or(false)
     }
 
     /// Returns `true` if tag existed.
     /// Removal fails if `tag_exists(tag)` returns false.
+    #[inline]
     pub fn remove_tag(&mut self, tag: &str) -> bool {
         if self.tag_exists(tag) {
             self.tagged.remove(tag);
@@ -143,59 +150,78 @@ impl Engine {
         }
     }
 
+    #[inline]
     pub fn get_entity_by_tag(&self, tag: &str) -> Option<&Entity> {
         self.entites.get(self.tagged.get(tag)?)
     }
 
+    #[inline]
+    pub fn get_entity_id_by_tag(&self, tag: &str) -> Option<&EntityId> {
+        self.tagged.get(tag)
+    }
+
+    #[inline]
     pub fn mut_entity_by_tag(&mut self, tag: &str) -> Option<&mut Entity> {
         self.entites.get_mut(self.tagged.get(tag)?)
     }
 
+    #[inline]
     pub fn entity_exists(&self, id: &EntityId) -> bool {
         self.entites.contains_key(id)
     }
 
+    #[inline]
     pub fn get_entity(&self, id: &EntityId) -> Option<&Entity> {
         self.entites.get(id)
     }
 
+    #[inline]
     pub fn mut_entity(&mut self, id: &EntityId) -> Option<&mut Entity> {
         self.entites.get_mut(id)
     }
 
+    #[inline]
     pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Option<&T> {
         self.entites.get(id)?.get_module()
     }
 
+    #[inline]
     pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Option<&mut T> {
         self.entites.get_mut(id)?.mut_module()
     }
 
+    #[inline]
     pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Option<&T> {
         self.get_entity_by_tag(tag)?.get_module()
     }
 
+    #[inline]
     pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Option<&mut T> {
         self.mut_entity_by_tag(tag)?.mut_module()
     }
 
+    #[inline]
     pub fn ids(&self) -> Keys<EntityId, Entity>{
         self.entites.keys()
     }
 
+    #[inline]
     pub fn iter(&self) -> Iter<EntityId, Entity>{
         self.entites.iter()
     }
 
+    #[inline]
     pub fn iter_mut(&mut self) -> IterMut<EntityId, Entity>{
         self.entites.iter_mut()
     }
 
+    #[inline]
     #[allow(clippy::type_complexity)]
     pub fn id_find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = &EntityId>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some(id)} else { None })
     }
 
+    #[inline]
     #[allow(clippy::type_complexity)]
     pub fn find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = (&EntityId, &T)>{
         self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>()?))} else { None })

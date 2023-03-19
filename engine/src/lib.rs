@@ -4,7 +4,15 @@
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
+#![feature(test)]
+extern crate test;
+
+#[cfg(test)]
+mod tests;
+
 use std::fmt::{Debug, Display, Formatter};
+use std::hash::{Hasher, SipHasher};
+use std::ptr::hash;
 pub use nanoserde;
 pub use libloading;
 pub use chrono;
@@ -17,29 +25,44 @@ pub mod error;
 pub mod util;
 
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
-pub struct Id([u8;16]);
+pub struct Id([u8;8]);
 
 pub type ClientId = Id;
 pub type EntityId = Id;
 pub type TypeId = Id;
 
 impl Id {
+    #[inline]
     pub fn new() -> Self {
-        Self(Uuid::new_v4().into_bytes())
+        let mut hasher = SipHasher::default();
+        hasher.write(&Uuid::new_v4().into_bytes());
+        Self::from_u64(hasher.finish())
     }
 
-    pub const fn from_bytes(b: [u8;16]) -> Self {
+    #[inline]
+    pub const fn from_bytes(b: [u8;8]) -> Self {
         Self(b)
     }
 
-    pub const fn into_bytes(self) -> [u8;16] {
+    #[inline]
+    pub const fn from_u64(b: u64) -> Self {
+        Self(b.to_le_bytes())
+    }
+
+    #[inline]
+    pub const fn into_bytes(self) -> [u8;8] {
         self.0
+    }
+
+    #[inline]
+    pub const fn into_u64(self) -> u64 {
+        u64::from_le_bytes(self.0)
     }
 }
 
 impl Debug for Id {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", Uuid::from_bytes(self.0))
+        write!(f, "{:X}{:X}-{:X}{:X}-{:X}{:X}-{:X}{:X}", self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5], self.0[6], self.0[7])
     }
 }
 
