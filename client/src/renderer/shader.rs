@@ -1,7 +1,18 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ffi::CString};
 use super::*;
 
+use aeonetica_engine::util::matrix::Matrix4;
 use regex::Regex;
+
+pub trait Uniform {
+    fn upload(&self, location: i32);
+}
+
+impl Uniform for Matrix4<f32> {
+    fn upload(&self, location: i32) {
+        unsafe { gl::UniformMatrix4fv(location, 1, gl::FALSE, self.value_ptr()) }
+    }
+}
 
 pub(super) enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
@@ -123,12 +134,24 @@ impl Program {
         String::from_utf8_lossy(&v).into_owned()
     }
 
-    pub(super) fn use_program(&self) {
+    pub(super) fn bind(&self) {
         unsafe { gl::UseProgram(self.0) }
+    }
+
+    pub(super) fn unbind(&self) {
+        unsafe { gl::UseProgram(0) }
     }
 
     pub(super) fn delete(self) {
         unsafe { gl::DeleteProgram(self.0) }
+    }
+
+    pub(super) fn upload_uniform(&self, name: &str, data: &impl Uniform) {
+        unsafe {
+            let c_str = CString::new(name).unwrap();
+            let location = gl::GetUniformLocation(self.0, c_str.as_ptr() as *const i8);
+            data.upload(location);
+        }
     }
 
     fn preprocess_sources(src: &str) -> Result<(String, String), String> {

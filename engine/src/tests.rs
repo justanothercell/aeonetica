@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use test::Bencher;
 use crate::Id;
-use crate::util::id_map::{IdMap, IdMap2};
+use crate::util::id_map::{IdMap};
 
 #[bench]
 fn bench_hashmap(b: &mut Bencher) {

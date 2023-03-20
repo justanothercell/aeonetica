@@ -6,7 +6,7 @@ pub(super) enum BufferType {
     ElementArray = gl::ELEMENT_ARRAY_BUFFER as isize
 }
 
-pub(super) struct Buffer {
+pub struct Buffer {
     id: RenderID,
     typ: BufferType,
     layout: Option<BufferLayout>,

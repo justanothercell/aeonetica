@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) struct VertexArray {
+pub struct VertexArray {
     id: RenderID,
     vertex_buffers: Vec<Buffer>,
     index_buffer: Option<Buffer>,
