@@ -2,6 +2,7 @@ pub mod vector;
 pub mod axis;
 pub mod matrix;
 pub mod id_map;
+pub mod camera;
 
 use std::any::{type_name};
 
