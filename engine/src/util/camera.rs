@@ -12,10 +12,8 @@ impl Camera {
    pub fn new(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Self {
         let projection_matrix = Matrix4::ortho(left, right, bottom, top, far, near);
         let view_matrix = Matrix4::from(1.0);
-        let view_projection_matrix = &projection_matrix * &view_matrix;
-        println!("projection: {projection_matrix:?}\nview: {view_matrix:?}\nview_projection: {view_projection_matrix:?}");
         Self {
-            view_projection_matrix,
+            view_projection_matrix: &projection_matrix * &view_matrix,
             projection_matrix,
             view_matrix,
             position: Vector2::default(),

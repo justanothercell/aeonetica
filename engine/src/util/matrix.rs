@@ -75,9 +75,6 @@ impl Matrix4<f32> {
         let c = radians.cos();
         let s = radians.sin();
 
-        let t = self.clone();
-        self.identity();
-
         match axis {
             Axis::X => {
                 self.0[0] = c;
@@ -93,13 +90,12 @@ impl Matrix4<f32> {
             }
             Axis::Z => {
                 self.0[0] = c;
-                self.0[2] = s;
-                self.0[8] = -s;
-                self.0[10] = c;
+                self.0[1] = -s;
+                self.0[4] = s;
+                self.0[5] = c;
             }
         }
 
-        self *= t;
         self
     }
 

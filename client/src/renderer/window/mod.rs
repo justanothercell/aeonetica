@@ -123,7 +123,7 @@ impl Window {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.2, 0.0);
         }
-        
+
         let aspect_ratio = self.glfw_window.get_size().0 as f32 / self.glfw_window.get_size().1 as f32;
         let zoom = 1.0;
         self.test_camera.set_projection(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom, -1.0, 1.0);
