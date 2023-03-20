@@ -74,7 +74,7 @@ causes undefined behaviour, (most likely STATUS_ACCESS VIOLATION)
   -> less laggy, harder to sync
 
 ### Approach
-- P1-A
+- P1A
 - server runs at 20 tps
 - sending interpolatable data every 5 frames or so
 - only sending data of entities within range
