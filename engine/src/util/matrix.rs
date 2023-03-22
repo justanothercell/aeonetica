@@ -77,7 +77,7 @@ impl Matrix4<f32> {
 
         match axis {
             Axis::X => {
-                self.0[0] = c;
+                self.0[1] = c;
                 self.0[2] = -s;
                 self.0[8] = s;
                 self.0[10] = -c;

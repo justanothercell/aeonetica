@@ -9,7 +9,7 @@ extern crate glfw;
 extern crate gl;
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 
-use super::{Renderer, vertex_array::VertexArray};
+use super::{Renderer, vertex_array::VertexArray, texture::Texture};
 
 pub(crate) struct Window {
     glfw_handle: Glfw,
@@ -18,6 +18,7 @@ pub(crate) struct Window {
     renderer: Renderer,
     test_vao: VertexArray,
     test_camera: Camera,
+    test_texture: Texture,
     context: Context
 }
 
@@ -61,18 +62,19 @@ impl Window {
                 test_vao.bind();
 
                 type Vertex = [f32; 3];
-                type Color = [f32; 3];
+                type TextureCoord = [f32; 2];
 
-                const VERTICES: [(Vertex, Color); 4] = [
-                    ([-0.5, -0.5, 0.0], [1.0, 0.0, 0.0]),
-                    ([0.5,  -0.5, 0.0], [0.0, 1.0, 0.0]),
-                    ([0.5,  0.5,  0.0], [0.0, 0.0, 1.0]),
-                    ([-0.5, 0.5,  0.0], [0.0, 0.0, 0.0])
+                const QW: f32 = 16.0 / 9.0 / 2.0;
+                const VERTICES: [(Vertex, TextureCoord); 4] = [
+                    ([-QW, -0.5, 0.0], [0.0, 0.0]),
+                    ([QW,  -0.5, 0.0], [1.0, 0.0]),
+                    ([QW,  0.5,  0.0], [1.0, 1.0]),
+                    ([-QW, 0.5,  0.0], [0.0, 1.0])
                 ];
 
                 let layout = BufferLayout::new(vec![
                     BufferElement::new(ShaderDataType::Float3), // position
-                    BufferElement::new(ShaderDataType::Float3), // color
+                    BufferElement::new(ShaderDataType::Float2), // texture coordinate
                 ]);
                 
                 let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(VERTICES), Some(layout))
@@ -90,6 +92,12 @@ impl Window {
                 let zoom = 1.0;
                 let camera = Camera::new(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom, -1.0, 1.0);
 
+                let texture = Texture::load_from("assets/test_image.png")
+                    .expect("Error loading image");
+
+                texture.bind(0);
+                renderer.shader().upload_uniform("u_Texture", &0);
+
                 Self {
                     glfw_handle: glfw,
                     glfw_window: window,
@@ -97,6 +105,7 @@ impl Window {
                     renderer,
                     test_vao,
                     test_camera: camera,
+                    test_texture: texture,
                     context
                 }
             },
@@ -127,6 +136,7 @@ impl Window {
         let aspect_ratio = self.glfw_window.get_size().0 as f32 / self.glfw_window.get_size().1 as f32;
         let zoom = 1.0;
         self.test_camera.set_projection(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom, -1.0, 1.0);
+       //> self.test_camera.set_rotation(self.test_camera.rotation() + 0.01);
 
         // render here
         self.renderer.begin_scene(&self.test_camera);

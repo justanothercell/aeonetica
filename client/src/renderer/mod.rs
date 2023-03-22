@@ -9,6 +9,8 @@ mod buffer;
 use buffer::*;
 mod shader;
 use shader::*;
+mod texture;
+use texture::*;
 
 pub(self) use aeonetica_engine::util::camera::Camera as Camera;
 
@@ -32,6 +34,10 @@ impl Renderer {
     pub fn begin_scene(&self, camera: &Camera) {
         self.shader.bind();
         self.shader.upload_uniform("u_ViewProjection", camera.view_projection_matrix());
+    }
+
+    pub fn shader(&self) -> &Program {
+        &self.shader
     }
 
     pub fn end_scene(&self) {
