@@ -65,7 +65,7 @@ impl ServerRuntime {
             log!("loading mod {} ...", item.0);
             let mut m = load_mod(item.0)
                 .map_err(|mut e| {
-                    e.additional_info.push(format!("could not load mod {}", item.0));
+                    e.add_info(format!("could not load mod {}", item.0));
                     e
                 })?;
             m.init(item.1);
