@@ -27,10 +27,7 @@ impl NetworkClient {
             loop {
                 match sock.recv_from(&mut buf) {
                     Ok((len, src)) => match DeBin::deserialize_bin(&buf[..len]) {
-                       Ok(packet) => {
-                           let trecv = recv.clone();
-                           std::thread::spawn(move || {trecv.lock().unwrap().push(packet)});
-                       },
+                       Ok(packet) => recv.lock().unwrap().push(packet),
                        Err(e) => log_err!("invalid server packet from {src}: {e}")
                     },
                     Err(e) => {

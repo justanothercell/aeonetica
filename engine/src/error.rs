@@ -6,9 +6,12 @@ use std::process::exit;
 use crate::{log_err, log_raw};
 
 #[derive(Debug)]
-pub struct AError {
+pub struct AError(Box<AErrorInner>);
+
+#[derive(Debug)]
+pub struct AErrorInner {
     et: AET,
-    pub additional_info: Vec<String>,
+    additional_info: Vec<String>,
     location: Location<'static>,
     trace: Backtrace,
 }
@@ -16,12 +19,12 @@ pub struct AError {
 impl AError {
     #[track_caller]
     pub fn new(et: AET) -> Self {
-        Self {
+        Self(Box::new(AErrorInner {
             et,
             additional_info: vec![],
             location: *std::panic::Location::caller(),
             trace: Backtrace::force_capture()
-        }
+        }))
     }
     #[track_caller]
     pub fn log_exit(&self) -> !{
@@ -31,8 +34,13 @@ impl AError {
 
     #[track_caller]
     pub fn log(&self) {
-        log_err!("{self}\nlocation: {}", self.location);
-        log_raw!("{}", self.trace);
+        log_err!("{self}\nlocation: {}", self.0.location);
+        log_raw!("{}", self.0.trace);
+    }
+
+    #[track_caller]
+    pub fn add_info(&mut self, info: String) {
+        self.0.additional_info.push(info)
     }
 }
 
@@ -48,15 +56,15 @@ pub enum AET {
 
 impl Display for AError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", match &self.et {
+        write!(f, "{}{}", match &self.0.et {
             AET::ValueError(e) => format!("ValueError: {e}"),
             AET::DataError(e) => format!("DataError: {e}"),
             AET::IOError(e) => format!("IOError: {e}"),
             AET::NetworkError(e) => format!("NetworkError: {e}"),
             AET::ModError(e) => format!("IOError: {e}"),
             AET::ModConflict(e) => format!("IOError: {e}"),
-        }, if !self.additional_info.is_empty() {
-            format!("\n => {}", self.additional_info.join("\n => "))
+        }, if !self.0.additional_info.is_empty() {
+            format!("\n => {}", self.0.additional_info.join("\n => "))
         } else { String::new() })
     }
 }
