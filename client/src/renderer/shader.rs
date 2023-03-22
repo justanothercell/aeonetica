@@ -14,6 +14,12 @@ impl Uniform for Matrix4<f32> {
     }
 }
 
+impl Uniform for i32 {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform1i(location, *self) }
+    }
+}
+
 pub(super) enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize

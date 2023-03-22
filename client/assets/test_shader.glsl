@@ -4,24 +4,28 @@ This is a short test shader for the client renderer
 #[vertex]
 #version 330 core
 
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 in_color;
+layout (location = 0) in vec3 a_Position;
+layout (location = 1) in vec2 a_TexCoord;
 
 uniform mat4 u_ViewProjection;
 
-smooth out vec4 vertex_color;
+out vec2 v_TexCoord;
 
 void main() {
-    gl_Position = u_ViewProjection * vec4(position, 1.0);
-    vertex_color = vec4(in_color, 1.0);
+    v_TexCoord = a_TexCoord;
+    gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
 }
 
 #[fragment]
 #version 330 core
 
-smooth in vec4 vertex_color;
+uniform sampler2D u_Texture;
+uniform float u_TilingFactor;
+
+in vec2 v_TexCoord;
+
 out vec4 color;
 
 void main() {
-    color = vertex_color;
+    color = texture(u_Texture, v_TexCoord, u_TilingFactor);
 }
