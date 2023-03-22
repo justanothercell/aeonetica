@@ -26,11 +26,12 @@ impl NetworkClient {
             let mut buf = [0u8; MAX_PACKET_SIZE];
             loop {
                 match sock.recv_from(&mut buf) {
-                    Ok((len, src)) => {
-                        match DeBin::deserialize_bin(&buf[..len]) {
-                            Ok(packet) => recv.lock().unwrap().push(packet),
-                            Err(e) => log_err!("invalid server packet from {src}: {e}")
-                        }
+                    Ok((len, src)) => match DeBin::deserialize_bin(&buf[..len]) {
+                       Ok(packet) => {
+                           let trecv = recv.clone();
+                           std::thread::spawn(move || {trecv.lock().unwrap().push(packet)});
+                       },
+                       Err(e) => log_err!("invalid server packet from {src}: {e}")
                     },
                     Err(e) => {
                         log_err!("couldn't recieve a datagram: {}", e);

@@ -10,6 +10,7 @@ use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::MAX_PACKET_SIZE;
 use aeonetica_engine::networking::client_packets::ClientPacket;
 use aeonetica_engine::networking::server_packets::ServerPacket;
+use aeonetica_engine::util::id_map::IdMap;
 use crate::server_runtime::ServerRuntime;
 
 mod protocol;
@@ -17,13 +18,13 @@ mod protocol;
 pub(crate) struct NetworkServer {
     pub(crate) socket: UdpSocket,
     pub(crate) received: Arc<Mutex<Vec<(SocketAddr, ClientPacket)>>>,
-    pub(crate) clients: HashMap<Id, ClientHandle>
+    pub(crate) clients: IdMap<ClientHandle>
 }
 
 pub(crate) struct ClientHandle {
     pub(crate) last_seen: Instant,
     pub(crate) client_addr: SocketAddr,
-    awaiting_replies: HashMap<Id, Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>>
+    awaiting_replies: IdMap<Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>>
 }
 
 impl NetworkServer {
@@ -38,7 +39,10 @@ impl NetworkServer {
                 match sock.recv_from(&mut buf) {
                     Ok((len, src)) => {
                         match DeBin::deserialize_bin(&buf[..len]) {
-                            Ok(packet) => recv.lock().unwrap().push((src, packet)),
+                            Ok(packet) => {
+                                let trecv = recv.clone();
+                                std::thread::spawn(move || {trecv.lock().unwrap().push((src, packet))});
+                            },
                             Err(e) => log_err!("invalid client packet from {src}: {e}")
                         }
                     },
