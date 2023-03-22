@@ -1,4 +1,50 @@
+use std::marker::PhantomData;
+
 use super::*;
+
+macro_rules! shader_tuple_impls {
+    ($($name:ident)+) => {
+        impl<$($name: ShaderLayoutType),+> Layout for ($($name,)+) {
+            type Type = ($($name::Type,)+);
+            fn layout() -> Vec<ShaderDataType> {
+                vec![$($name::Type::DATA_TYPE,)+]
+            }
+        }
+    };
+}
+
+pub struct Vertex;
+impl ShaderLayoutType for Vertex {
+    type Type = [f32; 3];
+}
+
+pub struct TexCoord;
+impl ShaderLayoutType for TexCoord {
+    type Type = [f32; 2];
+}
+
+pub struct Color;
+impl ShaderLayoutType for Color {
+    type Type = [f32; 4];
+}
+
+
+pub(super) trait Layout {
+    type Type;
+    fn layout() -> Vec<ShaderDataType>;
+}
+
+pub(super) struct BufferLayoutBuilder<T>(PhantomData<T>);
+
+impl<T: Layout> BufferLayoutBuilder<T> {
+    pub(super) fn build() -> BufferLayout {
+        BufferLayout::new(T::layout().iter().map(|d| (*d).into()).collect())
+    }
+
+    pub(super) fn array<const N: usize>(arr: [T::Type; N]) -> [T::Type; N] {
+        arr
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum BufferType {
@@ -59,6 +105,12 @@ pub(super) struct BufferElement {
     typ: ShaderDataType,
     offset: u32,
     normalized: bool
+}
+
+impl From<ShaderDataType> for BufferElement {
+    fn from(value: ShaderDataType) -> Self {
+        Self::new(value)
+    }
 }
 
 impl BufferElement {
@@ -133,3 +185,16 @@ impl BufferLayout {
         }
     }
 }
+
+shader_tuple_impls! { A }
+shader_tuple_impls! { A B }
+shader_tuple_impls! { A B C }
+shader_tuple_impls! { A B C D }
+shader_tuple_impls! { A B C D E }
+shader_tuple_impls! { A B C D E F }
+shader_tuple_impls! { A B C D E F G }
+shader_tuple_impls! { A B C D E F G H }
+shader_tuple_impls! { A B C D E F G H I }
+shader_tuple_impls! { A B C D E F G H I J }
+shader_tuple_impls! { A B C D E F G H I J K }
+shader_tuple_impls! { A B C D E F G H I J K L }

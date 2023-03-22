@@ -1,14 +1,10 @@
 pub mod events;
 
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, rc::Rc};
 
 use aeonetica_engine::log;
 use crate::{renderer::{context::Context, buffer::*, shader::*, util, Camera}};
-
-extern crate glfw;
-extern crate gl;
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
-
 use super::{Renderer, vertex_array::VertexArray, texture::Texture};
 
 pub(crate) struct Window {
@@ -61,7 +57,7 @@ impl Window {
                 let mut test_vao = VertexArray::new().expect("Error creating vertex array");
                 test_vao.bind();
 
-                type Vertex = [f32; 3];
+              /*type Vertex = [f32; 3];
                 type TextureCoord = [f32; 2];
 
                 const QW: f32 = 16.0 / 9.0 / 2.0;
@@ -75,9 +71,19 @@ impl Window {
                 let layout = BufferLayout::new(vec![
                     BufferElement::new(ShaderDataType::Float3), // position
                     BufferElement::new(ShaderDataType::Float2), // texture coordinate
+                ]); */
+                const QW: f32 = 16.0 / 9.0 / 2.0;
+
+                type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
+                let layout = Vertices::build();
+                let vertices = Vertices::array([
+                    ([-QW, -0.5, 0.0], [0.0, 0.0]),
+                    ([QW,  -0.5, 0.0], [1.0, 0.0]),
+                    ([QW,  0.5,  0.0], [1.0, 1.0]),
+                    ([-QW, 0.5,  0.0], [0.0, 1.0])
                 ]);
                 
-                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(VERTICES), Some(layout))
+                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(layout))
                     .expect("Error creating Vertex Buffer");
                 test_vao.add_vertex_buffer(vertex_buffer);
                 
@@ -86,7 +92,12 @@ impl Window {
                     .expect("Error creating Index Buffer");
                 test_vao.set_index_buffer(index_buffer);
 
-                let renderer = Renderer::new();
+                let mut renderer = Renderer::new();
+
+                let shader_src = include_str!("../../../assets/test_shader.glsl");
+                let shader_program = Rc::new(Program::from_source(shader_src)
+                    .unwrap_or_else(|err| panic!("Error loading shader: {err}")));
+                renderer.load_shader(shader_program.clone());
 
                 let aspect_ratio = 16.0 / 9.0;
                 let zoom = 1.0;
@@ -96,7 +107,7 @@ impl Window {
                     .expect("Error loading image");
 
                 texture.bind(0);
-                renderer.shader().upload_uniform("u_Texture", &0);
+                shader_program.upload_uniform("u_Texture", &0);
 
                 Self {
                     glfw_handle: glfw,

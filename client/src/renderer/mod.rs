@@ -4,6 +4,8 @@ pub mod context;
 pub mod util;
 
 mod vertex_array;
+use std::rc::Rc;
+
 use vertex_array::*;
 mod buffer;
 use buffer::*;
@@ -17,26 +19,39 @@ pub(self) use aeonetica_engine::util::camera::Camera as Camera;
 pub(self) type RenderID = gl::types::GLuint;
 
 pub struct Renderer {
-    shader: Program
+    shader: Option<Rc<Program>>
 }
 
 impl Renderer {
     pub fn new() -> Self {
-        let shader_src = include_str!("../../assets/test_shader.glsl");
-        let shader_program = Program::from_source(shader_src)
-            .unwrap_or_else(|err| panic!("Error loading shader: {err}"));
-
         Self {
-            shader: shader_program
+            shader: None
         }
     }
 
     pub fn begin_scene(&self, camera: &Camera) {
-        self.shader.bind();
-        self.shader.upload_uniform("u_ViewProjection", camera.view_projection_matrix());
+        if let Some(shader) = &self.shader {
+            shader.bind();
+            shader.upload_uniform("u_ViewProjection", camera.view_projection_matrix());
+        }
+        else {
+            panic!("no shader was loaded")
+        }
     }
 
-    pub fn shader(&self) -> &Program {
+    pub fn load_shader(&mut self, shader: Rc<Program>) {
+        shader.bind();
+        self.shader = Some(shader);
+    }
+
+    pub fn unload_shader(&mut self) {
+        if let Some(shader) = &self.shader {
+            shader.unbind();
+        }
+        self.shader = None;
+    }
+
+    pub fn shader(&self) -> &Option<Rc<Program>> {
         &self.shader
     }
 

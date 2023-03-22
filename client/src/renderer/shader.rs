@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ffi::CString};
 use super::*;
 
-use aeonetica_engine::util::matrix::Matrix4;
+use aeonetica_engine::util::{matrix::Matrix4, vector::Vector2};
 use regex::Regex;
 
 pub trait Uniform {
@@ -212,6 +212,7 @@ impl Program {
 }
 
 #[allow(unused)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ShaderDataType {
     Float = gl::FLOAT as isize,
     Float2 = gl::FLOAT_VEC2 as isize,
@@ -262,4 +263,56 @@ impl ShaderDataType {
             Self::Bool => gl::BOOL
         }
     }
+}
+
+pub(super) trait IntoShaderDataType {
+    const DATA_TYPE: ShaderDataType;
+}
+
+impl IntoShaderDataType for f32 {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Float;
+}
+
+impl IntoShaderDataType for [f32; 2] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Float2;
+}
+
+impl IntoShaderDataType for [f32; 3] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Float3;
+}
+
+impl IntoShaderDataType for [f32; 4] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Float4;
+}
+
+impl IntoShaderDataType for Matrix4<f32> {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Mat4;
+}
+
+impl IntoShaderDataType for i32 {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Int;
+}
+
+impl IntoShaderDataType for [i32; 2] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Int2;
+}
+
+impl IntoShaderDataType for [i32; 3] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Int3;
+}
+
+impl IntoShaderDataType for [i32; 4] {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Int4;
+}
+
+impl IntoShaderDataType for Vector2<f32> {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Float2;
+}
+
+impl IntoShaderDataType for bool {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Bool;
+}
+
+pub(super) trait ShaderLayoutType {
+    type Type: IntoShaderDataType;
 }
