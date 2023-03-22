@@ -42,7 +42,8 @@ pub(super) struct Texture {
 impl Texture {
     pub(super) fn load_from(img_path: &str) -> Result<Self, ImageError> {
         let img = ImageReader::open(img_path)?
-            .decode()?;
+            .decode()?
+            .flipv();
         
         let mut t = Self {
             id: 0,
