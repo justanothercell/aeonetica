@@ -41,7 +41,7 @@ impl<T: Layout> BufferLayoutBuilder<T> {
         BufferLayout::new(T::layout().iter().map(|d| (*d).into()).collect())
     }
 
-    pub(super) fn array<const N: usize>(arr: [T::Type; N]) -> [T::Type; N] {
+    pub(super) const fn array<const N: usize>(arr: [T::Type; N]) -> [T::Type; N] {
         arr
     }
 }
