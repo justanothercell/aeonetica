@@ -38,9 +38,38 @@ pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>
     Ok(())
 }
 
-pub const fn type_to_id<T>() -> TypeId {
+#[cfg(debug_assertions)]
+mod debug_id {
+    use std::sync::Mutex;
+    use lazy_static::lazy_static;
+    use crate::Id;
+    use crate::util::id_map::IdMap;
+
+    lazy_static! {
+        pub(crate) static ref ID_TYPE_MAP: Mutex<IdMap<String>> = Default::default();
+    }
+
+    impl Id {
+        pub fn info(&self) -> String {
+            ID_TYPE_MAP.lock().unwrap().get(self).map(|s|s.to_string()).unwrap_or(self.to_string())
+        }
+    }
+}
+#[cfg(not(debug_assertions))]
+mod debug_id {
+    impl Id {
+        pub fn info(&self) -> String {
+            self.to_string()
+        }
+    }
+}
+
+pub fn type_to_id<T>() -> TypeId {
     #[allow(deprecated)]
     let mut s = SipHasher::new();
     s.write(type_name::<T>().as_bytes());
-    Id::from_u64(s.finish())
+    let id = Id::from_u64(s.finish());
+    #[cfg(debug_assertions)]
+    debug_id::ID_TYPE_MAP.lock().unwrap().insert(id, type_name::<T>().to_string());
+    id
 }
