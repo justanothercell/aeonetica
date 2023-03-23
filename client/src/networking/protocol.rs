@@ -2,6 +2,7 @@ use std::process::exit;
 use aeonetica_engine::error::AError;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
+use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::client_runtime::{ClientHandleBox, ClientRuntime};
 use crate::networking::messaging::ClientMessenger;
@@ -27,7 +28,7 @@ impl ClientRuntime {
                 client_id: self.client_id,
                 conv_id: packet.conv_id,
                 message: ClientMessage::Pong(msg.clone()),
-            })?,
+            }, SendMode::Safe)?,
             ServerMessage::Unregister(reason) => {
                 log!("server unregistered client: {reason}");
                 exit(0)

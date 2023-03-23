@@ -1,6 +1,7 @@
 use std::time::{Instant};
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
+use aeonetica_engine::networking::SendMode;
 use crate::client_runtime::ClientRuntime;
 use crate::renderer::context::Context;
 use crate::renderer::window::Window;
@@ -16,7 +17,7 @@ pub fn run(ip: &str, server_ip: &str) {
         client_id,
         conv_id: Id::new(),
         message: ClientMessage::Login,
-    });
+    }, SendMode::Safe);
 
     log!("sent login");
 

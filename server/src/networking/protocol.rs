@@ -7,7 +7,7 @@ use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
 use aeonetica_engine::{ENGINE_VERSION, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::{log, Id};
-use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
+use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult, SendMode};
 use aeonetica_engine::sha2;
 use aeonetica_engine::sha2::Digest;
 use crate::ecs::Engine;
@@ -40,7 +40,7 @@ impl Engine {
                     let _ = mut_self_ref.runtime.ns.borrow().send(&id, &ServerPacket {
                         conv_id: Id::new(),
                         message: ServerMessage::Unregister("TIMEOUT".to_string()),
-                    });
+                    }, SendMode::Safe);
                     log!("timed out client ip {}", client.client_addr);
                     true
                 }
@@ -85,7 +85,7 @@ impl Engine {
                                 (name_path.clone(), flags.clone(), format!("{digest:X}"), size)
                             }).collect(),
                         }))
-                    })?;
+                    }, SendMode::Safe)?;
                     log!("registered client ip {addr} with id {}", packet.client_id);
                 } else {
                     self.runtime.ns.borrow().send_raw(*addr, &ServerPacket{
@@ -93,13 +93,13 @@ impl Engine {
                         message: ServerMessage::RegisterResponse(NetResult::Err(
                             format!("client and server engine versions do not match: {} != {}", client_info.client_version, ENGINE_VERSION)
                         ))
-                    })?;
+                    }, SendMode::Safe)?;
                 }
             }
             ClientMessage::Ping(msg) => self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                 conv_id: packet.conv_id,
                 message: ServerMessage::Pong(msg.clone()),
-            })?,
+            }, SendMode::Safe)?,
             ClientMessage::DownloadMod(name_path, offset) => {
                 let (name, path) = name_path.split_once(':').unwrap();
                 let client_path = format!("runtime/{path}/{name}_client.zip");
@@ -110,7 +110,7 @@ impl Engine {
                 self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                     conv_id: packet.conv_id,
                     message: ServerMessage::RawData(buffer[..len].to_vec())
-                })?;
+                }, SendMode::Safe)?;
             },
             ClientMessage::Login => {
                 if !self.clients.contains(&packet.client_id) {
@@ -139,11 +139,11 @@ impl Engine {
         Ok(())
     }
 
-    pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F) -> Result<(), AError> {
+    pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F, mode: SendMode) -> Result<(), AError> {
         match self.runtime.ns.borrow_mut().clients.get_mut(client_id) {
             Some(client) => {
                 client.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-                self.runtime.ns.borrow().send(client_id, packet)?;
+                self.runtime.ns.borrow().send(client_id, packet, mode)?;
                 Ok(())
             }
             None => {

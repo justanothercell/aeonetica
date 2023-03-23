@@ -5,6 +5,7 @@ use aeonetica_engine::{ClientId, EntityId, Id};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
+use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
@@ -47,12 +48,12 @@ impl ClientMessenger {
         self.client_receivers.remove(&type_to_id::<F>());
     }
 
-    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _: F, message: M) {
+    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _: F, message: M, mode: SendMode) {
         let id = type_to_id::<F>();
         let _ = self.nc.borrow().send(&ClientPacket {
             client_id: self.client_id,
             conv_id: Id::new(),
             message: ClientMessage::ModMessage(self.entity_id, id, message.serialize_bin()),
-        });
+        }, mode);
     }
 }

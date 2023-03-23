@@ -6,6 +6,7 @@ use std::collections::hash_map::{Iter, IterMut, Keys};
 
 use crate::ecs::entity::Entity;
 use aeonetica_engine::{ClientId, EntityId, Id, log};
+use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::ecs::events::ConnectionListener;
@@ -67,7 +68,7 @@ impl Engine {
             let _ = self.runtime.ns.borrow().send(id, &ServerPacket {
                 conv_id: Id::new(),
                 message: ServerMessage::Kick(reason.to_string()),
-            });
+            }, SendMode::Safe);
             log!("kicked client {id}");
             true
         } else { false }

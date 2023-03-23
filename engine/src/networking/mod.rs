@@ -31,3 +31,12 @@ impl<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin> From<Result<T, E>> fo
         }
     }
 }
+
+/// The mode the network message will be send in
+#[derive(Copy, Clone, Debug)]
+pub enum SendMode {
+    /// Quick and lossy. Use for discardable packets, such as continous updates.
+    Quick,
+    /// Safe transfer, but slow. Data is buffered. Use for things like downloading resources or events that only happen on state change.
+    Safe
+}

@@ -1,6 +1,6 @@
 
 use std::collections::HashMap;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr, TcpListener, TcpStream, UdpSocket};
 
 use std::sync::{Arc, Mutex};
@@ -9,7 +9,7 @@ use std::time::Instant;
 use aeonetica_engine::error::{AError, AET};
 use aeonetica_engine::{Id, log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
-use aeonetica_engine::networking::MAX_PACKET_SIZE;
+use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::ClientPacket;
 use aeonetica_engine::networking::server_packets::ServerPacket;
 use aeonetica_engine::util::id_map::IdMap;
@@ -90,25 +90,38 @@ impl NetworkServer {
         packets
     }
 
-    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket) -> Result<(), AError>{
+    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> Result<(), AError>{
         self.clients.get(client_id).map(|client| {
-            self.send_raw(client.client_addr, packet)
+            self.send_raw(client.client_addr, packet, mode)
         }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {client_id} does not exist")))))?;
 
         Ok(())
     }
 
-    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket) -> Result<(), AError>{
+    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), AError>{
         let data = SerBin::serialize_bin(packet);
         if data.len() > MAX_PACKET_SIZE {
             return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
         }
         let data = SerBin::serialize_bin(packet);
-        let sock = self.udp.try_clone()?;
-        std::thread::spawn(move || sock.send_to(&data[..], ip_addr).map_err(|e| {
-            let e: AError = e.into();
-            e.log();
-        }));
+        match mode {
+            SendMode::Quick => {
+                let sock = self.udp.try_clone()?;
+                std::thread::spawn(move || sock.send_to(&data[..], ip_addr).map_err(|e| {
+                    let e: AError = e.into();
+                    e.log();
+                }));
+            }
+            SendMode::Safe => {
+                let mut tcp = self.tcp.clone();
+                std::thread::spawn(move || {
+                    tcp.lock().unwrap().get_mut(&ip_addr).map(|stream| {
+                        let _ = stream.write_all(&(data.len() as u32).to_le_bytes());
+                        let _ = stream.write_all(&data[..]);
+                    })
+                });
+            }
+        }
         Ok(())
     }
 }

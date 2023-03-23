@@ -13,7 +13,7 @@ use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult};
+use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::unzip_archive;
@@ -100,7 +100,7 @@ impl ClientRuntime {
             state: ClientState::Start
         };
         let mod_list = client.register()?;
-        let timeout_socket = client.nc.borrow().socket.try_clone()?;
+        let timeout_socket = client.nc.borrow().udp.try_clone()?;
         thread::spawn(move || {
             loop {
                 let data = SerBin::serialize_bin(&ClientPacket {
@@ -123,9 +123,9 @@ impl ClientRuntime {
         Ok(client)
     }
 
-    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F) -> Result<(), AError> {
+    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> Result<(), AError> {
         self.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-        self.nc.borrow().send(packet)?;
+        self.nc.borrow().send(packet, mode)?;
         Ok(())
     }
 
@@ -195,7 +195,7 @@ impl ClientRuntime {
                     exit(1);
                 }
             }
-        })?;
+        }, SendMode::Safe)?;
         while self.state != ClientState::Registered {
             let packets = self.nc.borrow_mut().queued_packets();
             for packet in packets {
@@ -235,7 +235,7 @@ impl ClientRuntime {
                             exit(1);
                         }
                     }
-                }).map_err(|e| {
+                }, SendMode::Safe).map_err(|e| {
                     e.log_exit();
                 }).unwrap();
                 //std::thread::sleep(Duration::from_nanos(20));
