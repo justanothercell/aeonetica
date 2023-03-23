@@ -20,6 +20,18 @@ impl Uniform for i32 {
     }
 }
 
+impl Uniform for f32 {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform1f(location, *self) }
+    }
+}
+
+impl Uniform for (f32, f32, f32, f32) {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform4f(location, self.0, self.1, self.2, self.3) }
+    }
+}
+
 pub(super) enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize

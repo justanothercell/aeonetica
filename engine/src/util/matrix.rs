@@ -60,6 +60,14 @@ impl Matrix4<f32> {
         self
     }
 
+    pub fn scale(mut self, scale: &Vector2<f32>) -> Self {
+        self.0[0] = scale.x();
+        self.0[5] = scale.y();
+        self.0[10] = 1.0;
+        self.0[15] = 1.0;
+        self
+    }
+
     pub fn identity(&mut self) -> &mut Self {
         self.0.fill(0.0);
 

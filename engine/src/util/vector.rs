@@ -11,6 +11,13 @@ impl<T> Vector2<T> {
     pub fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
+
+    pub fn map<U>(self, func: impl Fn(T) -> U) -> Vector2<U> {
+        Vector2::<U> {
+            x: func(self.x),
+            y: func(self.y)
+        }
+    }
 }
 
 impl<T: Into<f64> + Copy> Vector2<T> {

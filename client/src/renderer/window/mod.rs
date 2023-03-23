@@ -2,7 +2,7 @@ pub mod events;
 
 use std::{sync::mpsc::Receiver, rc::Rc};
 
-use aeonetica_engine::log;
+use aeonetica_engine::{log, util::{matrix::Matrix4, vector::Vector2, Either}};
 use crate::{renderer::{context::Context, buffer::*, shader::*, util, Camera}};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use super::{Renderer, vertex_array::VertexArray, texture::Texture};
@@ -12,7 +12,6 @@ pub(crate) struct Window {
     glfw_window: GlfwWindow,
     event_receiver: Receiver<(f64, WindowEvent)>,
     renderer: Renderer,
-    test_vao: VertexArray,
     test_camera: Camera,
     test_texture: Texture,
     context: Context
@@ -22,6 +21,8 @@ impl Window {
     const DEFAULT_WINDOW_WIDTH: u32 = 1280;
     const DEFAULT_WINDOW_HEIGHT: u32 = 720;
     const DEFAULT_WINDOW_TITLE: &'static str = "Aeonetica Game Engine";
+
+    const TEST_SCREEN_WIDTH: f32 = 500.0;
 
     pub(crate) fn new(full_screen: bool, context: Context) -> Self {
         match glfw::init(glfw::FAIL_ON_ERRORS) {
@@ -54,67 +55,16 @@ impl Window {
                     unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8).to_str().unwrap() }
                 );
 
-                let mut test_vao = VertexArray::new().expect("Error creating vertex array");
-                test_vao.bind();
-
-              /*type Vertex = [f32; 3];
-                type TextureCoord = [f32; 2];
-
-                const QW: f32 = 16.0 / 9.0 / 2.0;
-                const VERTICES: [(Vertex, TextureCoord); 4] = [
-                    ([-QW, -0.5, 0.0], [0.0, 0.0]),
-                    ([QW,  -0.5, 0.0], [1.0, 0.0]),
-                    ([QW,  0.5,  0.0], [1.0, 1.0]),
-                    ([-QW, 0.5,  0.0], [0.0, 1.0])
-                ];
-
-                let layout = BufferLayout::new(vec![
-                    BufferElement::new(ShaderDataType::Float3), // position
-                    BufferElement::new(ShaderDataType::Float2), // texture coordinate
-                ]); */
-                const QW: f32 = 16.0 / 9.0 / 2.0;
-
-                type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
-                let layout = Vertices::build();
-                let vertices = Vertices::array([
-                    ([-QW, -0.5, 0.0], [0.0, 0.0]),
-                    ([QW,  -0.5, 0.0], [1.0, 0.0]),
-                    ([QW,  0.5,  0.0], [1.0, 1.0]),
-                    ([-QW, 0.5,  0.0], [0.0, 1.0])
-                ]);
-                
-                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(layout))
-                    .expect("Error creating Vertex Buffer");
-                test_vao.add_vertex_buffer(vertex_buffer);
-                
-                const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-                let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(INDICES), None)
-                    .expect("Error creating Index Buffer");
-                test_vao.set_index_buffer(index_buffer);
-
-                let mut renderer = Renderer::new();
-
-                let shader_src = include_str!("../../../assets/test_shader.glsl");
-                let shader_program = Rc::new(Program::from_source(shader_src)
-                    .unwrap_or_else(|err| panic!("Error loading shader: {err}")));
-                renderer.load_shader(shader_program.clone());
-
-                let aspect_ratio = 16.0 / 9.0;
-                let zoom = 1.0;
-                let camera = Camera::new(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom, -1.0, 1.0);
-
+                let renderer = Renderer::new();
+                let camera = Camera::new(0.0, window.get_size().0 as f32, window.get_size().1 as f32, 0.0, -1.0, 1.0);
                 let texture = Texture::load_from("assets/test_image.png")
                     .expect("Error loading image");
-
-                texture.bind(0);
-                shader_program.upload_uniform("u_Texture", &0);
 
                 Self {
                     glfw_handle: glfw,
                     glfw_window: window,
                     event_receiver: events,
                     renderer,
-                    test_vao,
                     test_camera: camera,
                     test_texture: texture,
                     context
@@ -145,13 +95,24 @@ impl Window {
         }
 
         let aspect_ratio = self.glfw_window.get_size().0 as f32 / self.glfw_window.get_size().1 as f32;
-        let zoom = 1.0;
-        self.test_camera.set_projection(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom, -1.0, 1.0);
-       //> self.test_camera.set_rotation(self.test_camera.rotation() + 0.01);
+        let screen_width = Self::TEST_SCREEN_WIDTH / 2.0;
+        let screen_height = Self::TEST_SCREEN_WIDTH / 2.0 / aspect_ratio;
+        self.test_camera.set_projection(-screen_width, screen_width, screen_height, -screen_height, -1.0, 1.0);
 
         // render here
         self.renderer.begin_scene(&self.test_camera);
-        self.renderer.draw_vertex_array(&self.test_vao);
+
+        const RED_COLOR: (f32, f32, f32, f32) = (0.7, 0.2, 0.2, 1.0);
+        const BLUE_COLOR: (f32, f32, f32, f32) = (0.2, 0.2, 0.7, 1.0);
+
+        let mut k = 0;
+        for i in -2..3 {
+            for j in -2..3 {
+                let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
+                self.renderer.draw_quad(&pos, &(40.0, 40.0).into(), Either::Right(if k % 2 == 0 { &RED_COLOR } else { &BLUE_COLOR }));
+                k += 1;
+            }
+        }
         self.renderer.end_scene();
 
         self.glfw_window.swap_buffers();
