@@ -53,7 +53,6 @@ impl NetworkServer {
                     },
                     Err(_e) => {}
                 }
-                println!("received udp!");
             }
         });
         let listener = TcpListener::bind(addr)?;
