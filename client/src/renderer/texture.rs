@@ -31,7 +31,7 @@ impl From<image::ImageError> for ImageError {
     }
 }
 
-pub(super) struct Texture {
+pub struct Texture {
     id: u32,
     width: u32,
     height: u32,

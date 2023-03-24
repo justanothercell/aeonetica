@@ -73,3 +73,10 @@ pub fn type_to_id<T>() -> TypeId {
     debug_id::ID_TYPE_MAP.lock().unwrap().insert(id, type_name::<T>().to_string());
     id
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Either<A, B> {
+    Left(A),
+    Right(B)
+}
+
