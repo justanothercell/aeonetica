@@ -40,7 +40,7 @@ impl From<glfw::WindowEvent> for EventType {
     fn from(event: glfw::WindowEvent) -> Self {
         match event {
             glfw::WindowEvent::Pos(x, y) => Self::WindowMoved(x, y),
-            glfw::WindowEvent::Size(x, y) => Self::WindowResize(x, y),
+            glfw::WindowEvent::FramebufferSize(x, y) => Self::WindowResize(x, y),
             glfw::WindowEvent::Close => Self::WindowClose(),
             glfw::WindowEvent::Key(_, scancode, action, _) => match action {
                 glfw::Action::Release => Self::KeyReleased(scancode),

@@ -14,6 +14,8 @@ mod shader;
 use shader::*;
 mod texture;
 use texture::*;
+mod batch;
+use batch::*;
 
 pub(self) use aeonetica_engine::util::camera::Camera;
 
