@@ -57,6 +57,8 @@ mod debug_id {
 }
 #[cfg(not(debug_assertions))]
 mod debug_id {
+    use crate::Id;
+
     impl Id {
         pub fn info(&self) -> String {
             self.to_string()
