@@ -15,7 +15,7 @@ use shader::*;
 mod texture;
 use texture::*;
 
-pub(self) use aeonetica_engine::util::camera::Camera as Camera;
+pub(self) use aeonetica_engine::util::camera::Camera;
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -23,7 +23,6 @@ pub struct Renderer {
     shader: Option<Rc<Program>>,
     quad_vertex_array: VertexArray,
     white_texture: Texture,
-    default_shader: Rc<Program>,
 }
 
 impl Renderer {
@@ -62,7 +61,6 @@ impl Renderer {
             shader: Some(default_shader.clone()),
             white_texture,
             quad_vertex_array,
-            default_shader
         }
     }
 
