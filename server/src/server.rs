@@ -36,6 +36,11 @@ pub fn run(ip: &str) {
             engine.tick += 1;
         }
 
+        if time > 10_000_000_000 / TPS {
+            time -= 10_000_000_000;
+            log!("WARINING: running 10 ticks {}ms behind, skipping!", time / 1_000_000);
+        }
+
         time += t.elapsed().as_nanos() as usize;
     }
 }
