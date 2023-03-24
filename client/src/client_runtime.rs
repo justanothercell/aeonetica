@@ -13,7 +13,7 @@ use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
-use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult, SendMode};
+use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::util::unzip_archive;
@@ -217,7 +217,7 @@ impl ClientRuntime {
             let total_size = lmb.total_size;
             drop(lmb);
             total += total_size;
-            for i in (0..total_size).step_by(MAX_RAW_DATA_SIZE) {
+            for i in (0..total_size).step_by(MOD_DOWNLOAD_CHUNK_SIZE) {
                 let lm = lm.clone();
                 self.request_response(&ClientPacket {
                     client_id: self.client_id,

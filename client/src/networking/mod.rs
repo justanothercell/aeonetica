@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::io::{Read, Write};
 use std::net::{TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
@@ -13,7 +14,7 @@ pub mod messaging;
 
 pub(crate) struct NetworkClient {
     pub(crate) udp: UdpSocket,
-    pub(crate) tcp: TcpStream,
+    pub(crate) tcp: RefCell<TcpStream>,
     received: Arc<Mutex<Vec<ServerPacket>>>
 }
 
@@ -57,7 +58,7 @@ impl NetworkClient {
         });
         Ok(Self {
             udp,
-            tcp,
+            tcp: RefCell::new(tcp),
             received
         })
     }
@@ -70,28 +71,26 @@ impl NetworkClient {
 
     pub(crate) fn send(&self, packet: &ClientPacket, mode: SendMode) -> Result<(), AError>{
         let data = SerBin::serialize_bin(packet);
-        if data.len() > MAX_PACKET_SIZE {
-            return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
-        }
         match mode {
-            SendMode::Quick | SendMode::Safe => {
+            SendMode::Quick => {
+                if data.len() > MAX_PACKET_SIZE {
+                    return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
+                }
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send(&data[..]).map_err(|e| {
                     let e: AError = e.into();
                     e.log();
                 }));
             }
-            _ => {
-                let mut tcp = self.tcp.try_clone()?;
-                std::thread::spawn(move || {
-                    let _ = tcp.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
-                        let e: AError = e.into();
-                        e.log();
-                    });
-                    let _ = tcp.write_all(&data[..]).map_err(|e| {
-                        let e: AError = e.into();
-                        e.log();
-                    });
+            SendMode::Safe => {
+                let mut tcp = self.tcp.borrow_mut();
+                let _ = tcp.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
+                    let e: AError = e.into();
+                    e.log();
+                });
+                let _ = tcp.write_all(&data[..]).map_err(|e| {
+                    let e: AError = e.into();
+                    e.log();
                 });
             }
         }

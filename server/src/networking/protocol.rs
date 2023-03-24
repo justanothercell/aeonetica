@@ -7,7 +7,7 @@ use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
 use aeonetica_engine::{ENGINE_VERSION, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::{log, Id};
-use aeonetica_engine::networking::{MAX_RAW_DATA_SIZE, NetResult, SendMode};
+use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::sha2;
 use aeonetica_engine::sha2::Digest;
 use crate::ecs::Engine;
@@ -104,7 +104,7 @@ impl Engine {
                 let (name, path) = name_path.split_once(':').unwrap();
                 let client_path = format!("runtime/{path}/{name}_client.zip");
                 let mut file = File::open(client_path)?;
-                let mut buffer = [0;MAX_RAW_DATA_SIZE];
+                let mut buffer = [0;MOD_DOWNLOAD_CHUNK_SIZE];
                 file.seek(SeekFrom::Start(*offset))?;
                 let len = file.read(&mut buffer[..])?;
                 self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{

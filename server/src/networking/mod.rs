@@ -69,7 +69,6 @@ impl NetworkServer {
                         let mut size = [0u8;4];
                         stream.read_exact(&mut size).unwrap();
                         let size = u32::from_le_bytes(size);
-                        println!("received packet of size: {size}");
                         let mut buffer: Vec<u8> = vec![0;size as usize];
                         stream.read_exact(&mut buffer[..]).unwrap();
                         match DeBin::deserialize_bin(&buffer[..]) {
@@ -104,31 +103,28 @@ impl NetworkServer {
 
     pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), AError>{
         let data = SerBin::serialize_bin(packet);
-        if data.len() > MAX_PACKET_SIZE {
-            return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
-        }
         match mode {
-            SendMode::Quick | SendMode::Safe => {
+            SendMode::Quick => {
+                if data.len() > MAX_PACKET_SIZE {
+                    return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
+                }
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send_to(&data[..], ip_addr).map_err(|e| {
                     let e: AError = e.into();
                     e.log();
                 }));
             }
-            _ => {
-                let tcp = self.tcp.clone();
-                std::thread::spawn(move || {
-                    tcp.lock().unwrap().get_mut(&ip_addr).map(|stream| {
-                        let _ = stream.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
-                            let e: AError = e.into();
-                            e.log();
-                        });
-                        let _ = stream.write_all(&data[..]).map_err(|e| {
-                            let e: AError = e.into();
-                            e.log();
-                        });
-                    })
-                });
+            SendMode::Safe => {
+                if let Some(tcp) = self.tcp.lock().unwrap().get_mut(&ip_addr) {
+                    let _ = tcp.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
+                        let e: AError = e.into();
+                        e.log();
+                    });
+                    let _ = tcp.write_all(&data[..]).map_err(|e| {
+                        let e: AError = e.into();
+                        e.log();
+                    });
+                }
             }
         }
         Ok(())
