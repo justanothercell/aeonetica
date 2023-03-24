@@ -62,10 +62,22 @@ impl Window {
                     unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8).to_str().unwrap() }
                 );
 
-                let renderer = Renderer::new();
+                let mut renderer = Renderer::new();
                 let camera = Camera::new(0.0, window.get_size().0 as f32, window.get_size().1 as f32, 0.0, -1.0, 1.0);
                 let texture = Texture::load_from("assets/test_image.png")
                     .expect("Error loading image");
+
+                const RED_COLOR: [f32; 4] = [0.7, 0.2, 0.2, 1.0];
+                const BLUE_COLOR: [f32; 4] = [0.2, 0.2, 0.7, 1.0];
+        
+                let mut k = 0;
+                for i in -2..3 {
+                    for j in -2..3 {
+                        let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
+                        renderer.static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR });
+                        k += 1;
+                    }
+                }
 
                 Self {
                     glfw_handle: glfw,
@@ -111,18 +123,7 @@ impl Window {
 
         // render here
         self.renderer.begin_scene(&self.test_camera);
-
-        const RED_COLOR: (f32, f32, f32, f32) = (0.7, 0.2, 0.2, 1.0);
-        const BLUE_COLOR: (f32, f32, f32, f32) = (0.2, 0.2, 0.7, 1.0);
-
-        let mut k = 0;
-        for i in -2..3 {
-            for j in -2..3 {
-                let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
-                self.renderer.draw_quad(&pos, &(40.0, 40.0).into(), Either::Right(if k % 2 == 0 { &RED_COLOR } else { &BLUE_COLOR }));
-                k += 1;
-            }
-        }
+        self.renderer.draw_batch();
         self.renderer.end_scene();
 
         self.glfw_window.swap_buffers();

@@ -1,5 +1,7 @@
 use image::io::Reader as ImageReader;
 
+use super::RenderID;
+
 #[derive(Debug)]
 pub enum ImageError {
     Io(std::io::Error),
@@ -132,5 +134,9 @@ impl Texture {
 
     pub(super) fn bind(&self, slot: u32) {
         unsafe { gl::BindTextureUnit(slot, self.id); }
+    }
+
+    pub(super) fn id(&self) -> RenderID {
+        self.id
     }
 }

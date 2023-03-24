@@ -2,7 +2,7 @@ use super::*;
 
 pub struct VertexArray {
     id: RenderID,
-    vertex_buffers: Vec<Buffer>,
+    vertex_buffer: Option<Buffer>,
     index_buffer: Option<Buffer>,
 }
 
@@ -13,7 +13,7 @@ impl VertexArray {
         if vao != 0 {
             Some(Self {
                 id: vao,
-                vertex_buffers: vec![],
+                vertex_buffer: None,
                 index_buffer: None
             })
         }
@@ -34,7 +34,8 @@ impl VertexArray {
         self.id
     }
 
-    pub fn add_vertex_buffer(&mut self, buffer: Buffer) {
+    fn init_vertex_buffer(&mut self) {
+        let buffer = self.vertex_buffer.as_ref().unwrap();
         unsafe { gl::BindVertexArray(self.id) }
         buffer.bind();
 
@@ -57,7 +58,11 @@ impl VertexArray {
                 );
             }
         }
-        self.vertex_buffers.push(buffer);
+    }
+
+    pub fn set_vertex_buffer(&mut self, buffer: Buffer) {
+        self.vertex_buffer = Some(buffer);
+        self.init_vertex_buffer();
     }
 
     pub fn set_index_buffer(&mut self, buffer: Buffer) {
@@ -68,5 +73,41 @@ impl VertexArray {
 
     pub fn index_buffer(&self) -> &Option<Buffer> {
         &self.index_buffer
+    }
+
+    pub fn append(&mut self, vertices: Buffer, new_indices: &[i32]) {
+        if let Some(index_buffer) = &mut self.index_buffer {
+            let num_vertices = self.vertex_buffer.iter().map(|buffer| {
+                let num_bytes = buffer.num_bytes() as u32;
+                if let Some(layout) = buffer.layout() {
+                    num_bytes / layout.total_size()
+                }
+                else {
+                    buffer.count()
+                }
+            }).sum::<u32>();
+
+           // let mut indices = index_buffer.data::<i32>();
+            let indices = new_indices.iter().map(|i| *i + num_vertices as i32).collect::<Vec<_>>();
+            
+            index_buffer.grow(util::to_raw_byte_slice!(indices));
+            index_buffer.bind();
+        }
+        else {
+            let index_buffer = Buffer::new(BufferType::ElementArray, unsafe { std::slice::from_raw_parts(
+                new_indices.as_ptr() as *const u8,
+                new_indices.len() * std::mem::size_of::<i32>()
+            ) }, None)
+                .expect("Error creating index buffer");
+            self.index_buffer = Some(index_buffer);
+        }
+
+        if let Some(vertex_buffer) = &mut self.vertex_buffer {
+            vertex_buffer.concat(vertices);
+            self.init_vertex_buffer();
+        }
+        else {
+            self.set_vertex_buffer(vertices);
+        }
     }
 }
