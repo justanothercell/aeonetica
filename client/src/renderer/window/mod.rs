@@ -28,6 +28,9 @@ impl Window {
     pub(crate) fn new(full_screen: bool, context: Context) -> Self {
         match glfw::init(glfw::FAIL_ON_ERRORS) {
             Ok(mut glfw) => {
+                glfw.window_hint(WindowHint::ContextVersion(3, 3));
+                glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
+
                 let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {
                     glfw.create_window(
                     Self::DEFAULT_WINDOW_WIDTH,
@@ -47,7 +50,8 @@ impl Window {
                 gl::load_with(|s| glfw.get_proc_address_raw(s));
                 gl::Viewport::load_with(|s| glfw.get_proc_address_raw(s));
                 glfw.set_swap_interval(glfw::SwapInterval::None);
-                
+                window.set_framebuffer_size_polling(true);
+
                 log!(r#"
 ==== OpenGL info ====
   -> Vendor: {}
@@ -82,17 +86,20 @@ impl Window {
         for (_, event) in flush_messages(&self.event_receiver) {
             let event = events::Event::from_glfw(event);
 
-            if let events::EventType::WindowClose() = event.typ() {
-                self.glfw_window.set_should_close(true);
+            match event.typ() {
+                events::EventType::WindowClose() => self.glfw_window.set_should_close(true),
+                events::EventType::WindowResize(x, y) => unsafe {
+                    gl::Viewport(0, 0, *x, *y)
+                }
+                _ => ()
             }
 
             self.context.on_event(event);
         }
     }
 
-    pub(crate) fn render(&mut self, time: usize) {
+    pub(crate) fn render(&mut self, _time: usize) {
         unsafe {
-            gl::Viewport(0, 0, self.glfw_window.get_size().0, self.glfw_window.get_size().1);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
             gl::ClearColor(0.1, 0.1, 0.2, 0.0);
         }
