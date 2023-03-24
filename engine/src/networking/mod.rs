@@ -7,7 +7,7 @@ pub mod messaging;
 
 pub const MAX_PACKET_SIZE: usize = 25000;
 pub const MAX_RAW_DATA_SIZE: usize = MAX_PACKET_SIZE - 26;
-pub const MOD_DOWNLOAD_CHUNK_SIZE: usize = 10000;
+pub const MOD_DOWNLOAD_CHUNK_SIZE: usize = 65000;
 
 #[derive(Debug, SerBin, DeBin)]
 pub enum NetResult<T: Debug + SerBin + DeBin, E: Debug + SerBin + DeBin>{
