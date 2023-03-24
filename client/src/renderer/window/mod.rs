@@ -1,6 +1,6 @@
 pub mod events;
 
-use std::{sync::mpsc::Receiver, rc::Rc};
+use std::{sync::mpsc::Receiver, rc::Rc, time::{Instant, Duration}};
 
 use aeonetica_engine::{log, util::{matrix::Matrix4, vector::Vector2, Either}};
 use crate::{renderer::{context::Context, buffer::*, shader::*, util, Camera}};
@@ -14,6 +14,7 @@ pub(crate) struct Window {
     renderer: Renderer,
     test_camera: Camera,
     test_texture: Texture,
+
     context: Context
 }
 
@@ -39,12 +40,14 @@ impl Window {
                     }
                 )}).expect("Error creating GLFW window!");
 
+                
                 window.make_current();
                 window.set_key_polling(true);
-
+                
                 gl::load_with(|s| glfw.get_proc_address_raw(s));
                 gl::Viewport::load_with(|s| glfw.get_proc_address_raw(s));
-
+                glfw.set_swap_interval(glfw::SwapInterval::None);
+                
                 log!(r#"
 ==== OpenGL info ====
   -> Vendor: {}
@@ -87,7 +90,7 @@ impl Window {
         }
     }
 
-    pub(crate) fn render(&mut self) {
+    pub(crate) fn render(&mut self, time: usize) {
         unsafe {
             gl::Viewport(0, 0, self.glfw_window.get_size().0, self.glfw_window.get_size().1);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);

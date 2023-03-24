@@ -23,17 +23,27 @@ pub fn run(ip: &str, server_ip: &str) {
 
     let mut window = Window::new(false, Context::new());
     let mut time = 0;
+    let mut frames = 0;
+    let mut last_time = 0;
 
     while !window.should_close() {
-        window.render();
         let t = Instant::now();
+        window.render(time);
 
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")
         });
 
-        time += t.elapsed().as_nanos() as usize;
         window.poll_events();
+        
+        frames += 1;
+        time += t.elapsed().as_nanos() as usize;
+
+        if time - last_time >= 1_000_000_000 {
+            log!("fps: {}", frames);
+            last_time = time;
+            frames = 0;
+        }
     }
 
     log!("shutting down client after {time} ns");
