@@ -5,7 +5,7 @@ pub mod client_packets;
 pub mod server_packets;
 pub mod messaging;
 
-pub const MAX_PACKET_SIZE: usize = 1500;
+pub const MAX_PACKET_SIZE: usize = 15000;
 pub const MAX_RAW_DATA_SIZE: usize = MAX_PACKET_SIZE - 26;
 
 #[derive(Debug, SerBin, DeBin)]

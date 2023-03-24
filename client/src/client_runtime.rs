@@ -245,7 +245,7 @@ impl ClientRuntime {
                 //}
             }
         }
-
+        log!("(sent all mod download requests)");
         let mut p = 0.0;
         while self.state != ClientState::DownloadedMods {
             let packets = self.nc.borrow_mut().queued_packets();

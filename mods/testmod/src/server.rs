@@ -1,4 +1,5 @@
 use aeonetica_engine::{Id, log};
+use aeonetica_engine::networking::SendMode;
 use aeonetica_server::ecs::module::Module;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::events::ConnectionListener;
@@ -31,13 +32,13 @@ impl Module for MyModule {
                 log!("user joined: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.add_client(*user);
-                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user joined: {user}"));
+                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user joined: {user}"), SendMode::Safe);
             },
             |id, engine, user| {
                 log!("user left: {user}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
                 messenger.remove_client(user);
-                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user left: {user}"));
+                messenger.call_client_fn(MyClientHandle::receive_server_msg, format!("user left: {user}"), SendMode::Safe);
             }));
         log!("registered client loginout listener");
         engine.queue_task( |mut e: &mut Engine| {

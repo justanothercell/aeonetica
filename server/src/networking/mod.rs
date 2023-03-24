@@ -53,11 +53,14 @@ impl NetworkServer {
                     },
                     Err(_e) => {}
                 }
+                println!("received udp!");
             }
         });
         let listener = TcpListener::bind(addr)?;
+        listener.set_nonblocking(false).unwrap();
         std::thread::spawn(move || {
             for mut stream in listener.incoming().flatten() {
+                stream.set_nonblocking(false).unwrap();
                 let addr = stream.peer_addr().unwrap();
                 tcp.lock().unwrap().insert(addr, stream.try_clone().unwrap());
                 let recv_udp_inner = recv_udp.clone();
@@ -66,6 +69,7 @@ impl NetworkServer {
                         let mut size = [0u8;4];
                         stream.read_exact(&mut size).unwrap();
                         let size = u32::from_le_bytes(size);
+                        println!("received packet of size: {size}");
                         let mut buffer: Vec<u8> = vec![0;size as usize];
                         stream.read_exact(&mut buffer[..]).unwrap();
                         match DeBin::deserialize_bin(&buffer[..]) {
@@ -103,21 +107,26 @@ impl NetworkServer {
         if data.len() > MAX_PACKET_SIZE {
             return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
         }
-        let data = SerBin::serialize_bin(packet);
         match mode {
-            SendMode::Quick => {
+            SendMode::Quick | SendMode::Safe => {
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send_to(&data[..], ip_addr).map_err(|e| {
                     let e: AError = e.into();
                     e.log();
                 }));
             }
-            SendMode::Safe => {
-                let mut tcp = self.tcp.clone();
+            _ => {
+                let tcp = self.tcp.clone();
                 std::thread::spawn(move || {
                     tcp.lock().unwrap().get_mut(&ip_addr).map(|stream| {
-                        let _ = stream.write_all(&(data.len() as u32).to_le_bytes());
-                        let _ = stream.write_all(&data[..]);
+                        let _ = stream.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
+                            let e: AError = e.into();
+                            e.log();
+                        });
+                        let _ = stream.write_all(&data[..]).map_err(|e| {
+                            let e: AError = e.into();
+                            e.log();
+                        });
                     })
                 });
             }

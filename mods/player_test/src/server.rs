@@ -1,5 +1,6 @@
 use std::collections::{HashMap};
 use aeonetica_engine::{ClientId, EntityId, Id};
+use aeonetica_engine::networking::SendMode;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
@@ -55,7 +56,7 @@ impl Player {
         let player = engine.mut_module_of::<Self>(id).unwrap();
         player.pos = pos;
         let messenger = engine.mut_module_of::<Messenger>(id).unwrap();
-        messenger.call_client_fn(PlayerHandle::server_position_update, pos);
+        messenger.call_client_fn(PlayerHandle::server_position_update, pose, SendMode::Quick);
     }
 }
 
@@ -70,7 +71,7 @@ impl Module for Player {
         }
 
         // make this the owning player's controller
-        messenger.call_client_fn_for(PlayerHandle::set_owning, &engine.get_module_of::<Self>(id).unwrap().client_id, true);
+        messenger.call_client_fn_for(PlayerHandle::set_owning, &engine.get_module_of::<Self>(id).unwrap().client_id, true, SendMode::Safe);
 
         engine.get_entity(id).unwrap().add_module(ConnectionListener::new(|id, engine, client| {
             let m = engine.mut_module_of::<Messenger>(id).unwrap();
