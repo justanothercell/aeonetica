@@ -4,6 +4,7 @@ pub mod context;
 pub mod util;
 
 mod vertex_array;
+use core::num;
 use std::rc::Rc;
 
 use aeonetica_engine::util::{vector::Vector2, Either, matrix::Matrix4};
@@ -24,7 +25,7 @@ pub(self) type RenderID = gl::types::GLuint;
 pub struct Renderer {
     shader: Option<Rc<Program>>,
     white_texture: Texture,
-    batch: Batch
+    batches: Vec<Batch>
 }
 
 impl Renderer {
@@ -32,27 +33,6 @@ impl Renderer {
         let white_texture = Texture::create(1, 1)
             .expect("error creating white texture");
         white_texture.set_data(&[0xff, 0xff, 0xff, 0xff]);
-
-     /*   let mut quad_vertex_array = VertexArray::new()
-            .expect("error creating quad vertex array");
-
-        let layout = Vertices::build();
-        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
-        let vertices = Vertices::array([
-            ([-0.5, -0.5, 0.0], [0.0, 0.0]),
-            ([ 0.5, -0.5, 0.0], [1.0, 0.0]),
-            ([ 0.5,  0.5, 0.0], [1.0, 1.0]),
-            ([-0.5,  0.5, 0.0], [0.0, 1.0])
-        ]);
-        
-        let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(layout))
-            .expect("Error creating Vertex Buffer");
-        quad_vertex_array.add_vertex_buffer(vertex_buffer);
-
-        let indices = [ 0, 1, 2, 2, 3, 0 ];
-        let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(indices), None)
-            .expect("Error creating Index Buffer");
-        quad_vertex_array.set_index_buffer(index_buffer); */
         
         let shader_src = include_str!("../../assets/test_shader.glsl");
         let default_shader = Rc::new(Program::from_source(shader_src)
@@ -62,7 +42,7 @@ impl Renderer {
         Self {
             shader: Some(default_shader.clone()),
             white_texture,
-            batch: Batch::new().expect("error creating render batch")
+            batches: vec![],
         }
     }
 
@@ -93,21 +73,27 @@ impl Renderer {
     }
 
     pub fn end_scene(&self) {
+        self.shader.as_ref().map(|shader| shader.unbind());
     }
 
-    pub fn draw_batch(&self) {
-        self.white_texture.bind(0);
-        let vao = self.batch.vao();
-        vao.bind();
-        
-        self.draw_vertex_array(vao);
+    pub fn draw_vertices(&self) {
+        self.batches.iter().for_each(|batch| batch.draw_vertices());
     }
 
-    pub fn draw_vertex_array(&self, vao: &VertexArray) { 
-        unsafe {
-            let num_indices = vao.index_buffer().as_ref().unwrap().count() as i32;
-            gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, std::ptr::null())
+    pub fn add_vertices(&mut self, vertices: &[u8], layout: &Rc<BufferLayout>, indices: &[u32]) {
+        let num_indices = indices.len() as u32;
+        let mut batch = self.batches
+            .iter_mut()
+            .filter(|buffer| buffer.has_space_for(&layout, num_indices))
+            .nth(0);
+
+        if batch.is_none() {
+            self.batches.push(Batch::new(layout.clone()).expect("Error creating new render batch"));
+            batch = self.batches.last_mut();
         }
+
+        let batch = batch.unwrap();
+        batch.add_vertices(vertices, indices);
     }
 
     pub fn static_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, color: [f32; 4]) {
@@ -122,10 +108,7 @@ impl Renderer {
             ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], color)
         ]);
 
-        let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(layout))
-            .expect("Error creating Vertex Buffer");
-
-        let indices = [ 0, 1, 2, 2, 3, 0 ];
-        self.batch.add_vertices(vertex_buffer, &indices);
+        let indices = [0, 1, 2, 2, 3, 0];
+        self.add_vertices(util::to_raw_byte_slice!(vertices), &Rc::new(layout), &indices);
     }
-}
+} 

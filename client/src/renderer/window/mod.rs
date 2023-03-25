@@ -1,11 +1,11 @@
 pub mod events;
 
-use std::{sync::mpsc::Receiver, rc::Rc, time::{Instant, Duration}};
+use std::sync::mpsc::Receiver;
 
-use aeonetica_engine::{log, util::{matrix::Matrix4, vector::Vector2, Either}};
-use crate::{renderer::{context::Context, buffer::*, shader::*, util, Camera}};
+use aeonetica_engine::{log, util::{vector::Vector2}};
+use crate::{renderer::{context::Context, Camera}};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
-use super::{Renderer, vertex_array::VertexArray, texture::Texture};
+use super::{Renderer, texture::Texture};
 
 pub(crate) struct Window {
     glfw_handle: Glfw,
@@ -123,7 +123,7 @@ impl Window {
 
         // render here
         self.renderer.begin_scene(&self.test_camera);
-        self.renderer.draw_batch();
+        self.renderer.draw_vertices();
         self.renderer.end_scene();
 
         self.glfw_window.swap_buffers();
