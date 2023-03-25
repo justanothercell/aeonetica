@@ -4,11 +4,9 @@ pub mod context;
 pub mod util;
 
 mod vertex_array;
-use core::num;
 use std::rc::Rc;
 
-use aeonetica_engine::util::{vector::Vector2, Either, matrix::Matrix4};
-use vertex_array::*;
+use aeonetica_engine::util::vector::Vector2;
 mod buffer;
 use buffer::*;
 mod shader;

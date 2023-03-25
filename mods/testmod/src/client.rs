@@ -11,6 +11,7 @@ use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_client::renderer::layer::Layer;
+use aeonetica_client::renderer::window::OpenGlContextProvider;
 use crate::server::MyModule;
 use std::rc::Rc;
 
@@ -28,7 +29,8 @@ impl ClientMod for TestModClient {
         handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle { }));
     }
 
-    fn init_context(&self, context: &mut aeonetica_client::renderer::context::Context) {
+    fn init_context(&self, context: &mut aeonetica_client::renderer::context::Context, gl_context_provider: &OpenGlContextProvider) {
+        gl_context_provider.make_context();
         context.push(Rc::new(TestLayer::instantiate()));
     }
 }

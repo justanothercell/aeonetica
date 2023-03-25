@@ -1,15 +1,37 @@
 pub mod events;
 
-use std::sync::mpsc::Receiver;
+use std::{sync::mpsc::Receiver, collections::HashMap};
 
 use aeonetica_engine::log;
 use crate::renderer::context::Context;
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 
+pub struct OpenGlContextProvider(HashMap<&'static str, GLProc>);
+
+impl OpenGlContextProvider {
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    fn insert(&mut self, name: &'static str, ptr: GLProc) -> GLProc {
+        self.0.insert(name, ptr);
+        ptr
+    }
+
+    fn get(&self, name: &str) -> GLProc {
+        *self.0.get(name).unwrap_or(&std::ptr::null())
+    }
+
+    pub fn make_context(&self) {
+        gl::load_with(|s| self.get(s));
+    }
+}
+
 pub(crate) struct Window {
     glfw_handle: Glfw,
     glfw_window: GlfwWindow,
     event_receiver: Receiver<(f64, WindowEvent)>,
+    context_provider: OpenGlContextProvider
 }
 
 impl Window {
@@ -38,8 +60,9 @@ impl Window {
                 window.make_current();
                 window.set_key_polling(true);
                 
-                gl::load_with(|s| glfw.get_proc_address_raw(s));
-                gl::Viewport::load_with(|s| glfw.get_proc_address_raw(s));
+                let mut context_provider = OpenGlContextProvider::new();
+
+                gl::load_with(|s| context_provider.insert(s, glfw.get_proc_address_raw(s)));
                 glfw.set_swap_interval(glfw::SwapInterval::None);
                 window.set_framebuffer_size_polling(true);
 
@@ -57,6 +80,7 @@ impl Window {
                     glfw_handle: glfw,
                     glfw_window: window,
                     event_receiver: events,
+                    context_provider
                 }
             },
             Err(err) => panic!("Error creating window: {err}!") 
@@ -92,5 +116,9 @@ impl Window {
 
     pub(crate) fn should_close(&self) -> bool {
         self.glfw_window.should_close()
+    }
+
+    pub(crate) fn context_provider(&self) -> &OpenGlContextProvider {
+        &self.context_provider
     }
 }

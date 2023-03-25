@@ -28,7 +28,7 @@ pub fn run(ip: &str, server_ip: &str) {
 
     let mut context = Context::new();
     client.loaded_mods.iter()
-        .for_each(|loaded_mod| loaded_mod.client_mod.init_context(&mut context));
+        .for_each(|loaded_mod| loaded_mod.client_mod.init_context(&mut context, window.context_provider()));
 
     while !window.should_close() {
         let t = Instant::now();
