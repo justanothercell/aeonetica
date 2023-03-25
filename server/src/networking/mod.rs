@@ -108,7 +108,7 @@ impl NetworkServer {
                     return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
                 }
                 let sock = self.udp.try_clone()?;
-                std::thread::spawn(move || sock.send_to(&data[..], ip_addr);
+                std::thread::spawn(move || sock.send_to(&data[..], ip_addr));
             }
             SendMode::Safe => {
                 if let Some(tcp) = self.tcp.lock().unwrap().get_mut(&ip_addr) {
