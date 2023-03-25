@@ -14,11 +14,11 @@ use aeonetica_client::renderer::layer::Layer;
 use crate::server::MyModule;
 use std::rc::Rc;
 
-pub struct CoreModClient {
+pub struct TestModClient {
 
 }
 
-impl ClientMod for CoreModClient {
+impl ClientMod for TestModClient {
     fn init(&mut self, _flags: &Vec<String>) {
         log!("hello from client testmod!");
     }

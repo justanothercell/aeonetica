@@ -8,7 +8,7 @@ use aeonetica_server::ecs::scheduling::WaitFor;
 use aeonetica_server::{ServerMod, yield_task};
 use crate::client::MyClientHandle;
 
-pub struct CoreModServer {
+pub struct TestModServer {
 
 }
 
@@ -60,12 +60,12 @@ impl MyModule {
     }
 }
 
-impl ServerMod for CoreModServer {
+impl ServerMod for TestModServer {
     fn init(&mut self, _flags: &Vec<String>) {
         log!("hello from server testmod init!");
     }
     fn start(&mut self, engine: &mut Engine) {
-        log!("server core start");
+        log!("server test start");
         let id = engine.new_entity();
         engine.mut_entity(&id).unwrap().add_module(MyModule {});
     }
