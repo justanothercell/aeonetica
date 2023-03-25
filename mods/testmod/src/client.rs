@@ -7,11 +7,11 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::type_to_id;
 use crate::server::MyModule;
 
-pub struct CoreModClient {
+pub struct TestModClient {
 
 }
 
-impl ClientMod for CoreModClient {
+impl ClientMod for TestModClient {
     fn init(&mut self, _flags: &Vec<String>) {
         log!("hello from client testmod!")
     }
