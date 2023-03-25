@@ -62,7 +62,6 @@ impl From<glfw::WindowEvent> for EventType {
 #[derive(Debug)]
 pub struct Event {
     event_type: EventType,
-    handled: bool
 }
 
 impl From<EventType> for Event {
@@ -75,21 +74,12 @@ impl Event {
     pub fn new(event_type: EventType) -> Self {
         Self {
             event_type,
-            handled: false
         }
     }
 
     pub fn typ(&self) -> &EventType {
         &self.event_type
     } 
-
-    pub fn handled(&self) -> bool {
-        self.handled
-    }
-
-    pub fn set_handled(&mut self) {
-        self.handled = true;
-    }
 
     pub(super) fn from_glfw(event: glfw::WindowEvent) -> Self {
         Self::new(event.into())

@@ -24,7 +24,7 @@ impl Batch {
 
         let index_buffer = Buffer::new_sized(
             BufferType::ElementArray,
-            Self::MAX_BATCH_INDEX_COUNT as isize * std::mem::size_of::<i32>() as isize,
+            Self::MAX_BATCH_INDEX_COUNT as isize * std::mem::size_of::<u32>() as isize,
             None,
             BufferUsage::DYNAMIC
         )?;

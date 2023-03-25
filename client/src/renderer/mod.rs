@@ -24,16 +24,11 @@ pub(self) type RenderID = gl::types::GLuint;
 
 pub struct Renderer {
     shader: Option<Rc<Program>>,
-    white_texture: Texture,
     batches: Vec<Batch>
 }
 
 impl Renderer {
     pub fn new() -> Self {
-        let white_texture = Texture::create(1, 1)
-            .expect("error creating white texture");
-        white_texture.set_data(&[0xff, 0xff, 0xff, 0xff]);
-        
         let shader_src = include_str!("../../assets/test_shader.glsl");
         let default_shader = Rc::new(Program::from_source(shader_src)
             .unwrap_or_else(|err| panic!("Error loading shader: {err}")));
@@ -41,7 +36,6 @@ impl Renderer {
 
         Self {
             shader: Some(default_shader.clone()),
-            white_texture,
             batches: vec![],
         }
     }

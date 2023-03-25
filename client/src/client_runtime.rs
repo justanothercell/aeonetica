@@ -16,6 +16,7 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
+use crate::renderer::context::Context;
 use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -97,7 +98,7 @@ impl ClientRuntime {
             registered_handles: Default::default(),
             handles: Default::default(),
             loaded_mods: vec![],
-            state: ClientState::Start
+            state: ClientState::Start,
         };
         let mod_list = client.register()?;
         let timeout_socket = client.nc.borrow().udp.try_clone()?;
@@ -118,7 +119,9 @@ impl ClientRuntime {
         });
         log!("started timeout preventer");
         let _ = client.download_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
+
         let _ = client.enable_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
+
         log!("finished client creation");
         Ok(client)
     }

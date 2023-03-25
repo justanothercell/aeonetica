@@ -21,20 +21,24 @@ pub fn run(ip: &str, server_ip: &str) {
 
     log!("sent login");
 
-    let mut window = Window::new(false, Context::new());
+    let mut window = Window::new(false);
     let mut time = 0;
     let mut frames = 0;
     let mut last_time = 0;
 
+    let mut context = Context::new();
+    client.loaded_mods.iter()
+        .for_each(|loaded_mod| loaded_mod.client_mod.init_context(&mut context));
+
     while !window.should_close() {
         let t = Instant::now();
-        window.render(time);
+        window.render(&mut context);
 
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")
         });
 
-        window.poll_events();
+        window.poll_events(&mut context);
         
         frames += 1;
         time += t.elapsed().as_nanos() as usize;

@@ -1,5 +1,7 @@
 use std::{rc::Rc};
 
+use aeonetica_engine::log;
+
 use crate::{
     renderer::window::events::Event,
     renderer::layer::Layer
@@ -24,38 +26,43 @@ impl LayerStack {
     }
 
     fn push_overlay(&mut self, layer: Rc<impl Layer + 'static>) {
-        self.layers.push(layer);
+        self.layers.insert(self.insert_index, layer);
     }
 }
 
-pub(crate) struct Context {
-    running: bool,
+pub struct Context {
     layer_stack: LayerStack,
 }
 
 impl Context {
     pub(crate) fn new() -> Self {
         Self {
-            running: false,
             layer_stack: LayerStack::new(),
         }
     }
 
-    pub(crate) fn push(&mut self, layer: Rc<impl Layer + 'static>) {
+    pub fn push(&mut self, layer: Rc<impl Layer + 'static>) {
         layer.on_attach();
-        self.layer_stack.push(layer);
+        if layer.is_overlay() {
+            self.layer_stack.push_overlay(layer);
+        }
+        else {
+            self.layer_stack.push(layer);
+        }
     }
 
     pub(crate) fn on_event(&mut self, event: Event) {
-        println!("Event {event:?}");
+        for layer in self.layer_stack.layers.iter().rev() {
+            let handled = layer.on_event(&event);
+            if handled {
+                return;
+            }
+        }
+
+        log!("Unhandled Event: {event:?}");
     }
 
     pub(crate) fn on_update(&mut self) {
-
-    }
-
-    fn on_window_close(&mut self) -> bool {
-        self.running = false;
-        true
+        self.layer_stack.layers.iter().for_each(|layer| layer.on_update());
     }
 }
