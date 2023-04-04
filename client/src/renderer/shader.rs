@@ -38,14 +38,15 @@ impl Uniform for Texture {
     }
 }
 
-pub(super) enum ShaderType {
+pub enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize
 }
 
+#[derive(Clone)]
 pub struct Shader(RenderID);
 impl Shader {
-    pub(super) fn from_source(ty: ShaderType, source: &str) -> Result<Self, String> {
+    pub fn from_source(ty: ShaderType, source: &str) -> Result<Self, String> {
         let id = Self::new(ty)
             .ok_or_else(|| "Couldn't allocate new shader".to_string())?;
         
@@ -114,6 +115,7 @@ impl Shader {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct Program(RenderID);
 impl Program {
     pub(super) fn new() -> Option<Self> {

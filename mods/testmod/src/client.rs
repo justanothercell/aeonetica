@@ -12,6 +12,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_client::renderer::layer::Layer;
 use aeonetica_client::renderer::window::OpenGlContextProvider;
+use aeonetica_client::renderer::shader;
 use crate::server::MyModule;
 use std::rc::Rc;
 
@@ -68,6 +69,7 @@ impl MyClientHandle {
 struct TestLayer {
     renderer: RefCell<Renderer>,
     camera: RefCell<Camera>,
+    shader: shader::Program
 }
 
 impl TestLayer {
@@ -78,7 +80,8 @@ impl Layer for TestLayer {
     fn instantiate() -> Self {
         Self {
             renderer: RefCell::new(Renderer::new()),
-            camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0))
+            camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
+            shader: shader::Program::from_source(include_str!("../assets/test_shader.glsl")).expect("error loading shader")
         }
     }
 
@@ -92,7 +95,7 @@ impl Layer for TestLayer {
         for i in -2..3 {
             for j in -2..3 {
                 let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
-                self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR });
+                self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR }, self.shader.clone());
                 k += 1;
             }
         }
@@ -103,8 +106,8 @@ impl Layer for TestLayer {
     }
 
     fn on_update(&self) {
-        let renderer = self.renderer.borrow();
-        renderer.begin_scene(&self.camera.borrow());
+        let mut renderer = self.renderer.borrow_mut();
+        renderer.begin_scene(&*self.camera.borrow());
         renderer.draw_vertices();
         renderer.end_scene();
     }

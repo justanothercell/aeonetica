@@ -1,6 +1,5 @@
 use aeonetica_engine::log;
 use client::client::run;
-
 fn main() {
     // nc -u 127.0.01 6090
     // cargo run -- 127.0.0.1:9000 127.0.0.1:6090

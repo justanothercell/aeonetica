@@ -1,9 +1,11 @@
+use std::rc::Rc;
 use std::time::{Instant};
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use crate::client_runtime::ClientRuntime;
 use crate::renderer::context::Context;
+use crate::renderer::layer::Layer;
 use crate::renderer::window::Window;
 
 pub fn run(ip: &str, server_ip: &str) {

@@ -26,7 +26,6 @@ impl OpenGlContextProvider {
         gl::load_with(|s| self.get(s));
     }
 }
-
 pub(crate) struct Window {
     glfw_handle: Glfw,
     glfw_window: GlfwWindow,
