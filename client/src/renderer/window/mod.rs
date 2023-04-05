@@ -166,6 +166,13 @@ impl Window {
         self.framebuffer.texture().bind(0);
         post_processing_shader.upload_uniform("u_Frame", &0);
 
+        context.post_processing_layer()
+            .as_ref()
+            .map(|layer| layer.uniforms())
+            .unwrap_or(&[])
+            .iter()
+            .for_each(|(name, data)| post_processing_shader.upload_uniform(name, *data));
+
         self.framebuffer_vao.bind();
 
         unsafe {

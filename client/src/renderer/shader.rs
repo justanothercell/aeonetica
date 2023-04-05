@@ -178,7 +178,7 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    pub(super) fn upload_uniform(&self, name: &str, data: &impl Uniform) {
+    pub(super) fn upload_uniform<U: Uniform + ?Sized>(&self, name: &str, data: &U) {
         unsafe {
             let c_str = CString::new(name).unwrap();
             let location = gl::GetUniformLocation(self.0, c_str.as_ptr() as *const i8);
