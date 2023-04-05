@@ -38,6 +38,12 @@ impl Uniform for Texture {
     }
 }
 
+impl Uniform for &[i32] {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform1iv(location, self.len() as i32, self.as_ptr()) }
+    }
+}
+
 pub enum ShaderType {
     Vertex = gl::VERTEX_SHADER as isize,
     Fragment = gl::FRAGMENT_SHADER as isize

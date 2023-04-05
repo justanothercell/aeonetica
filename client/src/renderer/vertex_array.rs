@@ -24,8 +24,6 @@ impl VertexArray {
 
     pub fn bind(&self) {
         unsafe { gl::BindVertexArray(self.id) }
-        self.vertex_buffer.as_ref().unwrap().bind();
-        self.index_buffer.as_ref().unwrap().bind();
     }
 
     pub fn unbind(&self) {
@@ -83,5 +81,15 @@ impl VertexArray {
 
     pub fn index_buffer_mut(&mut self) -> &mut Option<Buffer> {
         &mut self.index_buffer
+    }
+
+    pub fn draw(&self) {
+        unsafe { gl::DrawElements(gl::TRIANGLES, self.index_buffer.as_ref().unwrap().count() as i32, gl::UNSIGNED_INT, std::ptr::null()); }
+    }
+
+    pub fn delete(self) {
+        unsafe { gl::DeleteVertexArrays(1, &self.id); }
+        self.index_buffer.map(|ibo| ibo.delete());
+        self.vertex_buffer.map(|vbo| vbo.delete());
     }
 }

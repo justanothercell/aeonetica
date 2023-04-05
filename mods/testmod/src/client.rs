@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use aeonetica_client::ClientMod;
 use aeonetica_client::renderer::Renderer;
+use aeonetica_client::renderer::postprocessing::PostProcessingLayer;
 use aeonetica_engine::util::camera::Camera;
 use aeonetica_client::renderer::window::events::{Event, EventType};
 use aeonetica_engine::util::vector::Vector2;
@@ -13,6 +14,7 @@ use aeonetica_engine::util::type_to_id;
 use aeonetica_client::renderer::layer::Layer;
 use aeonetica_client::renderer::window::OpenGlContextProvider;
 use aeonetica_client::renderer::shader;
+use aeonetica_client::renderer::texture::Texture;
 use crate::server::MyModule;
 use std::rc::Rc;
 
@@ -32,7 +34,9 @@ impl ClientMod for TestModClient {
 
     fn init_context(&self, context: &mut aeonetica_client::renderer::context::Context, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
-        context.push(Rc::new(TestLayer::instantiate()));
+        let test_layer = Rc::new(TestLayer::instantiate());
+        context.push(test_layer.clone());
+        context.set_post_processing_layer(test_layer);
     }
 }
 
@@ -69,11 +73,22 @@ impl MyClientHandle {
 struct TestLayer {
     renderer: RefCell<Renderer>,
     camera: RefCell<Camera>,
-    shader: shader::Program
+    shader: shader::Program,
+    post_processing_shader: shader::Program,
+    texture: Texture,
 }
 
 impl TestLayer {
     const TEST_SCREEN_WIDTH: f32 = 500.0;
+}
+
+impl PostProcessingLayer for TestLayer {
+    fn on_attach(&self) {}
+    fn on_detach(&self) {}
+
+    fn shader(&self) -> &shader::Program {
+        &self.post_processing_shader
+    }
 }
 
 impl Layer for TestLayer {
@@ -81,7 +96,9 @@ impl Layer for TestLayer {
         Self {
             renderer: RefCell::new(Renderer::new()),
             camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
-            shader: shader::Program::from_source(include_str!("../assets/test_shader.glsl")).expect("error loading shader")
+            shader: shader::Program::from_source(include_str!("../assets/test_shader.glsl")).expect("error loading shader"),
+            texture: Texture::from_bytes(include_bytes!("../assets/test_image.png")).expect("error loading texture"),
+            post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader")
         }
     }
 

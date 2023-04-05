@@ -2,6 +2,8 @@ pub mod window;
 pub mod layer;
 pub mod context;
 pub mod util;
+pub mod postprocessing;
+pub mod framebuffer;
 
 mod vertex_array;
 use std::rc::Rc;
@@ -11,7 +13,7 @@ mod buffer;
 use buffer::*;
 pub mod shader;
 use shader::*;
-mod texture;
+pub mod texture;
 use texture::*;
 mod batch;
 use batch::*;
@@ -100,5 +102,25 @@ impl Renderer {
 
         let indices = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&VertexData::new(util::to_raw_byte_slice!(vertices), indices.as_slice(), Rc::new(layout), shader));
+    }
+
+    pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: TextureID, shader: Program) {
+        let half_size = size / Vector2::new(2.0, 2.0);
+
+        let layout = Vertices::build();
+        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
+        let vertices = Vertices::array([
+            ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [-1.0, -1.0]),
+            ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, -1.0]),
+            ([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0]),
+            ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [-1.0, 1.0])
+        ]);
+
+        let indices = [0, 1, 2, 2, 3, 0];
+        self.add_vertices(&VertexData::new_textured(
+            util::to_raw_byte_slice!(vertices),
+            indices.as_slice(),
+            Rc::new(layout), shader, texture)
+        );
     }
 } 

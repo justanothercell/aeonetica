@@ -1,16 +1,20 @@
-use std::rc::Rc;
+use std::{rc::Rc, collections::HashSet};
 
-use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader, Renderer};
+use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader, Renderer, texture::TextureID};
 
 pub(super) struct Batch {
     layout: Rc<BufferLayout>,
     vertex_array: VertexArray,
-    shader: shader::Program
+    shader: shader::Program,
+    textures: HashSet<TextureID>
 }
 
 impl Batch {
     const MAX_BATCH_VERTEX_COUNT: u32 = 1024;
     const MAX_BATCH_INDEX_COUNT: u32 = 1024;
+
+    const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
+    const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();
 
     pub fn new(data: &VertexData) -> Option<Batch> {
         let mut vertex_array = VertexArray::new()?;
@@ -34,7 +38,8 @@ impl Batch {
         Some(Self {
             layout: data.layout().clone(),
             vertex_array,
-            shader: data.shader()
+            shader: data.shader(),
+            textures: HashSet::new()
         })
     }
 
@@ -79,15 +84,34 @@ impl Batch {
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
-        if renderer.shader().as_ref().filter(|s| s == &&self.shader).is_none() {
-            renderer.unload_shader();
-            renderer.load_shader(self.shader.clone());
+        //    if renderer.shader().as_ref().filter(|s| s == &&self.shader).is_none() {
+        //        renderer.unload_shader();
+        // FIXME: only load shaders if needed
+        renderer.load_shader(self.shader.clone());
+        //  }
+
+        for (slot, texture) in self.textures.iter().enumerate() {
+            unsafe {
+                gl::ActiveTexture(gl::TEXTURE0 + slot as u32);
+                gl::BindTexture(gl::TEXTURE_2D, *texture);
+            }
+        }
+        if !self.textures.is_empty() {
+            self.shader.upload_uniform("u_Textures", &Self::TEXTURE_SLOTS.as_slice())
         }
 
         self.vertex_array.bind();
         let num_indices = self.vertex_array.index_buffer().as_ref().unwrap().count() as i32;
         unsafe {
             gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, std::ptr::null());
+        }
+
+        self.vertex_array.unbind();
+        for slot in 0..self.textures.len() {
+            unsafe {
+                gl::ActiveTexture(gl::TEXTURE0 + slot as u32);
+                gl::BindTexture(gl::TEXTURE_2D, 0);
+            }
         }
     }
 }

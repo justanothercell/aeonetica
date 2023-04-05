@@ -7,6 +7,8 @@ use crate::{
     renderer::layer::Layer
 };
 
+use super::postprocessing::PostProcessingLayer;
+
 struct LayerStack {
     layers: Vec<Rc<dyn Layer>>,
     insert_index: usize
@@ -32,12 +34,14 @@ impl LayerStack {
 
 pub struct Context {
     layer_stack: LayerStack,
+    post_processing_layer: Option<Rc<dyn PostProcessingLayer>>
 }
 
 impl Context {
     pub(crate) fn new() -> Self {
         Self {
             layer_stack: LayerStack::new(),
+            post_processing_layer: None
         }
     }
 
@@ -64,5 +68,24 @@ impl Context {
 
     pub(crate) fn on_update(&mut self) {
         self.layer_stack.layers.iter().for_each(|layer| layer.on_update());
+    }
+
+    pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
+        self.post_processing_layer = Some(post_processing_layer);
+    }
+
+    pub fn unset_post_processing_layer(&mut self) {
+        self.post_processing_layer = None;
+    }
+
+    pub(crate) fn post_processing_layer(&self) -> &Option<Rc<dyn PostProcessingLayer>> {
+        &self.post_processing_layer
+    }
+
+    pub(crate) fn finish(self) {
+        for layer in self.layer_stack.layers.iter() {
+            layer.on_detach();
+        }
+        self.post_processing_layer.map(|layer| layer.on_detach());
     }
 }

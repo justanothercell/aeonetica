@@ -53,4 +53,6 @@ pub fn run(ip: &str, server_ip: &str) {
     }
 
     log!("shutting down client after {time} ns");
+    context.finish();
+    window.finish();
 }

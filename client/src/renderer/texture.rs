@@ -1,6 +1,6 @@
-use image::io::Reader as ImageReader;
+use image::{io::Reader as ImageReader, DynamicImage};
 
-use super::RenderID;
+pub type TextureID = super::RenderID;
 
 #[derive(Debug)]
 pub enum ImageError {
@@ -42,11 +42,23 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub(super) fn load_from(img_path: &str) -> Result<Self, ImageError> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ImageError> {
+        let cursor = std::io::Cursor::new(bytes);
+        let img = ImageReader::new(cursor)
+            .with_guessed_format()?
+            .decode()?
+            .flipv();
+        Self::load(img)
+    }
+
+    pub fn from_file(img_path: &str) -> Result<Self, ImageError> {
         let img = ImageReader::open(img_path)?
             .decode()?
             .flipv();
-        
+        Self::load(img)
+    }
+
+    fn load(img: DynamicImage) -> Result<Self, ImageError> {
         let mut t = Self {
             id: 0,
             width: img.width(),
@@ -86,33 +98,29 @@ impl Texture {
         Ok(t)
     }
 
-    pub(super) fn create(width: u32, height: u32) -> Result<Self, ImageError> {
+    pub fn create(width: u32, height: u32) -> Self {
         let mut t = Self {
             id: 0,
             width,
             height,
-            internal_format: gl::RGBA8,
-            data_format: gl::RGBA
+            internal_format: gl::RGB,
+            data_format: gl::RGB
         };
 
         unsafe {
-            gl::CreateTextures(gl::TEXTURE_2D, 1, &mut t.id);
-            if t.id == 0 {
-                return Err(ImageError::OpenGL());
-            }
-            gl::TextureStorage2D(t.id, 1, t.internal_format, t.width as i32, t.height as i32);
+            gl::GenTextures(1, &mut t.id);
+            gl::BindTexture(gl::TEXTURE_2D, t.id);
+            
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 
-            gl::TextureParameteri(t.id, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-            gl::TextureParameteri(t.id, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
-
-            gl::TextureParameteri(t.id, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
-            gl::TextureParameteri(t.id, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, width as i32, height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, std::ptr::null());
         }
 
-        Ok(t)
+        t
     }
 
-    pub(super) fn set_data(&self, data: &[u8]) {
+    pub fn set_data(&self, data: &[u8]) {
         let bytes_per_pixel = match self.data_format {
             gl::RGBA => 4,
             gl::RGB => 3,
@@ -132,11 +140,15 @@ impl Texture {
         }
     }
 
-    pub(super) fn bind(&self, slot: u32) {
+    pub fn bind(&self, slot: u32) {
         unsafe { gl::BindTextureUnit(slot, self.id); }
     }
 
-    pub(super) fn id(&self) -> RenderID {
+    pub fn id(&self) -> TextureID {
         self.id
+    }
+
+    pub fn delete(self) {
+        unsafe { gl::DeleteTextures(1, &self.id); }
     }
 }
