@@ -250,7 +250,8 @@ pub(super) enum ShaderDataType {
     Int2 = gl::INT_VEC2 as isize,
     Int3 = gl::INT_VEC3 as isize,
     Int4 = gl::INT_VEC4 as isize,
-    Bool = gl::BOOL as isize
+    Bool = gl::BOOL as isize,
+    Sampler2D = gl::SAMPLER_2D as isize,
 }
 
 impl ShaderDataType {
@@ -267,13 +268,14 @@ impl ShaderDataType {
             Self::Int2 => size_of::<GLint>() * 2,
             Self::Int3 => size_of::<GLint>() * 3,
             Self::Int4 => size_of::<GLint>() * 4,
-            Self::Bool => size_of::<GLboolean>()
+            Self::Bool => size_of::<GLboolean>(),
+            Self::Sampler2D => size_of::<GLuint>(),
         }) as u32
     }
 
     pub(super) const fn component_count(&self) -> i32 {
         match self {
-            Self::Float | Self::Int | Self::Bool => 1,
+            Self::Float | Self::Int | Self::Bool | Self::Sampler2D => 1,
             Self::Float2 | Self::Int2 => 2,
             Self::Float3 | Self::Int3 => 3,
             Self::Float4 | Self::Int4 => 4,
@@ -285,7 +287,7 @@ impl ShaderDataType {
     pub(super) const fn base_type(&self) -> gl::types::GLenum {
         match self {
             Self::Float | Self::Float2 | Self::Float3 | Self::Float4 | Self::Mat3 | Self::Mat4 => gl::FLOAT,
-            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 => gl::INT,
+            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 | Self::Sampler2D => gl::INT,
             Self::Bool => gl::BOOL
         }
     }
@@ -337,6 +339,10 @@ impl IntoShaderDataType for Vector2<f32> {
 
 impl IntoShaderDataType for bool {
     const DATA_TYPE: ShaderDataType = ShaderDataType::Bool;
+}
+
+impl IntoShaderDataType for Sampler2D {
+    const DATA_TYPE: ShaderDataType = ShaderDataType::Sampler2D;
 }
 
 pub(super) trait ShaderLayoutType {

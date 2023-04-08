@@ -16,12 +16,6 @@ impl FrameBuffer {
             let texture = Texture::create(width, height);
             gl::BindTexture(gl::TEXTURE_2D, 0);
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture.id(), 0); 
-        
-          //  gl::TexImage2D(
-          //      gl::TEXTURE_2D, 0, gl::DEPTH24_STENCIL8 as i32, width as i32, height as i32, 0, gl::DEPTH_STENCIL, gl::UNSIGNED_INT_24_8, std::ptr::null()
-          //  );
-//
-          //  gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::TEXTURE_2D, texture.id(), 0);
 
             let mut rbo_id = 0;
             gl::GenRenderbuffers(1, &mut rbo_id);

@@ -28,6 +28,10 @@ impl ShaderLayoutType for Color {
     type Type = [f32; 4];
 }
 
+pub struct TextureID;
+impl ShaderLayoutType for TextureID {
+    type Type = Sampler2D;
+}
 
 pub(super) trait Layout {
     type Type;
@@ -163,6 +167,10 @@ impl BufferElement {
             offset: 0,
             normalized: false
         }
+    }
+
+    pub(super) fn typ(&self) -> ShaderDataType {
+        self.typ
     }
 
     pub(super) fn size(&self) -> u32 {
