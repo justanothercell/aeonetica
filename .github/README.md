@@ -1,6 +1,6 @@
 # Aeonetica Engine
 
-<img src="../assets/logo_banner.png" alt="aeonetica logo" style="width: 510px; image-rendering: pixelated">
+<img src="../assets/logo_banner_upscaled_x10.png" alt="aeonetica logo" style="width: 510px; image-rendering: pixelated">
 
 2D multiplayer moddable game engine with server side ECS
 
