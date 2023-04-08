@@ -1,4 +1,4 @@
-use aeonetica_engine::{Id, log};
+use aeonetica_engine::{EntityId, Id, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_server::ecs::module::Module;
 use aeonetica_server::ecs::Engine;
@@ -20,7 +20,7 @@ impl Module for MyModule {
     fn init(&mut self) where Self: Sized {
         log!("mymodule initialized");
     }
-    fn start(id: &Id, engine: &mut Engine) where Self: Sized {
+    fn start(id: &EntityId, engine: &mut Engine) where Self: Sized {
         log!("mymodule started. entity id: {id:?}");
         log!("registering messenger");
         engine.mut_entity(id).unwrap().add_module(Messenger::new::<MyClientHandle>());

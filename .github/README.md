@@ -6,7 +6,7 @@
 
 ### [Documentation](docs/README.md)
 
-<br>
+<img src="img/random_screenshot.png" width="510" alt="aeonetica logo" style="image-rendering: pixelated">
 
 ---
 
