@@ -1,5 +1,7 @@
 # Hello world: Running an example mod
 
+###### [Back to Home](README.md)
+
 This page explains how to set up a mod and includes a small example.
 Step 4 and later can be changed, the process here is only for demonstrational purposes.
 
