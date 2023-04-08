@@ -1,5 +1,8 @@
-# Mini introduction
+# Aeonetica Engine
+2D multiplayer moddable game engine with server side ECS
+
 ### [Documentation](docs/README.md)
+
 ### crates
 - [client](../client): client executable, web client, client loop, graphics, etc
 - [server](../server): server executable, web server, server game loop
@@ -12,19 +15,16 @@
 - start server with args specified in [main](../server/src/main.rs)
 - start client with args specified in [main](../client/src/main.rs)
 
----
-# Big Projects:
-- ECS
-- getting a screen & client side rendering
----
 # TODO/Fixes:
+- [x] ECS
+- getting a screen & client side rendering
 - [x] clean up client mod loading
-- [ ] cleanup of error handling
+- [x] cleanup of error handling
   - [x] client side
-  - [ ] server side
+  - [x] server side
 - [x] utility functions that return the path to a lib (and have platform appropriate ending)
 - [ ] checking whether all mods are valid after loading by checking for files and checking which platforms are supported
-- [ ] better mod build script using probably python, make it platform  generic
+- [x] better mod build script using probably python, make it platform  generic
 
 ---
 # ECS (see thoughts below)

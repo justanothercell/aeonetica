@@ -2,8 +2,11 @@
 
 ###### [Back to Home](README.md)
 
-This page explains how to set up a mod and includes a small example.
-Step 4 and later can be changed, the process here is only for demonstrational purposes.
+This page explains how to set up an example mod and run the server/client.
+
+A mod consists of two sides, a client and a server side.
+The client side code get automatically downloaded when the client is first
+launched or when changes are detected.
 
 _TODO: Project template generator (maybe using cargo generate, maybe using custom python script)_
 
@@ -39,36 +42,36 @@ aeonetica_server = { package="server", git="https://github.com/DragonFighter603/
 - `client.rs` (client side code)
 
 ## 5. Template Implementation:
-Replace `<ModName>` with the name of your mod:
+Replace `ExampleMod` with the name of your mod:
 
-`lib.rs`
+`lib.rs`: Registering the client and server side mod structs
 ```rs
 use aeonetica_engine::register;
 
 pub mod client;
 pub mod server;
 
-register!(client::<ModName>Client{}, server::<ModName>Server{});
+register!(client::ExampleModClient{}, server::ExampleModServer{});
 ```
-`client.rs`
+`client.rs`: The client side code
 ```rs
 use aeonetica_client::ClientMod;
 
-pub struct <ModName>Client {}
+pub struct ExampleModClient {}
 
-impl ClientMod for <ModName>Client {
+impl ClientMod for ExampleModClient {
     fn init(&mut self, _flags: &Vec<String>) {
         log!("hello from client!")
     }
 }
 ```
-`server.rs`
+`server.rs`: The server side code
 ```rs
 use aeonetica_server::ServerMod;
 
-pub struct <ModName>Server {}
+pub struct <ExampleMod>Server {}
 
-impl ServerMod for <ModName>Server {
+impl ServerMod for ExampleModServer {
     fn init(&mut self, _flags: &Vec<String>) {
         log!("hello from server!");
     }
