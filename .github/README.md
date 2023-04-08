@@ -1,10 +1,10 @@
 <div align="center">
 
-<h1>Aeonetica Engine</h1>
-
 ![](../assets/logo_banner_upscaled_x10.png)
 
-### [Documentation](docs/README.md)
+<h1>The Aeonetica Muliplayer Game Engine</h1>
+
+##### [📑Documentation](docs/README.md)
 
 </div>
 
