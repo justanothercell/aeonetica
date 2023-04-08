@@ -1,4 +1,5 @@
 # Mini introduction
+### [Documentation](docs/README.md)
 ### crates
 - [client](../client): client executable, web client, client loop, graphics, etc
 - [server](../server): server executable, web server, server game loop
