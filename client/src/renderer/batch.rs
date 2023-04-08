@@ -1,12 +1,12 @@
 use std::{rc::Rc, collections::HashSet};
 
-use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader, Renderer, texture::TextureID};
+use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader::{self, ShaderDataType}, Renderer};
 
 pub(super) struct Batch {
     layout: Rc<BufferLayout>,
     vertex_array: VertexArray,
     shader: shader::Program,
-    textures: HashSet<TextureID>
+    textures: Vec<RenderID>
 }
 
 impl Batch {
@@ -39,7 +39,7 @@ impl Batch {
             layout: data.layout().clone(),
             vertex_array,
             shader: data.shader(),
-            textures: HashSet::new()
+            textures: vec![]
         })
     }
 
@@ -47,10 +47,21 @@ impl Batch {
         self.vertex_array.vertex_buffer().as_ref().unwrap().count() < Self::MAX_BATCH_VERTEX_COUNT &&
         self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() <= Self::MAX_BATCH_INDEX_COUNT &&
         self.shader == data.shader() &&
-        self.layout.eq(data.layout())
+        self.layout.eq(data.layout()) &&
+        if let Some(t) = data.texture { self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS } else { true } 
     }
 
-    pub fn add_vertices(&mut self, data: &VertexData) {
+    pub fn add_vertices(&mut self, data: &mut VertexData) {
+        if let Some(tex_id) = data.texture {
+            let index = self.textures.iter().position(|id| *id == tex_id)
+                .unwrap_or_else(|| {
+                    self.textures.push(tex_id);
+                    self.textures.len() - 1
+                });
+
+            data.patch_texture_id(index as u32);
+        }
+
         let num_new_vertices = data.num_vertices();
 
         let vertex_buffer = self.vertex_array.vertex_buffer_mut().as_mut().unwrap();
@@ -118,7 +129,7 @@ impl Batch {
 
 #[derive(Clone)]
 pub struct VertexData<'a> {
-    vertices: &'a[u8],
+    vertices: Vec<u8>,
     indices: &'a[u32],
     layout: Rc<BufferLayout>,
     shader: shader::Program,
@@ -126,7 +137,7 @@ pub struct VertexData<'a> {
 }
 
 impl<'a> VertexData<'a> {
-    pub fn new(vertices: &'a[u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program) -> Self {
+    pub fn new(vertices: Vec<u8>, indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program) -> Self {
         Self {
             vertices,
             indices,
@@ -136,7 +147,7 @@ impl<'a> VertexData<'a> {
         }
     }
 
-    pub fn new_textured(vertices: &'a[u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, texture: RenderID) -> Self {
+    pub fn new_textured(vertices: Vec<u8>, indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, texture: RenderID) -> Self {
         Self {
             vertices,
             indices,
@@ -158,8 +169,8 @@ impl<'a> VertexData<'a> {
         &self.layout
     }
 
-    pub fn vertices(&self) -> &'a[u8] {
-        self.vertices
+    pub fn vertices(&self) -> &Vec<u8> {
+        &self.vertices
     }
 
     pub fn num_vertices(&self) -> u32 {
@@ -172,5 +183,15 @@ impl<'a> VertexData<'a> {
 
     pub fn shader(&self) -> shader::Program {
         self.shader.clone()
+    }
+
+    fn patch_texture_id(&mut self, slot: u32) {
+        let slot_bytes = slot.to_le_bytes();
+        for element in self.layout.elements().iter().filter(|e| e.typ() == ShaderDataType::Sampler2D) {
+            for i in 0..self.num_vertices() {
+                let pos = (self.layout.stride() * i + element.offset()) as usize;
+                (0..slot_bytes.len()).for_each(|i| self.vertices[i + pos] = slot_bytes[i]);
+            }
+        }
     }
 }

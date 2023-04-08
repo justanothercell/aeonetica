@@ -1,6 +1,9 @@
 use image::{io::Reader as ImageReader, DynamicImage};
 
-pub type TextureID = super::RenderID;
+use super::RenderID;
+
+#[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Sampler2D(pub i32);
 
 #[derive(Debug)]
 pub enum ImageError {
@@ -34,7 +37,7 @@ impl From<image::ImageError> for ImageError {
 }
 
 pub struct Texture {
-    id: u32,
+    id: RenderID,
     width: u32,
     height: u32,
     internal_format: gl::types::GLenum,
@@ -46,15 +49,15 @@ impl Texture {
         let cursor = std::io::Cursor::new(bytes);
         let img = ImageReader::new(cursor)
             .with_guessed_format()?
-            .decode()?
-            .flipv();
+            .decode()?;
+         //   .flipv();
         Self::load(img)
     }
 
     pub fn from_file(img_path: &str) -> Result<Self, ImageError> {
         let img = ImageReader::open(img_path)?
-            .decode()?
-            .flipv();
+            .decode()?;
+          //  .flipv();
         Self::load(img)
     }
 
@@ -144,7 +147,7 @@ impl Texture {
         unsafe { gl::BindTextureUnit(slot, self.id); }
     }
 
-    pub fn id(&self) -> TextureID {
+    pub fn id(&self) -> RenderID {
         self.id
     }
 

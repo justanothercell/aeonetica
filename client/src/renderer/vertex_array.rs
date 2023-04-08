@@ -24,10 +24,16 @@ impl VertexArray {
 
     pub fn bind(&self) {
         unsafe { gl::BindVertexArray(self.id) }
+        if let Some(layout) = self.vertex_buffer.as_ref().map(|buffer| buffer.layout().to_owned()).flatten() {
+            (0..layout.elements().len()).for_each(|i| unsafe { gl::EnableVertexAttribArray(i as u32) })
+        } 
     }
 
     pub fn unbind(&self) {
         unsafe { gl::BindVertexArray(0) }
+        if let Some(layout) = self.vertex_buffer.as_ref().map(|buffer| buffer.layout().to_owned()).flatten() {
+            (0..layout.elements().len()).for_each(|i| unsafe { gl::DisableVertexAttribArray(i as u32) })
+        }
     }
 
     pub fn id(&self) -> RenderID {
@@ -48,7 +54,6 @@ impl VertexArray {
         let stride = layout.stride();
         for (i, element) in layout.elements().iter().enumerate() {
             unsafe {
-                gl::EnableVertexAttribArray(i as u32);
                 gl::VertexAttribPointer(
                     i as u32, 
                     element.component_count(), 
@@ -57,6 +62,7 @@ impl VertexArray {
                     stride as i32,
                     element.offset() as *const _
                 );
+                gl::EnableVertexAttribArray(i as u32);       
             }
         }
     }

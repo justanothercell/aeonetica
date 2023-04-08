@@ -20,4 +20,12 @@ macro_rules! to_raw_byte_slice {
         unsafe { std::slice::from_raw_parts($value.as_ptr().cast(), std::mem::size_of_val(&$value)) }
     };
 }
-pub(crate) use to_raw_byte_slice;
+pub use to_raw_byte_slice;
+
+#[macro_export]
+macro_rules! to_raw_byte_vec {
+    ($value:expr) => {
+        unsafe { std::slice::from_raw_parts($value.as_ptr().cast(), std::mem::size_of_val(&$value)) }.to_owned()
+    }
+}
+pub use to_raw_byte_vec;
