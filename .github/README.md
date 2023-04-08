@@ -8,6 +8,15 @@
 
 </div>
 
+[![License](https://img.shields.io/github/license/DragonFIghter603/aeonetica?style=flat-square)](https://github.com/DragonFIghter603/aeonetica/blob/main/LICENSE)
+[![Issues](https://img.shields.io/github/issues/DragonFIghter603/aeonetica?style=flat-square)](https://github.com/DragonFIghter603/aeonetica/issues)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/DragonFIghter603/aeonetica?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-linux%20|%20windows-blueviolet?style=flat-square)
+[![Stars](https://img.shields.io/github/stars/DragonFIghter603/aeonetica?style=flat-square)](https://github.com/DragonFIghter603/aeonetica/stargazers)
+[![Forks](https://img.shields.io/github/forks/DragonFIghter603/aeonetica?style=flat-square)](https://github.com/DragonFIghter603/aeonetica/network/members)
+![GitHub repo size](https://img.shields.io/github/repo-size/DragonFIghter603/aeonetica?style=flat-square)
+![Lines of code](https://raster.shields.io/tokei/lines/github/DragonFIghter603/aeonetica?style=flat-square)
+
 ---
 
 2D multiplayer moddable game engine with server side ECS
