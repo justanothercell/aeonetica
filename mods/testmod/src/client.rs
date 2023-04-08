@@ -77,6 +77,7 @@ struct TestLayer {
     texture_shader: shader::Program,
     post_processing_shader: shader::Program,
     texture: Texture,
+    texture2: Texture,
 }
 
 impl TestLayer {
@@ -100,6 +101,7 @@ impl Layer for TestLayer {
             shader: shader::Program::from_source(include_str!("../assets/test_shader.glsl")).expect("error loading shader"),
             texture_shader: shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader"),
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
+            texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader")
         }
     }
@@ -114,11 +116,8 @@ impl Layer for TestLayer {
         for i in -2..3 {
             for j in -2..3 {
                 let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
-                match k % 2 {
-                    0 => self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR }, self.shader.clone()),
-                    1 => self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), self.texture.id(), self.texture_shader.clone()),
-                    _ => ()
-                }
+                //self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR }, self.shader.clone()),
+                self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { self.texture.id() } else { self.texture2.id() }, self.texture_shader.clone());
                 k += 1;
             }
         }

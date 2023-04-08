@@ -3,7 +3,7 @@ use image::{io::Reader as ImageReader, DynamicImage};
 use super::RenderID;
 
 #[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Sampler2D(pub i32);
+pub struct Sampler2D(pub u32);
 
 #[derive(Debug)]
 pub enum ImageError {

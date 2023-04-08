@@ -8,7 +8,7 @@ pub mod framebuffer;
 mod vertex_array;
 use std::rc::Rc;
 
-use aeonetica_engine::util::{vector::Vector2, matrix::Matrix4};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, log};
 mod buffer;
 use buffer::*;
 pub mod shader;
@@ -108,17 +108,18 @@ impl Renderer {
         let half_size = size / Vector2::new(2.0, 2.0);
 
         let layout = Vertices::build();
-        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
+        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
         let vertices = Vertices::array([
-            ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0]),
-            ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0]),
-            ([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0]),
-            ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0])
+            ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
+            ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),
+            ([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0], Sampler2D(0)),
+            ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0], Sampler2D(0))
         ]);
 
+        let data = util::to_raw_byte_vec!(vertices);
         let indices = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&mut VertexData::new_textured(
-            util::to_raw_byte_vec!(vertices),
+            data,
             indices.as_slice(),
             Rc::new(layout), shader, texture)
         );
