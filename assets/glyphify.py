@@ -17,7 +17,14 @@ if len(sys.argv) < 2:
     print('usage: scriptify.py <text>')
     exit()
     
-text = ' '.join(sys.argv[1:]).lower().replace('\\n', '\n')
+text = ' '.join(sys.argv[1:]).lower()
+
+with open('genesis.txt.txt') as g:
+    text = g.read().lower()
+
+text = text.replace('\n', '\\')
+
+text = text.replace(':', '').replace(',', '').replace('.', '').replace(';', '').replace(':', '').replace('"', '');
 
 text = text.replace('q', 'c').replace('qu', '[CW]').replace('k', 'c').replace('v', 'w') \
            .replace('z', 's').replace('x', '[CS]').replace('y', 'i')
@@ -33,7 +40,7 @@ for c in text:
     out = out.replace('th', '[TH]').replace('te', '[TE]').replace('in', '[IN]') \
              .replace('er', '[ER]').replace('re', '[RE]').replace('an', '[AN]') \
              .replace('ed', '[ED]').replace('nd', '[ND]').replace('on', '[ON]') \
-             .replace('en', '[en]').replace('rt', '[RT]').replace('ou', '[OU]') \
+             .replace('en', '[EN]').replace('rt', '[RT]').replace('ou', '[OU]') \
              .replace('ha', '[HA]').replace('to', '[TO]').replace('or', '[OR]') \
              .replace('it', '[IT]').replace('is', '[IS]').replace('hi', '[HI]') \
              .replace('es', '[ES]').replace('ng', '[NG]')
@@ -52,20 +59,20 @@ glyphs_pos = {
     '[ED]': (1, 2), '[ND]': (1, 3), '[ON]': (1, 4), '[EN]': (1, 5), '[AT]': (1, 6), '[OU]': (1, 7),
     '[HA]': (2, 2), '[TO]': (2, 3), '[OR]': (2, 4), '[IT]': (2, 5), '[IS]': (2, 6), '[HI]': (2, 7),
     '[ES]': (3, 2), '[NG]': (3, 3), '[CS]': (3, 4), '[CW]': (3, 5),
-    '[THE]': (4, 2), '[AND]': (4, 3), 'ING': (4, 4)
+    '[THE]': (4, 2), '[AND]': (4, 3), '[ING]': (4, 4)
 }
 
-rows_len = re.sub(r'\[.*?\]', 'x', out).split('\n')
+rows_len = re.sub(r'\[.*?\]', 'x', out).split('\\')
 
 max_w = max([len(r) for r in rows_len])
 h = len(rows_len)
 
-outimg = np.zeros((h * 9, max_w * 9, 3), dtype=np.uint8)
+outimg = np.zeros((h * 9 + 1, int(max_w * 0.7) * 9 + 1, 3), dtype=np.uint8)
 
 x = 0
 y = 0
 
-for item in re.findall(r'\[[^\]]*\]|.', out.replace('\n', '\\')):
+for item in re.findall(r'\[[^\]]*\]|.', out):
     p = glyphs_pos.get(item)
     mdx = 0
     if p is not None:
@@ -73,7 +80,7 @@ for item in re.findall(r'\[[^\]]*\]|.', out.replace('\n', '\\')):
             for dy in range(9):
                 if sum(glyphs[p[1] * 9 + dy][p[0] * 9  + dx]) > 0:
                     mdx = dx
-                outimg[y + dy][x + dx] = glyphs[p[1] * 9  + dy][p[0] * 9  + dx]
+                outimg[y + dy + 1][x + dx + 1] = glyphs[p[1] * 9  + dy][p[0] * 9  + dx]
     else:
         mdx = 5
     x += mdx + 1
@@ -83,3 +90,6 @@ for item in re.findall(r'\[[^\]]*\]|.', out.replace('\n', '\\')):
 
 im = Image.fromarray(outimg, mode='RGB')
 im.save('generated.png')
+
+im.resize((im.width * 64, im.height * 64), resample=Image.NEAREST)
+im.save('generated_x64.png')
