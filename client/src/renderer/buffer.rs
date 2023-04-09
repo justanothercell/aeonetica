@@ -3,13 +3,17 @@ use std::marker::PhantomData;
 use super::*;
 
 macro_rules! shader_tuple_impls {
-    ($($name:ident)+) => {
+    ($($name: ident)+, $tuple_struct: ident) => {
         impl<$($name: ShaderLayoutType),+> Layout for ($($name,)+) {
-            type Type = ($($name::Type,)+);
+            type Type = $tuple_struct<$($name::Type,)+>;
             fn layout() -> Vec<ShaderDataType> {
                 vec![$($name::Type::DATA_TYPE,)+]
             }
         }
+
+        #[repr(C)]
+        #[allow(unused)]
+        pub(super) struct $tuple_struct<$($name: IntoShaderDataType),+>($(pub(super) $name,)+);
     };
 }
 
@@ -238,15 +242,74 @@ impl BufferLayout {
     }
 }
 
-shader_tuple_impls! { A }
-shader_tuple_impls! { A B }
-shader_tuple_impls! { A B C }
-shader_tuple_impls! { A B C D }
-shader_tuple_impls! { A B C D E }
-shader_tuple_impls! { A B C D E F }
-shader_tuple_impls! { A B C D E F G }
-shader_tuple_impls! { A B C D E F G H }
-shader_tuple_impls! { A B C D E F G H I }
-shader_tuple_impls! { A B C D E F G H I J }
-shader_tuple_impls! { A B C D E F G H I J K }
-shader_tuple_impls! { A B C D E F G H I J K L }
+
+shader_tuple_impls! { A, VertexTuple1 }
+shader_tuple_impls! { A B, VertexTuple2 }
+shader_tuple_impls! { A B C, VertexTuple3 }
+shader_tuple_impls! { A B C D, VertexTuple4 }
+shader_tuple_impls! { A B C D E, VertexTuple5 }
+shader_tuple_impls! { A B C D E F, VertexTuple6 }
+shader_tuple_impls! { A B C D E F G, VertexTuple7 }
+shader_tuple_impls! { A B C D E F G H, VertexTuple8 }
+shader_tuple_impls! { A B C D E F G H I, VertexTuple9 }
+shader_tuple_impls! { A B C D E F G H I J, VertexTuple10 }
+shader_tuple_impls! { A B C D E F G H I J K, VertexTuple11 }
+shader_tuple_impls! { A B C D E F G H I J K L, VertexTuple12 }
+shader_tuple_impls! { A B C D E F G H I J K L M, VertexTuple13 }
+shader_tuple_impls! { A B C D E F G H I J K L M N, VertexTuple14 }
+shader_tuple_impls! { A B C D E F G H I J K L M N O, VertexTuple15 }
+shader_tuple_impls! { A B C D E F G H I J K L M N O P, VertexTuple16 }
+
+#[macro_export]
+macro_rules! vertex {
+    ($a: expr) => {
+        $crate::renderer::buffer::VertexTuple1($a)
+    };
+    ($a: expr, $b: expr) => {
+        $crate::renderer::buffer::VertexTuple2($a, $b)
+    };
+    ($a: expr, $b: expr, $c: expr) => {
+        $crate::renderer::buffer::VertexTuple3($a, $b, $c)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr) => {
+        $crate::renderer::buffer::VertexTuple4($a, $b, $c, $d)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr) => {
+        $crate::renderer::buffer::VertexTuple5($a, $b, $c, $d, $e)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr) => {
+        $crate::renderer::buffer::VertexTuple6($a, $b, $c, $d, $e, $f)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr) => {
+        $crate::renderer::buffer::VertexTuple7($a, $b, $c, $d, $e, $f, $g)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr) => {
+        $crate::renderer::buffer::VertexTuple8($a, $b, $c, $d, $e, $f, $g, $h)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr) => {
+        $crate::renderer::buffer::VertexTuple9($a, $b, $c, $d, $e, $f, $g, $h, $i)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr) => {
+        $crate::renderer::buffer::VertexTuple10($a, $b, $c, $d, $e, $f, $g, $h, $i, $j)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr) => {
+        $crate::renderer::buffer::VertexTuple11($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr, $l: expr) => {
+        $crate::renderer::buffer::VertexTuple12($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr, $l: expr, $m: expr) => {
+        $crate::renderer::buffer::VertexTuple13($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr, $l: expr, $m: expr, $n: expr) => {
+        $crate::renderer::buffer::VertexTuple14($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m, $n)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr, $l: expr, $m: expr, $n: expr, $o: expr) => {
+        $crate::renderer::buffer::VertexTuple15($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m, $n, $o)
+    };
+    ($a: expr, $b: expr, $c: expr, $d: expr, $e: expr, $f: expr, $g: expr, $h: expr, $i: expr, $j: expr, $k: expr, $l: expr, $m: expr, $n: expr, $o: expr, $p: expr) => {
+        $crate::renderer::buffer::VertexTuple16($a, $b, $c, $d, $e, $f, $g, $h, $i, $j, $k, $l, $m, $n, $o, $p)
+    };
+}
+
+pub use vertex;

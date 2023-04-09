@@ -93,10 +93,10 @@ impl Window {
                 type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
                 let layout = Vertices::build();
                 let vertices = Vertices::array([
-                    ([-1.0, -1.0, 0.0], [0.0, 0.0]),
-                    ([1.0,  -1.0, 0.0], [1.0, 0.0]),
-                    ([1.0,  1.0,  0.0], [1.0, 1.0]),
-                    ([-1.0, 1.0,  0.0], [0.0, 1.0])
+                    vertex!([-1.0, -1.0, 0.0], [0.0, 0.0]),
+                    vertex!([1.0,  -1.0, 0.0], [1.0, 0.0]),
+                    vertex!([1.0,  1.0,  0.0], [1.0, 1.0]),
+                    vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
                 ]);
                 
                 let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(Rc::new(layout)), BufferUsage::STATIC)

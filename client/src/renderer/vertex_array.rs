@@ -55,7 +55,13 @@ impl VertexArray {
         for (i, element) in layout.elements().iter().enumerate() {
             unsafe {
                 gl::EnableVertexAttribArray(i as u32);       
-                log!("attrib array {i}:\n\tsize: {}\n\ttype: {}\n\tnormalized: {}\n\tstride: {}\n\tpointer: {}", element.component_count(), element.base_type(), element.normalized(), stride, element.offset());
+                log!("attrib array {i}:\n\tcomp_count: {}\n\tsize: {}\n\ttype: {}\n\tnormalized: {}\n\tstride: {}\n\toffset: {}",
+                    element.component_count(),
+                    element.typ().size(),
+                    element.base_type(),
+                    element.normalized(),
+                    stride,
+                    element.offset());
                 gl::VertexAttribPointer(
                     i as u32, 
                     element.component_count(), 

@@ -92,10 +92,10 @@ impl Renderer {
         let layout = Vertices::build();
         type Vertices = BufferLayoutBuilder<(Vertex, Color)>;
         let vertices = Vertices::array([
-            ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], color),
-            ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], color),
-            ([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], color),
-            ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], color)
+            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], color),
+            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], color),
+            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], color),
+            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], color)
         ]);
 
         let indices = [0, 1, 2, 2, 3, 0];
@@ -110,11 +110,13 @@ impl Renderer {
         let layout = Vertices::build();
 
         let vertices = Vertices::array([
-            ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
-            ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),
-            ([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0], Sampler2D(0)),
-            ([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0], Sampler2D(0))
+            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
+            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),
+            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0], Sampler2D(0)),
+            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0], Sampler2D(0))
         ]);
+
+        let size = std::mem::size_of_val(&vertices);
 
         let data = util::to_raw_byte_vec!(vertices);
         let indices = [0, 1, 2, 2, 3, 0];
