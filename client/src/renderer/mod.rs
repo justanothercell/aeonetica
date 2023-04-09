@@ -74,11 +74,9 @@ impl Renderer {
         );
     }
 
-    pub fn add_vertices<'a>(&mut self, data: &mut VertexData<'a>) {
+    pub fn add_vertices(&mut self, data: &mut VertexData) {
         let mut batch = self.batches
-            .iter_mut()
-            .filter(|buffer| buffer.has_space_for(data))
-            .nth(0);
+            .iter_mut().find(|buffer| buffer.has_space_for(data));
 
         if batch.is_none() {
             self.batches.push(Batch::new(data).expect("Error creating new render batch"));
@@ -107,8 +105,10 @@ impl Renderer {
     pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: RenderID, shader: Program) {
         let half_size = size / Vector2::new(2.0, 2.0);
 
-        let layout = Vertices::build();
         type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
+
+        let layout = Vertices::build();
+
         let vertices = Vertices::array([
             ([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
             ([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),

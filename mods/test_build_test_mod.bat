@@ -1,0 +1,1 @@
+py build.py -w testmod -d ../server/mods
