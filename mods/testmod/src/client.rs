@@ -173,7 +173,7 @@ impl Layer for TestLayer {
         log!("TestLayer detached!");
     }
 
-    fn on_update(&self) {
+    fn on_update(&self, _delta_time: usize) {
         let mut renderer = self.renderer.borrow_mut();
         renderer.begin_scene(&*self.camera.borrow());
         renderer.draw_vertices();

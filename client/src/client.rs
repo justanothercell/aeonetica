@@ -26,7 +26,8 @@ pub fn run(ip: &str, server_ip: &str) {
     let mut window = Window::new(false);
     let mut time = 0;
     let mut frames = 0;
-    let mut last_time = 0;
+    let mut last_full_sec = 0;
+    let mut delta_time = 0;
 
     let mut context = Context::new();
     client.loaded_mods.iter()
@@ -34,7 +35,8 @@ pub fn run(ip: &str, server_ip: &str) {
 
     while !window.should_close() {
         let t = Instant::now();
-        window.render(&mut context);
+
+        window.render(&mut context, delta_time);
 
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")
@@ -42,12 +44,14 @@ pub fn run(ip: &str, server_ip: &str) {
 
         window.poll_events(&mut context);
         
+        delta_time = t.elapsed().as_nanos() as usize;
+        time += delta_time;
+        
         frames += 1;
-        time += t.elapsed().as_nanos() as usize;
 
-        if time - last_time >= 1_000_000_000 {
+        if time - last_full_sec >= 1_000_000_000 {
             log!("fps: {}", frames);
-            last_time = time;
+            last_full_sec = time;
             frames = 0;
         }
     }

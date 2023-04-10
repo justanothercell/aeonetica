@@ -141,7 +141,7 @@ impl Window {
         }
     }
 
-    pub(crate) fn render(&mut self, context: &mut Context) {
+    pub(crate) fn render(&mut self, context: &mut Context, delta_time: usize) {
         // main frame rendering
         self.framebuffer.bind();
         
@@ -152,7 +152,7 @@ impl Window {
             gl::Enable(gl::DEPTH_TEST);
         }
 
-        context.on_update();
+        context.on_update(delta_time);
 
         self.framebuffer.unbind();
         unsafe {

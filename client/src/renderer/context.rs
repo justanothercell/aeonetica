@@ -66,8 +66,8 @@ impl Context {
         log!("Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_update(&mut self) {
-        self.layer_stack.layers.iter().for_each(|layer| layer.on_update());
+    pub(crate) fn on_update(&mut self, delta_time: usize) {
+        self.layer_stack.layers.iter().for_each(|layer| layer.on_update(delta_time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
