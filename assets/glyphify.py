@@ -19,14 +19,14 @@ if len(sys.argv) < 2:
     
 text = ' '.join(sys.argv[1:]).lower()
 
-with open('genesis.txt.txt') as g:
-    text = g.read().lower()
+#with open('genesis.txt.txt') as g:
+#    text = g.read().lower()
 
 text = text.replace('\n', '\\')
 
 text = text.replace(':', '').replace(',', '').replace('.', '').replace(';', '').replace(':', '').replace('"', '');
 
-text = text.replace('q', 'c').replace('qu', '[CW]').replace('k', 'c').replace('v', 'w') \
+text = text.replace('q', 'c').replace('qu', '[CW]').replace('ck', 'c').replace('k', 'c').replace('v', 'w') \
            .replace('z', 's').replace('x', '[CS]').replace('y', 'i')
            
 text = text.replace('cs', '[CS]').replace('cw', '[CW]')
@@ -67,7 +67,7 @@ rows_len = re.sub(r'\[.*?\]', 'x', out).split('\\')
 max_w = max([len(r) for r in rows_len])
 h = len(rows_len)
 
-outimg = np.zeros((h * 9 + 1, int(max_w * 0.7) * 9 + 1, 3), dtype=np.uint8)
+outimg = np.zeros((h * 9 + 1, int(max_w * 1) * 9 + 1, 3), dtype=np.uint8)
 
 x = 0
 y = 0
@@ -91,5 +91,4 @@ for item in re.findall(r'\[[^\]]*\]|.', out):
 im = Image.fromarray(outimg, mode='RGB')
 im.save('generated.png')
 
-im.resize((im.width * 64, im.height * 64), resample=Image.NEAREST)
-im.save('generated_x64.png')
+im.resize((im.width * 16, im.height * 16), resample=Image.NEAREST).save('generated_x16.png')
