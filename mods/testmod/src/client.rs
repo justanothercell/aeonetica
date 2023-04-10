@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use aeonetica_client::ClientMod;
 use aeonetica_client::renderer::Renderer;
 use aeonetica_client::renderer::postprocessing::PostProcessingLayer;
+use aeonetica_client::renderer::sprite_sheet::SpriteSheet;
 use aeonetica_engine::util::camera::Camera;
 use aeonetica_client::renderer::window::events::{Event, EventType};
 use aeonetica_engine::util::vector::Vector2;
@@ -36,7 +37,7 @@ impl ClientMod for TestModClient {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
-        context.set_post_processing_layer(test_layer);
+       // context.set_post_processing_layer(test_layer);
     }
 }
 
@@ -78,6 +79,7 @@ struct TestLayer {
     post_processing_shader: shader::Program,
     texture: Texture,
     texture2: Texture,
+    spritesheet: SpriteSheet
 }
 
 impl TestLayer {
@@ -102,6 +104,7 @@ impl Layer for TestLayer {
             texture_shader: shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader"),
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
+            spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader")
         }
     }
@@ -120,6 +123,13 @@ impl Layer for TestLayer {
                 self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { self.texture.id() } else { self.texture2.id() }, self.texture_shader.clone(), 0);
                 k += 1;
             }
+        }
+
+        for i in -2..2 {
+            let pos = Vector2::new(-150, i * 40).map(|v| v as f32);
+            let sprite = self.spritesheet.get((i + 2) as u32).expect("error getting sprite");
+            println!("sprite: {sprite:?}");
+            self.renderer.borrow_mut().sprite_quad(&pos, (30.0, 30.0).into(), sprite, self.texture_shader.clone(), 0);
         }
     }
 

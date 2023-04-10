@@ -13,7 +13,7 @@ impl FrameBuffer {
             gl::GenFramebuffers(1, &mut fbo_id);
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo_id);
             
-            let texture = Texture::create(width, height);
+            let texture = Texture::create((width, height).into());
             gl::BindTexture(gl::TEXTURE_2D, 0);
             gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture.id(), 0); 
 

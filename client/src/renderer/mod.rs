@@ -4,6 +4,7 @@ pub mod context;
 pub mod util;
 pub mod postprocessing;
 pub mod framebuffer;
+pub mod sprite_sheet;
 
 mod vertex_array;
 use std::rc::Rc;
@@ -20,6 +21,8 @@ mod batch;
 use batch::*;
 
 pub(self) use aeonetica_engine::util::camera::Camera;
+
+use self::sprite_sheet::Sprite;
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -106,9 +109,7 @@ impl Renderer {
         let half_size = size / Vector2::new(2.0, 2.0);
 
         type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
-
         let layout = Vertices::build();
-
         let vertices = Vertices::array([
             vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
             vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),
@@ -121,6 +122,26 @@ impl Renderer {
             &mut util::to_raw_byte_slice!(vertices),
             INDICES.as_slice(),
             Rc::new(layout), shader, z_index, texture)
+        );
+    }
+
+    pub fn sprite_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, sprite: Sprite, shader: Program, z_index: u8) {
+        let half_size = size / Vector2::new(2.0, 2.0);
+
+        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
+        let layout = Vertices::build();
+        let vertices = Vertices::array([
+            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [sprite.left(), sprite.top()], Sampler2D(0)),
+            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [sprite.right(), sprite.top()], Sampler2D(0)),
+            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [sprite.right(), sprite.bottom()], Sampler2D(0)),
+            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [sprite.left(), sprite.bottom()], Sampler2D(0))
+        ]);
+
+        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
+        self.add_vertices(&mut VertexData::new_textured(
+            &mut util::to_raw_byte_slice!(vertices),
+            INDICES.as_slice(),
+            Rc::new(layout), shader, z_index, sprite.texture())
         );
     }
 } 

@@ -49,6 +49,21 @@ impl<T> From<(T, T)> for Vector2<T> {
     }
 }
 
+impl<T> Into<[T; 2]> for Vector2<T> {
+    fn into(self) -> [T; 2] {
+        [self.x, self.y]
+    }
+}
+
+impl<T: Copy> From<[T; 2]> for Vector2<T> {
+    fn from(value: [T; 2]) -> Self {
+        Self {
+            x: value[0],
+            y: value[1]
+        }
+    }
+}
+
 impl<T: Add<Output = T>> Add for Vector2<T> {
     type Output = Self;
 

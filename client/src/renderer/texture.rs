@@ -1,9 +1,18 @@
+use aeonetica_engine::util::vector::Vector2;
 use image::{io::Reader as ImageReader, DynamicImage};
 
 use super::RenderID;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
 pub struct Sampler2D(pub i32);
+
+pub enum TexCoordFormat {
+    LeftRightTopBottom,
+    RightLeftTopBottom,
+    LeftRightBottomTop,
+    RightLeftBottomTop,
+    // TODO: implement remaining
+}
 
 #[derive(Debug)]
 pub enum ImageError {
@@ -38,8 +47,7 @@ impl From<image::ImageError> for ImageError {
 
 pub struct Texture {
     id: RenderID,
-    width: u32,
-    height: u32,
+    size: Vector2<u32>,
     internal_format: gl::types::GLenum,
     data_format: gl::types::GLenum
 }
@@ -64,8 +72,7 @@ impl Texture {
     fn load(img: DynamicImage) -> Result<Self, ImageError> {
         let mut t = Self {
             id: 0,
-            width: img.width(),
-            height: img.height(),
+            size: (img.width(), img.height()).into(),
             internal_format: 0,
             data_format: 0
         };
@@ -87,7 +94,7 @@ impl Texture {
             if t.id == 0 {
                 return Err(ImageError::OpenGL());
             }
-            gl::TextureStorage2D(t.id, 1, t.internal_format, t.width as i32, t.height as i32);
+            gl::TextureStorage2D(t.id, 1, t.internal_format, t.size.x() as i32, t.size.y() as i32);
 
             gl::TextureParameteri(t.id, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TextureParameteri(t.id, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
@@ -95,17 +102,16 @@ impl Texture {
             gl::TextureParameteri(t.id, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
             gl::TextureParameteri(t.id, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
 
-            gl::TextureSubImage2D(t.id, 0, 0, 0, t.width as i32, t.height as i32, t.data_format, gl::UNSIGNED_BYTE, img.into_bytes().as_ptr() as *const _)
+            gl::TextureSubImage2D(t.id, 0, 0, 0, t.size.x() as i32, t.size.y() as i32, t.data_format, gl::UNSIGNED_BYTE, img.into_bytes().as_ptr() as *const _)
         }
 
         Ok(t)
     }
 
-    pub fn create(width: u32, height: u32) -> Self {
+    pub fn create(size: Vector2<u32>) -> Self {
         let mut t = Self {
             id: 0,
-            width,
-            height,
+            size,
             internal_format: gl::RGB,
             data_format: gl::RGB
         };
@@ -117,7 +123,7 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 
-            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, width as i32, height as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, std::ptr::null());
+            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, size.x() as i32, size.y() as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, std::ptr::null());
         }
 
         t
@@ -130,13 +136,13 @@ impl Texture {
             _ => panic!("unsupported texture data format {}", self.data_format)
         };
 
-        assert_eq!(data.len() as u32, self.width * self.height * bytes_per_pixel, "wrong pixel data size for texture");
+        assert_eq!(data.len() as u32, self.size.x() * self.size.y() * bytes_per_pixel, "wrong pixel data size for texture");
         unsafe {
             gl::TextureSubImage2D(
                 self.id, 
                 0, 
                 0, 0, 
-                self.width as i32, self.height as i32,
+                self.size.x() as i32, self.size.y() as i32,
                 self.data_format, gl::UNSIGNED_BYTE, 
                 data.as_ptr() as *const _
             );
@@ -153,5 +159,9 @@ impl Texture {
 
     pub fn delete(self) {
         unsafe { gl::DeleteTextures(1, &self.id); }
+    }
+
+    pub fn size(&self) -> &Vector2<u32> {
+        &self.size
     }
 }
