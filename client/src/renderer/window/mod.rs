@@ -48,7 +48,7 @@ impl Window {
     pub(crate) fn new(full_screen: bool) -> Self {
         match glfw::init(glfw::FAIL_ON_ERRORS) {
             Ok(mut glfw) => {
-                glfw.window_hint(WindowHint::ContextVersion(3, 3));
+                glfw.window_hint(WindowHint::ContextVersion(4, 0));
                 glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
 
                 let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {

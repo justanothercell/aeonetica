@@ -99,7 +99,7 @@ impl Renderer {
         ]);
 
         let indices = [0, 1, 2, 2, 3, 0];
-        self.add_vertices(&mut VertexData::new(util::to_raw_byte_vec!(vertices), indices.as_slice(), Rc::new(layout), shader));
+        self.add_vertices(&mut VertexData::new(util::to_raw_byte_slice!(vertices), indices.as_slice(), Rc::new(layout), shader));
     }
 
     pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: RenderID, shader: Program) {
@@ -118,10 +118,9 @@ impl Renderer {
 
         let size = std::mem::size_of_val(&vertices);
 
-        let data = util::to_raw_byte_vec!(vertices);
         let indices = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&mut VertexData::new_textured(
-            data,
+            &mut util::to_raw_byte_slice!(vertices),
             indices.as_slice(),
             Rc::new(layout), shader, texture)
         );

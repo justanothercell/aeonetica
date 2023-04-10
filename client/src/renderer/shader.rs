@@ -269,7 +269,7 @@ impl ShaderDataType {
             Self::Int3 => size_of::<GLint>() * 3,
             Self::Int4 => size_of::<GLint>() * 4,
             Self::Bool => size_of::<GLboolean>(),
-            Self::Sampler2D => size_of::<GLuint>(),
+            Self::Sampler2D => size_of::<GLint>(),
         }) as u32
     }
 
@@ -290,6 +290,24 @@ impl ShaderDataType {
             Self::Int | Self::Int2 | Self::Int3 | Self::Int4 | Self::Sampler2D => gl::INT,
             Self::Bool => gl::BOOL
         }
+    }
+
+    pub(super) const fn base_is_fp(&self) -> bool {
+        match self {
+            Self::Float | Self::Float2 | Self::Float3 | Self::Float4 | Self::Mat3 | Self::Mat4 => true,
+            _ => false
+        }
+    }
+
+    pub(super) const fn base_is_int(&self) -> bool {
+        match self {
+            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 | Self::Sampler2D | Self::Bool => true,
+            _ => false
+        }
+    }
+
+    pub(super) const fn base_is_long(&self) -> bool {
+        false
     }
 }
 

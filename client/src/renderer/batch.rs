@@ -1,4 +1,4 @@
-use std::{rc::Rc, collections::HashSet};
+use std::rc::Rc;
 
 use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader::{self, ShaderDataType}, Renderer};
 
@@ -95,11 +95,8 @@ impl Batch {
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
-        //    if renderer.shader().as_ref().filter(|s| s == &&self.shader).is_none() {
-        //        renderer.unload_shader();
         // FIXME: only load shaders if needed
         renderer.load_shader(self.shader.clone());
-        //  }
 
         for (slot, texture) in self.textures.iter().enumerate() {
             unsafe {
@@ -127,9 +124,8 @@ impl Batch {
     }
 }
 
-#[derive(Clone)]
 pub struct VertexData<'a> {
-    vertices: Vec<u8>,
+    vertices: &'a mut [u8],
     indices: &'a[u32],
     layout: Rc<BufferLayout>,
     shader: shader::Program,
@@ -137,7 +133,7 @@ pub struct VertexData<'a> {
 }
 
 impl<'a> VertexData<'a> {
-    pub fn new(vertices: Vec<u8>, indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program) -> Self {
+    pub fn new(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program) -> Self {
         Self {
             vertices,
             indices,
@@ -147,7 +143,7 @@ impl<'a> VertexData<'a> {
         }
     }
 
-    pub fn new_textured(vertices: Vec<u8>, indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, texture: RenderID) -> Self {
+    pub fn new_textured(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, texture: RenderID) -> Self {
         Self {
             vertices,
             indices,
@@ -169,7 +165,7 @@ impl<'a> VertexData<'a> {
         &self.layout
     }
 
-    pub fn vertices(&self) -> &Vec<u8> {
+    pub fn vertices(&self) -> &&'a mut [u8] {
         &self.vertices
     }
 

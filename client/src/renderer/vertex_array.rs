@@ -51,25 +51,26 @@ impl VertexArray {
 
         assert!(!layout.elements().is_empty(), "Vertex Buffer has no layout!");
 
-        let stride = layout.stride();
+        let stride = layout.stride() as i32;
         for (i, element) in layout.elements().iter().enumerate() {
             unsafe {
-                gl::EnableVertexAttribArray(i as u32);       
-                log!("attrib array {i}:\n\tcomp_count: {}\n\tsize: {}\n\ttype: {}\n\tnormalized: {}\n\tstride: {}\n\toffset: {}",
-                    element.component_count(),
-                    element.typ().size(),
-                    element.base_type(),
-                    element.normalized(),
-                    stride,
-                    element.offset());
-                gl::VertexAttribPointer(
-                    i as u32, 
-                    element.component_count(), 
-                    element.base_type(),
-                    element.normalized(),
-                    stride as i32,
-                    element.offset() as *const _
-                );
+                gl::EnableVertexAttribArray(i as u32);
+
+                let i = i as u32;
+                let size = element.component_count();
+                let base_type = element.base_type();
+                let normalized = element.normalized();
+                let offset = element.offset() as *const _;
+
+                match element.typ() {
+                    t if t.base_is_fp() => 
+                        gl::VertexAttribPointer(i, size, base_type, normalized, stride, offset),
+                    t if t.base_is_int() =>
+                        gl::VertexAttribIPointer(i, size, base_type, stride, offset),
+                    t if t.base_is_long() =>
+                        gl::VertexAttribLPointer(i, size, base_type, stride, offset),
+                    _ => unreachable!("typ: {:?}", element.typ())
+                }
             }
         }
     }

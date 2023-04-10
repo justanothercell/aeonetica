@@ -2,7 +2,7 @@
 This is a short test shader for textures
 
 #[vertex]
-#version 330 core
+#version 400 core
 
 layout (location = 0) in vec3 a_Position;
 layout (location = 1) in vec2 a_TexCoord;
@@ -20,7 +20,7 @@ void main() {
 }
 
 #[fragment]
-#version 330 core
+#version 400 core
 
 in vec2 v_TexCoord;
 flat in int v_TexIdx;

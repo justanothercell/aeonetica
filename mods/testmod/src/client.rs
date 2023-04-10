@@ -36,7 +36,7 @@ impl ClientMod for TestModClient {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
-       // context.set_post_processing_layer(test_layer);
+        context.set_post_processing_layer(test_layer);
     }
 }
 

@@ -2,7 +2,7 @@
 This is a short test shader for the client renderer
 
 #[vertex]
-#version 330 core
+#version 400 core
 
 layout (location = 0) in vec3 a_Position;
 layout (location = 1) in vec4 a_Color;
@@ -18,7 +18,7 @@ void main() {
 }
 
 #[fragment]
-#version 330 core
+#version 400 core
 
 in vec4 v_Color;
 
