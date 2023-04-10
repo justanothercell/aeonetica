@@ -157,19 +157,25 @@ impl Renderer {
 
         const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
 
+        let mut x_offset = 0.0;
+
         for (i, c) in string.chars().enumerate() {
             if c == ' ' {
                 continue;
             }
 
-            let position = Vector2::new(position.x() + i as f32 * (size.x() + spacing), position.y());
+            let position = Vector2::new(x_offset * size.x() + i as f32 * spacing, position.y());
 
-            let char_idx = font.char_idx(c);
+            let char_idx = font.char_index(c);
             if char_idx.is_none() {
                 continue;
             }
+            let char_idx = *char_idx.unwrap();
 
-            let char_sprite = font.sprite_sheet().get(*char_idx.unwrap());
+            let width = font.index_width(char_idx) as f32;
+            x_offset += width / size.x * 2.0;
+
+            let char_sprite = font.sprite_sheet().get(char_idx);
             if char_sprite.is_none() {
                 continue;
             }
@@ -184,7 +190,7 @@ impl Renderer {
 
             self.add_vertices(
                 &mut VertexData::new_textured(
-                    &mut util::to_raw_byte_slice!(vertices),
+                    util::to_raw_byte_slice!(vertices),
                     INDICES.as_slice(),
                     layout.clone(),
                     shader.clone(),

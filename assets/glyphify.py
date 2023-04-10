@@ -67,7 +67,7 @@ rows_len = re.sub(r'\[.*?\]', 'x', out).split('\\')
 max_w = max([len(r) for r in rows_len])
 h = len(rows_len)
 
-outimg = np.zeros((h * 9 + 1, int(max_w * 1) * 9 + 1, 3), dtype=np.uint8)
+outimg = np.zeros((h * 9 + 1, int(max_w * 0.7) * 9 + 1, 3), dtype=np.uint8)
 
 x = 0
 y = 0
