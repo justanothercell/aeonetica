@@ -1,4 +1,4 @@
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::{util::vector::Vector2, log};
 use image::{io::Reader as ImageReader, DynamicImage};
 
 use super::RenderID;
@@ -81,6 +81,7 @@ impl Texture {
             image::DynamicImage::ImageRgb8(_) => {
                 t.internal_format = gl::RGB8;
                 t.data_format = gl::RGB;
+                log!("only rgb  :(");
             }
             image::DynamicImage::ImageRgba8(_) => {
                 t.internal_format = gl::RGBA8;

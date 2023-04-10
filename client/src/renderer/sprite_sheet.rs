@@ -96,6 +96,10 @@ impl SpriteSheet {
         }
     }
 
+    pub fn sprite_size(&self) -> &Vector2<u32> {
+        &self.sprite_size
+    }
+
     pub fn texture(&self) -> &Texture {
         &self.texture
     }

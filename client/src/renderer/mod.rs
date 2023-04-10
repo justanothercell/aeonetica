@@ -5,6 +5,7 @@ pub mod util;
 pub mod postprocessing;
 pub mod framebuffer;
 pub mod sprite_sheet;
+pub mod font;
 
 mod vertex_array;
 use std::rc::Rc;
@@ -22,7 +23,7 @@ use batch::*;
 
 pub(self) use aeonetica_engine::util::camera::Camera;
 
-use self::sprite_sheet::Sprite;
+use self::{sprite_sheet::Sprite, font::BitmapFont};
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -73,7 +74,7 @@ impl Renderer {
 
     pub fn draw_vertices(&mut self) {
         let mut_ref_ptr = self as *mut _;
-        self.batches.iter().for_each(|batch|
+        self.batches.iter().rev().for_each(|batch|
                 batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
         );
     }
@@ -143,5 +144,54 @@ impl Renderer {
             INDICES.as_slice(),
             Rc::new(layout), shader, z_index, sprite.texture())
         );
+    }
+
+    pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: Program, z_index: u8) {
+        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
+        let layout = Rc::new(Vertices::build());
+
+        let size = font.char_size(size);
+        let half_size = size / Vector2::new(2.0, 2.0);
+
+        let texture_id = font.sprite_sheet().texture().id();
+
+        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
+
+        for (i, c) in string.chars().enumerate() {
+            if c == ' ' {
+                continue;
+            }
+
+            let position = Vector2::new(position.x() + i as f32 * (size.x() + spacing), position.y());
+
+            let char_idx = font.char_idx(c);
+            if char_idx.is_none() {
+                continue;
+            }
+
+            let char_sprite = font.sprite_sheet().get(*char_idx.unwrap());
+            if char_sprite.is_none() {
+                continue;
+            }
+            let char_sprite = char_sprite.unwrap();
+
+            let vertices = Vertices::array([
+                vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.left(), char_sprite.top()], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.right(), char_sprite.top()], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
+                vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.left(), char_sprite.bottom()], Sampler2D(0))
+            ]);
+
+            self.add_vertices(
+                &mut VertexData::new_textured(
+                    &mut util::to_raw_byte_slice!(vertices),
+                    INDICES.as_slice(),
+                    layout.clone(),
+                    shader.clone(),
+                    z_index,
+                    texture_id
+                )
+            );
+        }
     }
 } 

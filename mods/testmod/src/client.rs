@@ -17,6 +17,7 @@ use aeonetica_client::renderer::window::OpenGlContextProvider;
 use aeonetica_client::renderer::shader;
 use aeonetica_client::renderer::texture::Texture;
 use crate::server::MyModule;
+use aeonetica_client::renderer::font::BitmapFont;
 use std::rc::Rc;
 
 pub struct TestModClient {
@@ -79,7 +80,8 @@ struct TestLayer {
     post_processing_shader: shader::Program,
     texture: Texture,
     texture2: Texture,
-    spritesheet: SpriteSheet
+    spritesheet: SpriteSheet,
+    font: BitmapFont
 }
 
 impl TestLayer {
@@ -97,6 +99,37 @@ impl PostProcessingLayer for TestLayer {
 
 impl Layer for TestLayer {
     fn instantiate() -> Self {
+        let charmap = HashMap::from([
+            ('A', 0),
+            ('B', 1),
+            ('C', 2),
+            ('D', 3),
+            ('E', 4),
+            ('F', 5),
+            ('G', 6),
+            ('H', 7),
+            ('I', 8),
+            ('J', 9),
+            ('K', 10),
+            ('L', 11),
+            ('M', 12),
+            ('N', 13),
+            ('O', 14),
+            ('P', 15),
+            ('Q', 16),
+            ('R', 17),
+            ('S', 18),
+            ('T', 19),
+            ('U', 10),
+            ('V', 21),
+            ('W', 22),
+            ('X', 23),
+            ('Y', 24),
+            ('Z', 25),
+            (',', 26),
+            ('!', 27)
+        ]);
+
         Self {
             renderer: RefCell::new(Renderer::new()),
             camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
@@ -105,7 +138,8 @@ impl Layer for TestLayer {
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
-            post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader")
+            post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
+            font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap).expect("error crating font"),
         }
     }
 
@@ -131,6 +165,8 @@ impl Layer for TestLayer {
             println!("sprite: {sprite:?}");
             self.renderer.borrow_mut().sprite_quad(&pos, (30.0, 30.0).into(), sprite, self.texture_shader.clone(), 0);
         }
+
+        self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -120.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
     }
 
     fn on_detach(&self) {

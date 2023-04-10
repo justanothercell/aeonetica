@@ -108,6 +108,11 @@ impl Window {
                     .expect("Error creating Index Buffer");
                 framebuffer_vao.set_index_buffer(index_buffer);
 
+                unsafe {
+                    gl::Enable(gl::BLEND);
+                    gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
+                }
+
                 Self {
                     glfw_handle: glfw,
                     glfw_window: window,
