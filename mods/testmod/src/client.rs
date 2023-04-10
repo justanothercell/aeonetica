@@ -117,7 +117,7 @@ impl Layer for TestLayer {
             for j in -2..3 {
                 let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
                 //self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR }, self.shader.clone()),
-                self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { self.texture.id() } else { self.texture2.id() }, self.texture_shader.clone());
+                self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { self.texture.id() } else { self.texture2.id() }, self.texture_shader.clone(), 0);
                 k += 1;
             }
         }

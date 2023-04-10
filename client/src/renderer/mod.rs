@@ -14,6 +14,7 @@ use buffer::*;
 pub mod shader;
 use shader::*;
 pub mod texture;
+use sorted_vec::SortedVec;
 use texture::*;
 mod batch;
 use batch::*;
@@ -25,7 +26,7 @@ pub(self) type RenderID = gl::types::GLuint;
 pub struct Renderer {
     shader: Option<Program>,
     view_projection: Option<Matrix4<f32>>,
-    batches: Vec<Batch>
+    batches: SortedVec<Batch>
 }
 
 impl Renderer {
@@ -33,7 +34,7 @@ impl Renderer {
         Self {
             shader: None,
             view_projection: None,
-            batches: vec![],
+            batches: SortedVec::new(),
         }
     }
 
@@ -75,18 +76,17 @@ impl Renderer {
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) {
-        let mut batch = self.batches
-            .iter_mut().find(|buffer| buffer.has_space_for(data));
-
-        if batch.is_none() {
-            self.batches.push(Batch::new(data).expect("Error creating new render batch"));
-            batch = self.batches.last_mut();
+        if let Some(batch_idx) = self.batches.iter().position(|buffer| buffer.has_space_for(data)) {
+            self.batches.mutate_vec(|vec| vec[batch_idx].add_vertices(data));
         }
-
-        batch.unwrap().add_vertices(data);
+        else {
+            let mut batch = Batch::new(data).expect("Error creating new render batch");
+            batch.add_vertices(data);
+            self.batches.push(batch);
+        }
     }
 
-    pub fn static_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, color: [f32; 4], shader: Program) {
+    pub fn static_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, color: [f32; 4], shader: Program, z_index: u8) {
         let half_size = size / Vector2::new(2.0, 2.0);
 
         let layout = Vertices::build();
@@ -98,11 +98,11 @@ impl Renderer {
             vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], color)
         ]);
 
-        let indices = [0, 1, 2, 2, 3, 0];
-        self.add_vertices(&mut VertexData::new(util::to_raw_byte_slice!(vertices), indices.as_slice(), Rc::new(layout), shader));
+        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
+        self.add_vertices(&mut VertexData::new(util::to_raw_byte_slice!(vertices), INDICES.as_slice(), Rc::new(layout), shader, z_index));
     }
 
-    pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: RenderID, shader: Program) {
+    pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: RenderID, shader: Program, z_index: u8) {
         let half_size = size / Vector2::new(2.0, 2.0);
 
         type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
@@ -116,13 +116,11 @@ impl Renderer {
             vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0], Sampler2D(0))
         ]);
 
-        let size = std::mem::size_of_val(&vertices);
-
-        let indices = [0, 1, 2, 2, 3, 0];
+        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&mut VertexData::new_textured(
             &mut util::to_raw_byte_slice!(vertices),
-            indices.as_slice(),
-            Rc::new(layout), shader, texture)
+            INDICES.as_slice(),
+            Rc::new(layout), shader, z_index, texture)
         );
     }
 } 

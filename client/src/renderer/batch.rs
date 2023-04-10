@@ -6,7 +6,8 @@ pub(super) struct Batch {
     layout: Rc<BufferLayout>,
     vertex_array: VertexArray,
     shader: shader::Program,
-    textures: Vec<RenderID>
+    textures: Vec<RenderID>,
+    z_index: u8
 }
 
 impl Batch {
@@ -39,7 +40,8 @@ impl Batch {
             layout: data.layout().clone(),
             vertex_array,
             shader: data.shader(),
-            textures: vec![]
+            textures: vec![],
+            z_index: 0
         })
     }
 
@@ -129,26 +131,29 @@ pub struct VertexData<'a> {
     indices: &'a[u32],
     layout: Rc<BufferLayout>,
     shader: shader::Program,
+    z_index: u8,
     texture: Option<RenderID>,
 }
 
 impl<'a> VertexData<'a> {
-    pub fn new(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program) -> Self {
+    pub fn new(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, z_index: u8) -> Self {
         Self {
             vertices,
             indices,
             layout,
             shader,
+            z_index,
             texture: None,
         }
     }
 
-    pub fn new_textured(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, texture: RenderID) -> Self {
+    pub fn new_textured(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, z_index: u8, texture: RenderID) -> Self {
         Self {
             vertices,
             indices,
             layout,
             shader,
+            z_index,
             texture: Some(texture),
         }
     }
@@ -189,5 +194,45 @@ impl<'a> VertexData<'a> {
                 (0..slot_bytes.len()).for_each(|i| self.vertices[i + pos] = slot_bytes[i]);
             }
         }
+    }
+}
+
+impl PartialEq for Batch {
+    fn eq(&self, other: &Self) -> bool {
+        self.z_index == other.z_index
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.z_index != other.z_index
+    }
+}
+
+impl Eq for Batch {}
+
+impl PartialOrd for Batch {
+    fn ge(&self, other: &Self) -> bool {
+        self.z_index.ge(&other.z_index)
+    }
+
+    fn gt(&self, other: &Self) -> bool {
+        self.z_index.gt(&other.z_index)
+    }
+
+    fn le(&self, other: &Self) -> bool {
+        self.z_index.le(&other.z_index)
+    }
+
+    fn lt(&self, other: &Self) -> bool {
+        self.z_index.lt(&other.z_index)
+    }
+    
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.z_index.partial_cmp(&other.z_index)
+    }
+}
+
+impl Ord for Batch {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.z_index.cmp(&other.z_index)
     }
 }
