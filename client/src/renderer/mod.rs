@@ -2,26 +2,23 @@ pub mod window;
 pub mod layer;
 pub mod context;
 pub mod util;
-pub mod postprocessing;
-pub mod framebuffer;
-pub mod sprite_sheet;
-pub mod font;
 pub mod quad;
+pub mod shader;
+pub mod texture;
+
+mod buffer;
+mod batch;
+
+pub use batch::VertexLocation;
 pub use quad::*;
 
-mod vertex_array;
 use std::rc::Rc;
 
 use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
-mod buffer;
 use buffer::*;
-pub mod shader;
 use shader::*;
-pub mod texture;
 use texture::*;
-mod batch;
 use batch::*;
-pub use batch::VertexLocation;
 
 pub(self) use aeonetica_engine::util::camera::Camera;
 

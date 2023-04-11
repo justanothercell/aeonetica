@@ -1,3 +1,6 @@
+pub mod framebuffer;
+pub mod vertex_array;
+
 use std::marker::PhantomData;
 
 use super::*;
@@ -150,11 +153,7 @@ impl Buffer {
     pub(super) fn set_count(&mut self, count: u32) {
         self.count = count;
     }
-
-    pub(super) fn typ(&self) -> BufferType {
-        self.typ
-    }
-
+    
     pub(super) fn gl_typ(&self) -> gl::types::GLenum {
         self.typ.into()
     }

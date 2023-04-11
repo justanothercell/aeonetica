@@ -1,24 +1,20 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
-use aeonetica_client::ClientMod;
-use aeonetica_client::renderer::{Renderer, TexturedQuad, SpriteQuad};
-use aeonetica_client::renderer::postprocessing::PostProcessingLayer;
-use aeonetica_client::renderer::sprite_sheet::SpriteSheet;
-use aeonetica_engine::util::camera::Camera;
-use aeonetica_client::renderer::window::events::{Event, EventType};
-use aeonetica_engine::util::vector::Vector2;
-use aeonetica_engine::{Id, log};
-use aeonetica_engine::networking::messaging::ClientEntity;
-use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
-use aeonetica_engine::networking::SendMode;
-use aeonetica_engine::util::type_to_id;
-use aeonetica_client::renderer::layer::Layer;
-use aeonetica_client::renderer::window::OpenGlContextProvider;
-use aeonetica_client::renderer::shader;
-use aeonetica_client::renderer::texture::Texture;
-use crate::server::MyModule;
-use aeonetica_client::renderer::font::BitmapFont;
 use std::rc::Rc;
+
+use crate::server::MyModule;
+
+use aeonetica_client::{
+    ClientMod,
+    renderer::{*, shader::*, texture::{*, font::BitmapFont}, window::{OpenGlContextProvider, events::*}, layer::Layer},
+    networking::messaging::{ClientHandle, ClientMessenger},
+};
+
+use aeonetica_engine::{
+    Id, log,
+    util::{camera::Camera, vector::*, type_to_id},
+    networking::{SendMode, messaging::*}
+};
 
 pub struct TestModClient {
 

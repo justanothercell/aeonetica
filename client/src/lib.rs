@@ -1,5 +1,3 @@
-#![feature(inherent_associated_types)]
-
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::Id;

@@ -4,7 +4,7 @@ use aeonetica_engine::nanoserde;
 
 use aeonetica_engine::util::vector::Vector2;
 
-use super::{sprite_sheet::SpriteSheet, texture::Texture};
+use super::*;
 
 #[derive(Debug, SerRon, DeRon)]
 struct BMPFontFile {

@@ -1,3 +1,6 @@
+pub mod postprocessing;
+pub use postprocessing::*;
+
 use std::{collections::HashMap, ffi::CString};
 use super::*;
 

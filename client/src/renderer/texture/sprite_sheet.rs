@@ -2,7 +2,7 @@ use std::ops::Div;
 
 use aeonetica_engine::util::vector::Vector2;
 
-use super::{texture::{Texture, TexCoordFormat}, RenderID};
+use super::{Texture, TexCoordFormat, RenderID};
 
 #[derive(Debug, Clone)]
 pub struct Sprite {

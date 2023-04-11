@@ -7,7 +7,7 @@ pub struct VertexArray {
 }
 
 impl VertexArray {
-    pub(super) fn new() -> Option<Self> {
+    pub fn new() -> Option<Self> {
         let mut vao = 0;
         unsafe { gl::GenVertexArrays(1, &mut vao) };
         if vao != 0 {
@@ -34,10 +34,6 @@ impl VertexArray {
         if let Some(layout) = self.vertex_buffer.as_ref().map(|buffer| buffer.layout().to_owned()).flatten() {
             (0..layout.elements().len()).for_each(|i| unsafe { gl::DisableVertexAttribArray(i as u32) })
         }
-    }
-
-    pub fn id(&self) -> RenderID {
-        self.id
     }
 
     pub fn set_vertex_buffer(&mut self, buffer: Buffer) {

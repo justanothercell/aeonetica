@@ -55,10 +55,6 @@ impl FrameBuffer {
         &self.texture
     }
 
-    pub fn fbo_id(&self) -> RenderID {
-        self.fbo_id
-    }
-
     pub fn delete(self) {
         unsafe { 
             gl::DeleteFramebuffers(1, &self.fbo_id);

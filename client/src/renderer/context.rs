@@ -7,7 +7,7 @@ use crate::{
     renderer::layer::Layer
 };
 
-use super::postprocessing::PostProcessingLayer;
+use super::shader::PostProcessingLayer;
 
 struct LayerStack {
     layers: Vec<Rc<dyn Layer>>,

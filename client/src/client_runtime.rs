@@ -16,7 +16,6 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
-use crate::renderer::context::Context;
 use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;

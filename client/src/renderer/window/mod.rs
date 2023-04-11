@@ -3,10 +3,10 @@ pub mod events;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::log;
-use crate::renderer::{context::Context, buffer::*, util::{self, polygon_mode, PolygonMode}};
+use crate::renderer::{context::Context, buffer::*, util};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 
-use super::{framebuffer::FrameBuffer, shader, vertex_array::VertexArray};
+use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader};
 
 pub struct OpenGlContextProvider(HashMap<&'static str, GLProc>);
 

@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, Id};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};

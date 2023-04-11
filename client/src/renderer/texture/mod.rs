@@ -1,3 +1,8 @@
+pub mod sprite_sheet;
+pub use sprite_sheet::*;
+
+pub mod font;
+
 use aeonetica_engine::{util::vector::Vector2, log};
 use image::{io::Reader as ImageReader, DynamicImage};
 

@@ -1,6 +1,6 @@
-use std::{rc::Rc, num};
+use std::rc::Rc;
 
-use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader::{self, ShaderDataType}, Renderer};
+use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
 use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
 
 pub type BatchID = uuid::Uuid;
