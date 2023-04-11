@@ -10,13 +10,12 @@ pub mod font;
 mod vertex_array;
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, log};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
 mod buffer;
 use buffer::*;
 pub mod shader;
 use shader::*;
 pub mod texture;
-use sorted_vec::SortedVec;
 use texture::*;
 mod batch;
 use batch::*;
@@ -30,7 +29,7 @@ pub(self) type RenderID = gl::types::GLuint;
 pub struct Renderer {
     shader: Option<Program>,
     view_projection: Option<Matrix4<f32>>,
-    batches: SortedVec<Batch>
+    batches: OrderedMap<BatchID, Batch, u8>
 }
 
 impl Renderer {
@@ -38,7 +37,7 @@ impl Renderer {
         Self {
             shader: None,
             view_projection: None,
-            batches: SortedVec::new(),
+            batches: OrderedMap::new(),
         }
     }
 
@@ -74,19 +73,19 @@ impl Renderer {
 
     pub fn draw_vertices(&mut self) {
         let mut_ref_ptr = self as *mut _;
-        self.batches.iter().rev().for_each(|batch|
-                batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
+        self.batches.iter().for_each(|(_, batch)|
+            batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
         );
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) {
-        if let Some(batch_idx) = self.batches.iter().position(|buffer| buffer.has_space_for(data)) {
-            self.batches.mutate_vec(|vec| vec[batch_idx].add_vertices(data));
+        if let Some(idx) = self.batches.iter().position(|(_, batch)| batch.has_space_for(data)) {
+            self.batches.nth_mut(idx, |batch| batch.add_vertices(data));
         }
         else {
             let mut batch = Batch::new(data).expect("Error creating new render batch");
             batch.add_vertices(data);
-            self.batches.push(batch);
+            self.batches.insert(*batch.id(), batch);
         }
     }
 
