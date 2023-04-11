@@ -1,8 +1,13 @@
 use std::rc::Rc;
 
 use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader::{self, ShaderDataType}, Renderer};
+use aeonetica_engine::collections::ordered_map::ExtractComparable;
+
+pub type BatchID = uuid::Uuid;
 
 pub(super) struct Batch {
+    id: BatchID,
+
     layout: Rc<BufferLayout>,
     vertex_array: VertexArray,
     shader: shader::Program,
@@ -37,6 +42,7 @@ impl Batch {
         vertex_array.set_index_buffer(index_buffer);
 
         Some(Self {
+            id: uuid::Uuid::new_v4(),
             layout: data.layout().clone(),
             vertex_array,
             shader: data.shader(),
@@ -125,45 +131,19 @@ impl Batch {
             }
         }
     }
-}
 
-impl PartialEq for Batch {
-    fn eq(&self, other: &Self) -> bool {
-        self.z_index == other.z_index
+    pub fn id(&self) -> &BatchID {
+        &self.id
     }
 
-    fn ne(&self, other: &Self) -> bool {
-        self.z_index != other.z_index
+    pub fn z_index(&self) -> u8 {
+        self.z_index
     }
 }
 
-impl Eq for Batch {}
-
-impl PartialOrd for Batch {
-    fn ge(&self, other: &Self) -> bool {
-        self.z_index.ge(&other.z_index)
-    }
-
-    fn gt(&self, other: &Self) -> bool {
-        self.z_index.gt(&other.z_index)
-    }
-
-    fn le(&self, other: &Self) -> bool {
-        self.z_index.le(&other.z_index)
-    }
-
-    fn lt(&self, other: &Self) -> bool {
-        self.z_index.lt(&other.z_index)
-    }
-    
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.z_index.partial_cmp(&other.z_index)
-    }
-}
-
-impl Ord for Batch {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.z_index.cmp(&other.z_index)
+impl ExtractComparable<u8> for Batch {
+    fn extract_comparable(&self) -> u8 {
+        self.z_index
     }
 }
 
@@ -239,5 +219,21 @@ impl<'a> VertexData<'a> {
 
     pub fn z_index(&self) -> u8 {
         self.z_index
+    }
+}
+
+#[derive(Clone)]
+pub struct VertexLocation {
+    batch: BatchID,
+    offset: u64
+}
+
+impl VertexLocation {
+    pub(super) fn batch(&self) -> &BatchID {
+        &self.batch
+    }
+
+    pub(super) fn offset(&self) -> u64 {
+        self.offset
     }
 }

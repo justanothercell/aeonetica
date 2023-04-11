@@ -3,6 +3,7 @@
 #![feature(hashmap_internals)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
+#![feature(let_chains)]
 
 #![feature(test)]
 extern crate test;
@@ -23,6 +24,7 @@ use uuid::Uuid;
 pub mod networking;
 pub mod error;
 pub mod util;
+pub mod collections;
 
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
 pub struct Id([u8;8]);
