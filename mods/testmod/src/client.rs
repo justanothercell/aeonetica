@@ -140,7 +140,7 @@ impl Layer for TestLayer {
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
-            font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, true).expect("error crating font"),
+            font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, false).expect("error crating font"),
         }
     }
 
@@ -168,8 +168,8 @@ impl Layer for TestLayer {
         }
 
         self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -120.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -80.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -4.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+        self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -90.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+        self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -60.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
     }
 
     fn on_detach(&self) {
@@ -183,7 +183,7 @@ impl Layer for TestLayer {
         renderer.end_scene();
     }
 
-    fn on_event(&self, event: &aeonetica_client::renderer::window::events::Event) -> bool {
+    fn on_event(&self, event: &Event) -> bool {
         match event.typ() {
             EventType::WindowResize(x, y) => {
                 let aspect_ratio = *x as f32 / *y as f32;

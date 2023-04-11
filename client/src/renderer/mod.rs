@@ -150,8 +150,9 @@ impl Renderer {
         type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
         let layout = Rc::new(Vertices::build());
 
-        let size = font.char_size(size);
-        let half_size = size / Vector2::new(2.0, 2.0);
+        let size = size / font.char_size().y;
+
+        let half_size =  font.char_size() * [size, size].into() / Vector2::new(2.0, 2.0);
 
         let texture_id = font.sprite_sheet().texture().id();
 
@@ -159,12 +160,8 @@ impl Renderer {
 
         let mut x_offset = 0.0;
 
-        for (i, c) in string.chars().enumerate() {
-            if c == ' ' {
-                continue;
-            }
-
-            let position = Vector2::new(x_offset * size.x() + i as f32 * spacing, position.y());
+        for c in string.chars() {
+            let position = Vector2::new(x_offset, position.y());
 
             let char_idx = font.char_index(c);
             if char_idx.is_none() {
@@ -173,7 +170,7 @@ impl Renderer {
             let char_idx = *char_idx.unwrap();
 
             let width = font.index_width(char_idx) as f32;
-            x_offset += width / size.x * 2.0;
+            x_offset += width * size + spacing;
 
             let char_sprite = font.sprite_sheet().get(char_idx);
             if char_sprite.is_none() {
