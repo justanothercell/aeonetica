@@ -169,9 +169,9 @@ impl Layer for TestLayer {
             self.renderer.borrow_mut().sprite_quad(&pos, (30.0, 30.0).into(), sprite, self.texture_shader.clone(), 0);
         }
 
-        self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -120.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -90.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -60.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+        self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -130.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+        self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -100.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+        self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -70.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
 
 
         for (i, row) in ["#![no_main]",
@@ -189,7 +189,7 @@ impl Layer for TestLayer {
 "    let mut stdout = stdout();",
 "    stdout.write(b\"Hello, world!\\n\").unwrap();",
 "}"].into_iter().enumerate() {
-            self.renderer.borrow_mut().static_string(row, &(-120.0, -60.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
+            self.renderer.borrow_mut().static_string(row, &(-120.0, -40.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
         }
     }
 
