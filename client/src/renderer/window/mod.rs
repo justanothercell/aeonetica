@@ -70,7 +70,7 @@ impl Window {
 
                 gl::load_with(|s| context_provider.insert(s, glfw.get_proc_address_raw(s)));
                 glfw.set_swap_interval(glfw::SwapInterval::None);
-                window.set_framebuffer_size_polling(true);
+                window.set_all_polling(true);
 
                 log!(r#"
 ==== OpenGL info ====
@@ -146,18 +146,27 @@ impl Window {
         self.framebuffer.bind();
         
         unsafe {
-            gl::Viewport(0, 0, Self::DEFAULT_FRAMEBUFFER_WIDTH as i32, Self::DEFAULT_FRAMEBUFFER_HEIGHT as i32);
             gl::ClearColor(0.1, 0.1, 0.2, 1.0);                
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+
+            let [width, height]: [u32; 2] = (*self.framebuffer.size()).into();
+            gl::Viewport(0, 0, width as i32, height as i32);
+
             gl::Enable(gl::DEPTH_TEST);
+
         }
 
         context.on_update(delta_time);
 
         self.framebuffer.unbind();
         unsafe {
-            gl::ClearColor(0.2, 0.1, 0.1, 1.0);                
+            gl::ClearColor(0.0, 0.0, 0.0, 1.0);                
             gl::Clear(gl::COLOR_BUFFER_BIT);
+
+            let (width, height) = self.glfw_window.get_size();
+            gl::Viewport(0, 0, width, height);
+
+            gl::Disable(gl::DEPTH_TEST);
         }
 
         // post-processing
@@ -179,12 +188,6 @@ impl Window {
             .for_each(|(name, data)| post_processing_shader.upload_uniform(name, *data));
 
         self.framebuffer_vao.bind();
-
-        unsafe {
-            gl::Viewport(0, 0, self.glfw_window.get_size().0, self.glfw_window.get_size().1);
-            gl::Disable(gl::DEPTH_TEST);
-        }
-
         self.framebuffer_vao.draw();
         self.framebuffer_vao.unbind();
 

@@ -1,3 +1,5 @@
+use aeonetica_engine::util::vector::Vector2;
+
 use super::{RenderID, texture::{Texture, ImageError}};
 
 pub struct FrameBuffer {
@@ -63,5 +65,9 @@ impl FrameBuffer {
             gl::DeleteRenderbuffers(1, &self.rbo_id);
         }
         self.texture.delete();
+    }
+
+    pub fn size(&self) -> &Vector2<u32> {
+        &self.texture.size()
     }
 }
