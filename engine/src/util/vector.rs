@@ -18,6 +18,50 @@ impl<T> Vector2<T> {
             y: func(self.y)
         }
     }
+
+    pub fn mag_sq(&self) -> T where T: Add<Output=T> + Mul<Output=T> + Copy {
+        self.x * self.x + self.y * self.y
+    }
+
+    pub fn area(&self) -> T where T: Mul<Output=T> + Copy  {
+        self.x * self.y
+    }
+}
+
+impl Vector2<f32> {
+    pub fn round(&self) -> Vector2<f32> {
+        Vector2::new(self.x.round(), self.y.round())
+    }
+
+    pub fn floor(&self) -> Vector2<f32> {
+        Vector2::new(self.x.floor(), self.y.floor())
+    }
+
+    pub fn ceil(&self) -> Vector2<f32> {
+        Vector2::new(self.x.ceil(), self.y.ceil())
+    }
+
+    pub fn mag(&self) -> f32 {
+        f32::sqrt(self.mag_sq())
+    }
+}
+
+impl Vector2<f64> {
+    pub fn round(&self) -> Vector2<f64> {
+        Vector2::new(self.x.round(), self.y.round())
+    }
+
+    pub fn floor(&self) -> Vector2<f64> {
+        Vector2::new(self.x.floor(), self.y.floor())
+    }
+
+    pub fn ceil(&self) -> Vector2<f64> {
+        Vector2::new(self.x.ceil(), self.y.ceil())
+    }
+
+    pub fn mag(&self) -> f64 {
+        f64::sqrt(self.mag_sq())
+    }
 }
 
 impl<T: Into<f64> + Copy> Vector2<T> {

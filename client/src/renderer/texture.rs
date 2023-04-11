@@ -69,6 +69,10 @@ impl Texture {
         Self::load(img)
     }
 
+    pub fn data_format(&self) -> gl::types::GLenum {
+        self.data_format
+    }
+
     fn load(img: DynamicImage) -> Result<Self, ImageError> {
         let mut t = Self {
             id: 0,
