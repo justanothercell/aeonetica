@@ -169,4 +169,12 @@ impl Texture {
     pub fn size(&self) -> &Vector2<u32> {
         &self.size
     }
+
+    pub fn bytes_per_pixel(&self) -> u32 {
+        match self.data_format {
+            gl::RGBA => 4,
+            gl::RGB => 3,
+            _ => panic!("unsupported pixel layout")
+        }
+    }
 }

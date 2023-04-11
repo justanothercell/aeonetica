@@ -1,7 +1,7 @@
-use std::rc::Rc;
+use std::{rc::Rc, num};
 
 use super::{vertex_array::VertexArray, buffer::{Buffer, BufferLayout, BufferType, BufferUsage}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::collections::ordered_map::ExtractComparable;
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
 
 pub type BatchID = uuid::Uuid;
 
@@ -60,7 +60,7 @@ impl Batch {
         if let Some(t) = data.texture { self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS } else { true } 
     }
 
-    pub fn add_vertices(&mut self, data: &mut VertexData) {
+    pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
         if let Some(tex_id) = data.texture {
             let index = self.textures.iter().position(|id| *id == tex_id)
                 .unwrap_or_else(|| {
@@ -78,7 +78,7 @@ impl Batch {
         vertex_buffer.bind();
         unsafe {
             gl::BufferSubData(
-                BufferType::Array.into(), 
+                vertex_buffer.gl_typ(), 
                 (self.layout.stride() * num_vertices) as isize, 
                 data.vertices().len() as isize, 
                 data.vertices().as_ptr() as *const _
@@ -94,13 +94,47 @@ impl Batch {
         index_buffer.bind();
         unsafe {
             gl::BufferSubData(
-                BufferType::ElementArray.into(),
+                index_buffer.gl_typ(),
                 num_indices as isize * index_size,
                 index_size * indices.len() as isize,
                 indices.as_ptr() as *const _
             )
         }
         index_buffer.set_count(index_buffer.count() + indices.len() as u32);
+
+        VertexLocation {
+            batch: self.id, 
+            vertices_offset: num_vertices,
+            vertices_count: data.num_vertices()
+        }
+    }
+
+    pub fn modify_vertices(&self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+        let num_bytes = location.count() * self.layout.stride();
+        if num_bytes < data.len() as u32 {
+            log_err!("unexpected vertices lenght; got {}, expected {}", data.len(), num_bytes);
+            return Err(());
+        }
+
+
+        if let Some(texture) = texture {
+            patch_texture_id(data, &self.layout, *self.textures.iter().find(|t| t == &&texture).ok_or(())?);            
+        }
+
+        let offset = location.offset() * self.layout.stride();
+        let vertex_buffer = self.vertex_array.vertex_buffer().as_ref().unwrap();
+        vertex_buffer.bind();
+        unsafe {
+            gl::BufferSubData(
+                vertex_buffer.gl_typ(),
+                offset as isize,
+                data.len() as isize,
+                data.as_ptr() as *const _
+            );
+        }
+        vertex_buffer.unbind();
+
+        Ok(())
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
@@ -134,10 +168,6 @@ impl Batch {
 
     pub fn id(&self) -> &BatchID {
         &self.id
-    }
-
-    pub fn z_index(&self) -> u8 {
-        self.z_index
     }
 }
 
@@ -208,13 +238,7 @@ impl<'a> VertexData<'a> {
     }
 
     fn patch_texture_id(&mut self, slot: u32) {
-        let slot_bytes = slot.to_le_bytes();
-        for element in self.layout.elements().iter().filter(|e| e.typ() == ShaderDataType::Sampler2D) {
-            for i in 0..self.num_vertices() {
-                let pos = (self.layout.stride() * i + element.offset()) as usize;
-                (0..slot_bytes.len()).for_each(|i| self.vertices[i + pos] = slot_bytes[i]);
-            }
-        }
+        patch_texture_id(&mut self.vertices, &self.layout, slot)
     }
 
     pub fn z_index(&self) -> u8 {
@@ -222,10 +246,21 @@ impl<'a> VertexData<'a> {
     }
 }
 
+fn patch_texture_id(vertices: &mut [u8], layout: &BufferLayout, slot: u32) {
+    let slot_bytes = slot.to_le_bytes();
+    for element in layout.elements().iter().filter(|e| e.typ() == ShaderDataType::Sampler2D) {
+        for i in 0..(vertices.len() as u32 / layout.stride()) {
+            let pos = (layout.stride() * i + element.offset()) as usize;
+            (0..slot_bytes.len()).for_each(|i| vertices[i + pos] = slot_bytes[i]);
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct VertexLocation {
     batch: BatchID,
-    offset: u64
+    vertices_offset: u32,
+    vertices_count: u32,
 }
 
 impl VertexLocation {
@@ -233,7 +268,11 @@ impl VertexLocation {
         &self.batch
     }
 
-    pub(super) fn offset(&self) -> u64 {
-        self.offset
+    pub(super) fn offset(&self) -> u32 {
+        self.vertices_offset
+    }
+
+    pub(super) fn count(&self) -> u32 {
+        self.vertices_count
     }
 }

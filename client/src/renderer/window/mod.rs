@@ -99,12 +99,12 @@ impl Window {
                     vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
                 ]);
                 
-                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(vertices), Some(Rc::new(layout)), BufferUsage::STATIC)
+                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)
                     .expect("Error creating Vertex Buffer");
                 framebuffer_vao.set_vertex_buffer(vertex_buffer);
                 
                 const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-                let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(INDICES), None, BufferUsage::STATIC)
+                let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)
                     .expect("Error creating Index Buffer");
                 framebuffer_vao.set_index_buffer(index_buffer);
 

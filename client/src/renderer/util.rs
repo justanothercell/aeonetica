@@ -18,7 +18,7 @@ pub fn polygon_mode(mode: PolygonMode) {
 #[macro_export]
 macro_rules! to_raw_byte_slice {
     ($value: expr) => {
-        unsafe { std::mem::transmute::<_, &mut [u8]>((&$value, std::mem::size_of_val(&$value))) }
+        unsafe { std::mem::transmute::<_, &mut [u8]>(($value, std::mem::size_of_val($value))) }
     };
 }
 pub use to_raw_byte_slice;

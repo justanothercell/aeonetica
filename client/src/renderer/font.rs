@@ -15,7 +15,8 @@ impl BitmapFont {
     pub fn from_texture(texture: Texture, char_size: Vector2<u32>, characters: HashMap<char, u32>, monospaced: bool) -> Result<Self, String> {
         let mut widths = vec![];
         let pix = texture.size().area() as usize;
-        let mut buffer = vec![0u8;pix*4];
+        let bytes_per_pixel = texture.bytes_per_pixel() as usize;
+        let mut buffer = vec![0u8; pix * bytes_per_pixel];
 
         unsafe {
             gl::GetTextureSubImage(texture.id(), 0, 0, 0, 0, texture.size().x as i32, texture.size().y as i32, 1, texture.data_format(), gl::UNSIGNED_BYTE, buffer.len() as i32, buffer.as_mut_ptr() as * mut _)
@@ -35,7 +36,7 @@ impl BitmapFont {
                         for dx in (0..char_size.x).rev() {
                             for dy in 0..char_size.y {
                                 let p = ((y * char_size.y + dy) * texture.size().x + (x * char_size.x + dx)) as usize;
-                                if buffer[p * 4] > 0 || buffer[p * 4 + 1] > 0 || buffer[p * 4 + 2] > 0 {
+                                if buffer[p * bytes_per_pixel] > 0 || buffer[p * bytes_per_pixel + 1] > 0 || buffer[p * bytes_per_pixel + 2] > 0 {
                                     widths.push(dx);
                                     break 'l
                                 }

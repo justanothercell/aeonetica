@@ -13,7 +13,8 @@ macro_rules! shader_tuple_impls {
 
         #[repr(C)]
         #[allow(unused)]
-        pub(super) struct $tuple_struct<$($name: IntoShaderDataType),+>($(pub(super) $name,)+);
+        #[derive(Clone)]
+        pub struct $tuple_struct<$($name: IntoShaderDataType),+>($(pub $name,)+);
     };
 }
 
@@ -37,12 +38,12 @@ impl ShaderLayoutType for TextureID {
     type Type = Sampler2D;
 }
 
-pub(super) trait Layout {
+pub trait Layout {
     type Type;
     fn layout() -> Vec<ShaderDataType>;
 }
 
-pub(super) struct BufferLayoutBuilder<T>(PhantomData<T>);
+pub struct BufferLayoutBuilder<T>(PhantomData<T>);
 
 impl<T: Layout> BufferLayoutBuilder<T> {
     pub(super) fn build() -> BufferLayout {
@@ -148,6 +149,14 @@ impl Buffer {
 
     pub(super) fn set_count(&mut self, count: u32) {
         self.count = count;
+    }
+
+    pub(super) fn typ(&self) -> BufferType {
+        self.typ
+    }
+
+    pub(super) fn gl_typ(&self) -> gl::types::GLenum {
+        self.typ.into()
     }
 }
 

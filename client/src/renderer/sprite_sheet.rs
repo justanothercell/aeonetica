@@ -4,7 +4,7 @@ use aeonetica_engine::util::vector::Vector2;
 
 use super::{texture::{Texture, TexCoordFormat}, RenderID};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Sprite {
     texture_id: RenderID,
     left: f32,

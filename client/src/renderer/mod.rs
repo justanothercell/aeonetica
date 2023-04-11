@@ -6,6 +6,8 @@ pub mod postprocessing;
 pub mod framebuffer;
 pub mod sprite_sheet;
 pub mod font;
+pub mod quad;
+pub use quad::*;
 
 mod vertex_array;
 use std::rc::Rc;
@@ -19,12 +21,17 @@ pub mod texture;
 use texture::*;
 mod batch;
 use batch::*;
+pub use batch::VertexLocation;
 
 pub(self) use aeonetica_engine::util::camera::Camera;
 
 use self::{sprite_sheet::Sprite, font::BitmapFont};
 
 pub(self) type RenderID = gl::types::GLuint;
+
+pub trait Renderable {
+    fn vertex_data<'a>(&'a mut self) -> VertexData<'a>;
+}
 
 pub struct Renderer {
     shader: Option<Program>,
@@ -78,71 +85,30 @@ impl Renderer {
         );
     }
 
-    pub fn add_vertices(&mut self, data: &mut VertexData) {
+    pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
         if let Some(idx) = self.batches.iter().position(|(_, batch)| batch.has_space_for(data)) {
-            self.batches.nth_mut(idx, |batch| batch.add_vertices(data));
+            self.batches.nth_mut(idx, |batch| batch.add_vertices(data)).unwrap()
         }
         else {
             let mut batch = Batch::new(data).expect("Error creating new render batch");
-            batch.add_vertices(data);
+            let location = batch.add_vertices(data);
             self.batches.insert(*batch.id(), batch);
+
+            location
         }
     }
 
-    pub fn static_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, color: [f32; 4], shader: Program, z_index: u8) {
-        let half_size = size / Vector2::new(2.0, 2.0);
-
-        let layout = Vertices::build();
-        type Vertices = BufferLayoutBuilder<(Vertex, Color)>;
-        let vertices = Vertices::array([
-            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], color),
-            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], color),
-            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], color),
-            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], color)
-        ]);
-
-        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
-        self.add_vertices(&mut VertexData::new(util::to_raw_byte_slice!(vertices), INDICES.as_slice(), Rc::new(layout), shader, z_index));
+    pub fn modify_vertices(&self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+        if let Some(batch) = self.batches.get(location.batch()) {
+            batch.modify_vertices(location, data, texture)
+        }
+        else {
+            Err(())
+        }
     }
 
-    pub fn textured_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, texture: RenderID, shader: Program, z_index: u8) {
-        let half_size = size / Vector2::new(2.0, 2.0);
-
-        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
-        let layout = Vertices::build();
-        let vertices = Vertices::array([
-            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [0.0, 0.0], Sampler2D(0)),
-            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [1.0, 0.0], Sampler2D(0)),
-            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [1.0, 1.0], Sampler2D(0)),
-            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [0.0, 1.0], Sampler2D(0))
-        ]);
-
-        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
-        self.add_vertices(&mut VertexData::new_textured(
-            &mut util::to_raw_byte_slice!(vertices),
-            INDICES.as_slice(),
-            Rc::new(layout), shader, z_index, texture)
-        );
-    }
-
-    pub fn sprite_quad(&mut self, position: &Vector2<f32>, size: Vector2<f32>, sprite: Sprite, shader: Program, z_index: u8) {
-        let half_size = size / Vector2::new(2.0, 2.0);
-
-        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
-        let layout = Vertices::build();
-        let vertices = Vertices::array([
-            vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [sprite.left(), sprite.top()], Sampler2D(0)),
-            vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [sprite.right(), sprite.top()], Sampler2D(0)),
-            vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [sprite.right(), sprite.bottom()], Sampler2D(0)),
-            vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [sprite.left(), sprite.bottom()], Sampler2D(0))
-        ]);
-
-        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
-        self.add_vertices(&mut VertexData::new_textured(
-            &mut util::to_raw_byte_slice!(vertices),
-            INDICES.as_slice(),
-            Rc::new(layout), shader, z_index, sprite.texture())
-        );
+    pub fn add(&mut self, item: &mut impl Renderable) -> VertexLocation {
+        self.add_vertices(&mut item.vertex_data())
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: Program, z_index: u8) {
@@ -186,7 +152,7 @@ impl Renderer {
 
             self.add_vertices(
                 &mut VertexData::new_textured(
-                    util::to_raw_byte_slice!(vertices),
+                    util::to_raw_byte_slice!(&vertices),
                     INDICES.as_slice(),
                     layout.clone(),
                     shader.clone(),

@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use aeonetica_client::ClientMod;
-use aeonetica_client::renderer::Renderer;
+use aeonetica_client::renderer::{Renderer, TexturedQuad, SpriteQuad};
 use aeonetica_client::renderer::postprocessing::PostProcessingLayer;
 use aeonetica_client::renderer::sprite_sheet::SpriteSheet;
 use aeonetica_engine::util::camera::Camera;
@@ -75,7 +75,6 @@ impl MyClientHandle {
 struct TestLayer {
     renderer: RefCell<Renderer>,
     camera: RefCell<Camera>,
-    shader: shader::Program,
     texture_shader: shader::Program,
     post_processing_shader: shader::Program,
     texture: Texture,
@@ -134,7 +133,6 @@ impl Layer for TestLayer {
         Self {
             renderer: RefCell::new(Renderer::new()),
             camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
-            shader: shader::Program::from_source(include_str!("../assets/test_shader.glsl")).expect("error loading shader"),
             texture_shader: shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader"),
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
@@ -147,15 +145,14 @@ impl Layer for TestLayer {
     fn on_attach(&self) {
         log!("TestLayer attached!");
 
-        const RED_COLOR: [f32; 4] = [0.7, 0.2, 0.2, 1.0];
-        const BLUE_COLOR: [f32; 4] = [0.2, 0.2, 0.7, 1.0];
-
         let mut k = 0;
         for i in -2..3 {
             for j in -2..3 {
                 let pos = Vector2::new(i * 50, j * 50).map(|v| v as f32);
                 //self.renderer.borrow_mut().static_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { RED_COLOR } else { BLUE_COLOR }, self.shader.clone()),
-                self.renderer.borrow_mut().textured_quad(&pos, (40.0, 40.0).into(), if k % 2 == 0 { self.texture.id() } else { self.texture2.id() }, self.texture_shader.clone(), 0);
+                let texture_id = if k % 2 == 0 { self.texture.id() } else { self.texture2.id() };
+                let mut quad = TexturedQuad::new(pos, Vector2::new(40.0, 40.0), 0, texture_id, self.texture_shader.clone());
+                self.renderer.borrow_mut().add(&mut quad);
                 k += 1;
             }
         }
@@ -163,8 +160,8 @@ impl Layer for TestLayer {
         for i in -2..2 {
             let pos = Vector2::new(-150, i * 40).map(|v| v as f32);
             let sprite = self.spritesheet.get((i + 2) as u32).expect("error getting sprite");
-            println!("sprite: {sprite:?}");
-            self.renderer.borrow_mut().sprite_quad(&pos, (30.0, 30.0).into(), sprite, self.texture_shader.clone(), 0);
+            let mut quad = SpriteQuad::new(pos, Vector2::new(30.0, 30.0), 0, sprite, self.texture_shader.clone());
+            self.renderer.borrow_mut().add(&mut quad);
         }
 
         self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -120.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);

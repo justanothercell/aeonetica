@@ -239,7 +239,7 @@ impl Program {
 
 #[allow(unused)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum ShaderDataType {
+pub enum ShaderDataType {
     Float = gl::FLOAT as isize,
     Float2 = gl::FLOAT_VEC2 as isize,
     Float3 = gl::FLOAT_VEC3 as isize,
@@ -311,7 +311,7 @@ impl ShaderDataType {
     }
 }
 
-pub(super) trait IntoShaderDataType {
+pub trait IntoShaderDataType {
     const DATA_TYPE: ShaderDataType;
 }
 
@@ -363,6 +363,6 @@ impl IntoShaderDataType for Sampler2D {
     const DATA_TYPE: ShaderDataType = ShaderDataType::Sampler2D;
 }
 
-pub(super) trait ShaderLayoutType {
+pub trait ShaderLayoutType {
     type Type: IntoShaderDataType;
 }
