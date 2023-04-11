@@ -3,7 +3,7 @@ pub mod events;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::log;
-use crate::renderer::{context::Context, buffer::*, util};
+use crate::renderer::{context::Context, buffer::*, util::{self, polygon_mode, PolygonMode}};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 
 use super::{framebuffer::FrameBuffer, shader, vertex_array::VertexArray};
@@ -84,7 +84,7 @@ impl Window {
 
                 let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))
                     .expect("error loading default post processing shader");
-                let framebuffer = FrameBuffer::new(1920, 1080)
+                let framebuffer = FrameBuffer::new(Self::DEFAULT_FRAMEBUFFER_WIDTH, Self::DEFAULT_FRAMEBUFFER_HEIGHT)
                     .expect("error creating framebuffer");
 
                 let mut framebuffer_vao = VertexArray::new().expect("Error creating vertex array");
@@ -153,7 +153,6 @@ impl Window {
             gl::Viewport(0, 0, width as i32, height as i32);
 
             gl::Enable(gl::DEPTH_TEST);
-
         }
 
         context.on_update(delta_time);
@@ -172,7 +171,7 @@ impl Window {
         // post-processing
         let post_processing_shader = context.post_processing_layer()
             .as_ref()
-            .map(|layer| layer.shader())
+            .map(|layer| layer.post_processing_shader())
             .unwrap_or(&self.default_post_processing_shader);
 
         post_processing_shader.bind();

@@ -1,8 +1,18 @@
 use std::collections::HashMap;
+use aeonetica_engine::nanoserde::{DeRon, SerRon};
+use aeonetica_engine::nanoserde;
 
 use aeonetica_engine::util::vector::Vector2;
 
 use super::{sprite_sheet::SpriteSheet, texture::Texture};
+
+#[derive(Debug, SerRon, DeRon)]
+struct BMPFontFile {
+    texture: String,
+    monospaced: bool,
+    char_size: (u32, u32),
+    characters: HashMap<String, u32>
+}
 
 pub struct BitmapFont {
     char_size: Vector2<u32>,
@@ -12,6 +22,22 @@ pub struct BitmapFont {
 }
 
 impl BitmapFont {
+    pub fn from_texture_and_fontdata(texture: Texture, fontdata: &str) -> Result<Self, String> {
+        let font_data = BMPFontFile::deserialize_ron(fontdata).map_err(|e| e.to_string())?;
+        Self::from_texture(texture,
+                           font_data.char_size.into(),
+                           font_data.characters.into_iter().map(|(k, v)| {
+                               let c: Vec<_> = k.chars().collect();
+                               if c.len() != 1 {
+                                   return Err(format!("key '{}' in font data las length {}, expected 1 char", k, c.len()))
+                               }
+                               let c = c[0];
+                               Ok((c, v))
+                           }).collect::<Result<HashMap<char, u32>, _>>()?,
+                           font_data.monospaced
+        )
+    }
+
     pub fn from_texture(texture: Texture, char_size: Vector2<u32>, characters: HashMap<char, u32>, monospaced: bool) -> Result<Self, String> {
         let mut widths = vec![];
         let pix = texture.size().area() as usize;
