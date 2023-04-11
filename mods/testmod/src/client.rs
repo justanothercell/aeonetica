@@ -38,7 +38,7 @@ impl ClientMod for TestModClient {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
-        context.set_post_processing_layer(test_layer);
+        //context.set_post_processing_layer(test_layer);
     }
 }
 
@@ -81,7 +81,8 @@ struct TestLayer {
     texture: Texture,
     texture2: Texture,
     spritesheet: SpriteSheet,
-    font: BitmapFont
+    font: BitmapFont,
+    aeonetica_font: BitmapFont
 }
 
 impl TestLayer {
@@ -92,7 +93,7 @@ impl PostProcessingLayer for TestLayer {
     fn on_attach(&self) {}
     fn on_detach(&self) {}
 
-    fn shader(&self) -> &shader::Program {
+    fn post_processing_shader(&self) -> &shader::Program {
         &self.post_processing_shader
     }
 }
@@ -141,6 +142,7 @@ impl Layer for TestLayer {
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
             font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, false).expect("error crating font"),
+            aeonetica_font: BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font")
         }
     }
 
@@ -170,6 +172,25 @@ impl Layer for TestLayer {
         self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -120.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
         self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -90.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
         self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -60.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
+
+
+        for (i, row) in ["#![no_main]",
+"",
+"use std::fs::File;",
+"use std::io::Write;",
+"use std::os::unix::io::FromRawFd;",
+"",
+"fn stdout() -> File {",
+"    unsafe { File::from_raw_fd(1) }",
+"}",
+"",
+"#[no_mangle]",
+"pub fn main(_argc: i32, _argv: *const *const u8) {",
+"    let mut stdout = stdout();",
+"    stdout.write(b\"Hello, world!\\n\").unwrap();",
+"}"].into_iter().enumerate() {
+            self.renderer.borrow_mut().static_string(row, &(-120.0, -60.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
+        }
     }
 
     fn on_detach(&self) {
@@ -178,7 +199,7 @@ impl Layer for TestLayer {
 
     fn on_update(&self, _delta_time: usize) {
         let mut renderer = self.renderer.borrow_mut();
-        renderer.begin_scene(&*self.camera.borrow());
+        renderer.begin_scene(&self.camera.borrow());
         renderer.draw_vertices();
         renderer.end_scene();
     }

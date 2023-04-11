@@ -119,7 +119,7 @@ impl Renderer {
 
         const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&mut VertexData::new_textured(
-            &mut util::to_raw_byte_slice!(vertices),
+            util::to_raw_byte_slice!(vertices),
             INDICES.as_slice(),
             Rc::new(layout), shader, z_index, texture)
         );
@@ -139,7 +139,7 @@ impl Renderer {
 
         const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
         self.add_vertices(&mut VertexData::new_textured(
-            &mut util::to_raw_byte_slice!(vertices),
+            util::to_raw_byte_slice!(vertices),
             INDICES.as_slice(),
             Rc::new(layout), shader, z_index, sprite.texture())
         );

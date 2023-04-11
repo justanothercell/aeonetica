@@ -163,7 +163,7 @@ impl Window {
         // post-processing
         let post_processing_shader = context.post_processing_layer()
             .as_ref()
-            .map(|layer| layer.shader())
+            .map(|layer| layer.post_processing_shader())
             .unwrap_or(&self.default_post_processing_shader);
 
         post_processing_shader.bind();
