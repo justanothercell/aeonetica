@@ -185,7 +185,7 @@ impl Layer for TestLayer {
             self.renderer.borrow_mut().static_string(row, &(-120.0, -40.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
         }
 
-        let (fb_width, fb_height) = (1920.0 / 2.0, 1080.0 / 2.0);
+        let (fb_width, fb_height) = (640.0 / 2.0, 360.0 / 2.0);
         self.camera.borrow_mut().set_projection(-fb_width, fb_width, fb_height, -fb_height, -1.0, 1.0);
     }
 

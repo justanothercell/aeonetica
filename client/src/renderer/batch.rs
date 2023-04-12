@@ -3,9 +3,9 @@ use std::rc::Rc;
 use crate::{uniform_str, renderer::shader::UniformStr};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
 
-pub type BatchID = uuid::Uuid;
+pub type BatchID = Id;
 
 pub(super) struct Batch {
     id: BatchID,
@@ -44,7 +44,7 @@ impl Batch {
         vertex_array.set_index_buffer(index_buffer);
 
         Some(Self {
-            id: uuid::Uuid::new_v4(),
+            id: Id::new(),
             layout: data.layout().clone(),
             vertex_array,
             shader: data.shader(),

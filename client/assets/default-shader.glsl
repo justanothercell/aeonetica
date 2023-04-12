@@ -7,13 +7,11 @@ Default shader used when no postprocessing shader is set up
 layout (location = 0) in vec3 a_Position;
 layout (location = 1) in vec2 a_FrameCoord;
 
-//uniform float u_AspectRatio;
-
 out vec2 v_FrameCoord;
 
 void main() {
     v_FrameCoord = a_FrameCoord;
-    gl_Position = vec4(a_Position /** vec3(16.0 / 9.0, u_AspectRatio, 1.0)*/, 1.0);
+    gl_Position = vec4(a_Position, 1.0);
 }
 
 #[fragment]
