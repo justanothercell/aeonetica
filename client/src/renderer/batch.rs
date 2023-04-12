@@ -47,15 +47,15 @@ impl Batch {
             vertex_array,
             shader: data.shader(),
             textures: vec![],
-            z_index: 0
+            z_index: data.z_index
         })
     }
 
     pub fn has_space_for(&self, data: &VertexData) -> bool {
+        if self.z_index != data.z_index { return false }
         self.vertex_array.vertex_buffer().as_ref().unwrap().count() < Self::MAX_BATCH_VERTEX_COUNT &&
         self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() <= Self::MAX_BATCH_INDEX_COUNT &&
         self.shader == data.shader() &&
-        self.z_index == data.z_index &&
         self.layout.eq(data.layout()) &&
         if let Some(t) = data.texture { self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS } else { true } 
     }
