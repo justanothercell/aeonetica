@@ -37,6 +37,8 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    const VIEW_PROJECTION_UNIFORM: UniformStr = uniform_str!("u_ViewProjection");
+
     pub fn new() -> Self {
         Self {
             shader: None,
@@ -47,7 +49,7 @@ impl Renderer {
 
     pub fn begin_scene(&mut self, camera: &Camera) {
         if let Some(shader) = &self.shader {
-            shader.upload_uniform("u_ViewProjection", camera.view_projection_matrix());
+            shader.upload_uniform(&Self::VIEW_PROJECTION_UNIFORM, camera.view_projection_matrix());
         }
         self.view_projection = Some(camera.view_projection_matrix().clone());
     }
@@ -63,7 +65,7 @@ impl Renderer {
 
         shader.bind();
         if let Some(view_projection) = &self.view_projection {
-            shader.upload_uniform("u_ViewProjection", view_projection);
+            shader.upload_uniform(&Self::VIEW_PROJECTION_UNIFORM, view_projection);
         }
         self.shader = Some(shader);
     }

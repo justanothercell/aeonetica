@@ -1,11 +1,21 @@
 pub mod postprocessing;
 pub use postprocessing::*;
 
-use std::{collections::HashMap, ffi::CString, cell::Cell};
+use std::collections::HashMap;
 use super::*;
 
-use aeonetica_engine::{util::{matrix::Matrix4, vector::Vector2}, log};
+use aeonetica_engine::util::{matrix::Matrix4, vector::Vector2};
 use regex::Regex;
+
+#[macro_export]
+macro_rules! uniform_str {
+    ($value:literal) => {
+        UniformStr(concat!($value, '\0').as_ptr())
+    };
+}
+pub use uniform_str;
+
+pub struct UniformStr(pub *const u8);
 
 pub trait Uniform {
     fn upload(&self, location: i32);
@@ -181,10 +191,9 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    pub(super) fn upload_uniform<U: Uniform + ?Sized>(&self, name: &str, data: &U) {
+    pub(super) fn upload_uniform<U: Uniform + ?Sized>(&self, name: &UniformStr, data: &U) {
         unsafe {
-            let c_str = CString::new(name).unwrap();
-            let location = gl::GetUniformLocation(self.0, c_str.as_ptr() as *const i8);
+            let location = gl::GetUniformLocation(self.0, name.0 as *const i8);
             data.upload(location);
         }
     }

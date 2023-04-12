@@ -34,7 +34,7 @@ impl ClientMod for TestModClient {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
-        //context.set_post_processing_layer(test_layer);
+        context.set_post_processing_layer(test_layer);
     }
 }
 
@@ -184,6 +184,9 @@ impl Layer for TestLayer {
 "}"].into_iter().enumerate() {
             self.renderer.borrow_mut().static_string(row, &(-120.0, -40.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
         }
+
+        let (fb_width, fb_height) = (1920.0 / 2.0, 1080.0 / 2.0);
+        self.camera.borrow_mut().set_projection(-fb_width, fb_width, fb_height, -fb_height, -1.0, 1.0);
     }
 
     fn on_detach(&self) {
@@ -200,10 +203,10 @@ impl Layer for TestLayer {
     fn on_event(&self, event: &Event) -> bool {
         match event.typ() {
             EventType::WindowResize(x, y) => {
-                let aspect_ratio = *x as f32 / *y as f32;
-                let screen_width = Self::TEST_SCREEN_WIDTH / 2.0;
-                let screen_height = Self::TEST_SCREEN_WIDTH / 2.0 / aspect_ratio;
-                self.camera.borrow_mut().set_projection(-screen_width, screen_width, screen_height, -screen_height, -1.0, 1.0);
+              //  let aspect_ratio = *x as f32 / *y as f32;
+              //  let screen_width = Self::TEST_SCREEN_WIDTH / 2.0;
+              //  let screen_height = Self::TEST_SCREEN_WIDTH / 2.0 / aspect_ratio;
+              //  self.camera.borrow_mut().set_projection(-screen_width, screen_width, screen_height, -screen_height, -1.0, 1.0);
                 true
             }
             _ => false

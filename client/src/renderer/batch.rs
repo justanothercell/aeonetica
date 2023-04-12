@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+use crate::{uniform_str, renderer::shader::UniformStr};
+
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
 use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
 
@@ -147,7 +149,8 @@ impl Batch {
             }
         }
         if !self.textures.is_empty() {
-            self.shader.upload_uniform("u_Textures", &Self::TEXTURE_SLOTS.as_slice())
+            const TEXTURES_UNIFORM: UniformStr = uniform_str!("u_Textures");
+            self.shader.upload_uniform(&TEXTURES_UNIFORM, &Self::TEXTURE_SLOTS.as_slice())
         }
 
         self.vertex_array.bind();

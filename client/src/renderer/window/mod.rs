@@ -1,9 +1,10 @@
 pub mod events;
 
+use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::log;
-use crate::renderer::{context::Context, buffer::*, util};
+use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 
 use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader};
@@ -28,13 +29,56 @@ impl OpenGlContextProvider {
         gl::load_with(|s| self.get(s));
     }
 }
+
+struct Viewport {
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32
+}
+
+impl Viewport {
+    fn calculate(window: &Window) -> Self {
+        let (width, height) = window.glfw_window.get_size();
+        let aspect_ratio = window.target_aspect_ratio();
+            
+        let mut aspect_width = width;
+        let mut aspect_height = (aspect_width as f32 / aspect_ratio) as i32;
+        if aspect_height > height {
+            aspect_height = height;
+            aspect_width = (aspect_height as f32 * aspect_ratio) as i32;
+        }
+
+        Self {
+            x: width / 2 - aspect_width / 2,
+            y: height / 2 - aspect_height / 2,
+            width: aspect_width,
+            height: aspect_height
+        }
+    }
+
+    fn apply(&self) {
+        unsafe { gl::Viewport(self.x, self.y, self.width, self.height) }
+    }
+}
+
+impl Default for Viewport {
+    fn default() -> Self {
+        Self { x: 0, y: 0, width: 1920, height: 1080 } 
+    }
+}
+
 pub(crate) struct Window {
     glfw_handle: Glfw,
     glfw_window: GlfwWindow,
+    
     event_receiver: Receiver<(f64, WindowEvent)>,
     context_provider: OpenGlContextProvider,
+
     framebuffer: FrameBuffer,
     framebuffer_vao: VertexArray,
+    framebuffer_viewport: Viewport,
+
     default_post_processing_shader: shader::Program,
 }
 
@@ -120,7 +164,8 @@ impl Window {
                     framebuffer,
                     framebuffer_vao,
                     default_post_processing_shader,
-                    context_provider
+                    context_provider,
+                    framebuffer_viewport: Viewport::default()
                 }
             },
             Err(err) => panic!("Error creating window: {err}!") 
@@ -134,11 +179,17 @@ impl Window {
 
             match event.typ() {
                 events::EventType::WindowClose() => self.glfw_window.set_should_close(true),
+                events::EventType::WindowResize(_, _) => self.framebuffer_viewport = Viewport::calculate(self),
                 _ => ()
             }
 
             context.on_event(event);
         }
+    }
+
+    fn target_aspect_ratio(&self) -> f32 {
+        let size = self.framebuffer.size();
+        size.x() as f32 / size.y() as f32
     }
 
     pub(crate) fn render(&mut self, context: &mut Context, delta_time: usize) {
@@ -158,13 +209,12 @@ impl Window {
         context.on_update(delta_time);
 
         self.framebuffer.unbind();
+
+        
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);                
             gl::Clear(gl::COLOR_BUFFER_BIT);
-
-            let (width, height) = self.glfw_window.get_size();
-            gl::Viewport(0, 0, width, height);
-
+            self.framebuffer_viewport.apply();
             gl::Disable(gl::BLEND);
         }
 
@@ -177,7 +227,9 @@ impl Window {
         post_processing_shader.bind();
 
         self.framebuffer.texture().bind(0);
-        post_processing_shader.upload_uniform("u_Frame", &0);
+
+        const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
+        post_processing_shader.upload_uniform(&FRAME_UNIFORM_NAME, &0);
 
         context.post_processing_layer()
             .as_ref()
