@@ -138,7 +138,6 @@ impl Batch {
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
-        // FIXME: only load shaders if needed
         renderer.load_shader(self.shader.clone());
 
         for (slot, texture) in self.textures.iter().enumerate() {

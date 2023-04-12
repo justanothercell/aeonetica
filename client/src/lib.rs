@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::Id;

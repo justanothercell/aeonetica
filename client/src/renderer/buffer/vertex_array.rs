@@ -24,16 +24,10 @@ impl VertexArray {
 
     pub fn bind(&self) {
         unsafe { gl::BindVertexArray(self.id) }
-        if let Some(layout) = self.vertex_buffer.as_ref().map(|buffer| buffer.layout().to_owned()).flatten() {
-            (0..layout.elements().len()).for_each(|i| unsafe { gl::EnableVertexAttribArray(i as u32) })
-        } 
     }
 
     pub fn unbind(&self) {
         unsafe { gl::BindVertexArray(0) }
-        if let Some(layout) = self.vertex_buffer.as_ref().map(|buffer| buffer.layout().to_owned()).flatten() {
-            (0..layout.elements().len()).for_each(|i| unsafe { gl::DisableVertexAttribArray(i as u32) })
-        }
     }
 
     pub fn set_vertex_buffer(&mut self, buffer: Buffer) {

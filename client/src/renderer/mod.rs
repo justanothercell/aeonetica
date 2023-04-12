@@ -57,6 +57,10 @@ impl Renderer {
     }
 
     pub fn load_shader(&mut self, shader: Program) {
+        if self.shader.as_ref() == Some(&shader) {
+            return;
+        }
+
         shader.bind();
         if let Some(view_projection) = &self.view_projection {
             shader.upload_uniform("u_ViewProjection", view_projection);
@@ -80,6 +84,8 @@ impl Renderer {
         self.batches.iter().for_each(|(_, batch)|
             batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
         );
+
+        self.unload_shader();
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
