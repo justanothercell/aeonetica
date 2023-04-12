@@ -7,6 +7,12 @@ pub trait ExtractComparable<C> {
     fn extract_comparable(&self) -> C;
 }
 
+impl<T: Copy> ExtractComparable<T> for T {
+    fn extract_comparable(&self) -> T {
+        *self
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct OrderedMap<K, V, C> {
     map: HashMap<K, V>,
