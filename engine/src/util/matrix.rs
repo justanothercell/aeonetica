@@ -1,9 +1,11 @@
+use core::arch::x86_64::*;
 use std::array;
 use std::ops::*;
 
 use super::axis::Axis;
 use super::vector::Vector2;
 
+#[repr(align(16))]
 #[derive(Clone, Debug, Default)]
 pub struct Matrix4<T>([T; 16]);
 
@@ -240,85 +242,44 @@ impl Matrix4<f32> {
     }
 }
 
-impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> Mul for &Matrix4<T> {
-    type Output = Matrix4<T>;
+//impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> Mul for &Matrix4<T> {
+impl Mul for &Matrix4<f32> {
+    type Output = Matrix4<f32>;
 
-    fn mul(self, rhs: Self) -> Matrix4<T> {
+    fn mul(self, rhs: Self) -> Matrix4<f32> {
         let mut ret = Matrix4::default();
 
-        ret.0[0] = (self.0[0] * rhs.0[0])
-            + (self.0[1] * rhs.0[4])
-            + (self.0[2] * rhs.0[8])
-            + (self.0[3] * rhs.0[12]);
-        ret.0[1] = (self.0[0] * rhs.0[1])
-            + (self.0[1] * rhs.0[5])
-            + (self.0[2] * rhs.0[9])
-            + (self.0[3] * rhs.0[13]);
-        ret.0[2] = (self.0[0] * rhs.0[2])
-            + (self.0[1] * rhs.0[6])
-            + (self.0[2] * rhs.0[10])
-            + (self.0[3] * rhs.0[14]);
-        ret.0[3] = (self.0[0] * rhs.0[3])
-            + (self.0[1] * rhs.0[7])
-            + (self.0[2] * rhs.0[11])
-            + (self.0[3] * rhs.0[15]);
+        unsafe {
+            let (row0, row1, row2, row3) = (
+                _mm_load_ps(&rhs.0[0]),
+                _mm_load_ps(&rhs.0[4]),
+                _mm_load_ps(&rhs.0[8]),
+                _mm_load_ps(&rhs.0[12])
+            );
 
-        ret.0[4] = (self.0[4] * rhs.0[0])
-            + (self.0[5] * rhs.0[4])
-            + (self.0[6] * rhs.0[8])
-            + (self.0[7] * rhs.0[12]);
-        ret.0[5] = (self.0[4] * rhs.0[1])
-            + (self.0[5] * rhs.0[5])
-            + (self.0[6] * rhs.0[9])
-            + (self.0[7] * rhs.0[13]);
-        ret.0[6] = (self.0[4] * rhs.0[2])
-            + (self.0[5] * rhs.0[6])
-            + (self.0[6] * rhs.0[10])
-            + (self.0[7] * rhs.0[14]);
-        ret.0[7] = (self.0[4] * rhs.0[3])
-            + (self.0[5] * rhs.0[7])
-            + (self.0[6] * rhs.0[11])
-            + (self.0[7] * rhs.0[15]);
+            for i in 0..4 {
+                let (brod0, brod1, brod2, brod3) = (
+                    _mm_set1_ps(self.0[4 * i + 0]),
+                    _mm_set1_ps(self.0[4 * i + 1]),
+                    _mm_set1_ps(self.0[4 * i + 2]),
+                    _mm_set1_ps(self.0[4 * i + 3])
+                );
 
-        ret.0[8] = (self.0[8] * rhs.0[0])
-            + (self.0[9] * rhs.0[4])
-            + (self.0[10] * rhs.0[8])
-            + (self.0[11] * rhs.0[12]);
-        ret.0[9] = (self.0[8] * rhs.0[1])
-            + (self.0[9] * rhs.0[5])
-            + (self.0[10] * rhs.0[9])
-            + (self.0[11] * rhs.0[13]);
-        ret.0[10] = (self.0[8] * rhs.0[2])
-            + (self.0[9] * rhs.0[6])
-            + (self.0[10] * rhs.0[10])
-            + (self.0[11] * rhs.0[14]);
-        ret.0[11] = (self.0[8] * rhs.0[3])
-            + (self.0[9] * rhs.0[7])
-            + (self.0[10] * rhs.0[11])
-            + (self.0[11] * rhs.0[15]);
+                let row = _mm_add_ps(
+                    _mm_add_ps(_mm_mul_ps(brod0, row0), _mm_mul_ps(brod1, row1)),
+                    _mm_add_ps(_mm_mul_ps(brod2, row2), _mm_mul_ps(brod3, row3))
+                );
 
-        ret.0[12] = (self.0[12] * rhs.0[0])
-            + (self.0[13] * rhs.0[4])
-            + (self.0[14] * rhs.0[8])
-            + (self.0[15] * rhs.0[12]);
-        ret.0[13] = (self.0[12] * rhs.0[1])
-            + (self.0[13] * rhs.0[5])
-            + (self.0[14] * rhs.0[9])
-            + (self.0[15] * rhs.0[13]);
-        ret.0[14] = (self.0[12] * rhs.0[2])
-            + (self.0[13] * rhs.0[6])
-            + (self.0[14] * rhs.0[10])
-            + (self.0[15] * rhs.0[14]);
-        ret.0[15] = (self.0[12] * rhs.0[3])
-            + (self.0[13] * rhs.0[7])
-            + (self.0[14] * rhs.0[11])
-            + (self.0[15] * rhs.0[15]);
+                _mm_store_ps(&mut ret.0[4 * i], row);
+            }
+        }
 
         ret
     }
 }
 
-impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> Mul for Matrix4<T> {
+//impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> Mul for Matrix4<T> {
+impl Mul for Matrix4<f32> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -326,7 +287,8 @@ impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> Mul for Matrix4<T> {
     }
 }
 
-impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> MulAssign for Matrix4<T> {
+//impl<T: Copy + Default + Mul<Output = T> + Add<Output = T>> MulAssign for Matrix4<T> {
+impl MulAssign for Matrix4<f32> {
     fn mul_assign(&mut self, rhs: Self) {
         let tmp = self.clone();
         *self = tmp * rhs;
