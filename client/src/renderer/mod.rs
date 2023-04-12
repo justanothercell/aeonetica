@@ -81,7 +81,7 @@ impl Renderer {
 
     pub fn draw_vertices(&mut self) {
         let mut_ref_ptr = self as *mut _;
-        self.batches.iter().for_each(|(_, batch)|
+        self.batches.iter().rev().for_each(|(_, batch)|
             batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
         );
 

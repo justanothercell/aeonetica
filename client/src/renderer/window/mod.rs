@@ -152,7 +152,7 @@ impl Window {
             let [width, height]: [u32; 2] = (*self.framebuffer.size()).into();
             gl::Viewport(0, 0, width as i32, height as i32);
 
-            gl::Enable(gl::DEPTH_TEST);
+            gl::Enable(gl::BLEND);
         }
 
         context.on_update(delta_time);
@@ -165,7 +165,7 @@ impl Window {
             let (width, height) = self.glfw_window.get_size();
             gl::Viewport(0, 0, width, height);
 
-            gl::Disable(gl::DEPTH_TEST);
+            gl::Disable(gl::BLEND);
         }
 
         // post-processing
