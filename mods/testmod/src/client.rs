@@ -77,7 +77,9 @@ struct TestLayer {
     texture2: Texture,
     spritesheet: SpriteSheet,
     font: BitmapFont,
-    aeonetica_font: BitmapFont
+    aeonetica_font: BitmapFont,
+    
+    moving_quad: RefCell<Option<TexturedQuad>>
 }
 
 impl TestLayer {
@@ -136,7 +138,8 @@ impl Layer for TestLayer {
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
             font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, false).expect("error crating font"),
-            aeonetica_font: BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font")
+            aeonetica_font: BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font"),
+            moving_quad: RefCell::new(None)
         }
     }
 
@@ -187,29 +190,30 @@ impl Layer for TestLayer {
 
         let (fb_width, fb_height) = (640.0 / 2.0, 360.0 / 2.0);
         self.camera.borrow_mut().set_projection(-fb_width, fb_width, fb_height, -fb_height, -1.0, 1.0);
+
+        let mut moving_quad = TexturedQuad::new(Vector2::new(-250.0, -170.0), Vector2::new(75.0, 75.0), 2, self.texture.id(), self.texture_shader.clone());
+        self.renderer.borrow_mut().add(&mut moving_quad);
+        *self.moving_quad.borrow_mut() = Some(moving_quad);
     }
 
     fn on_detach(&self) {
         log!("TestLayer detached!");
     }
 
-    fn on_update(&self, _delta_time: usize) {
+    fn on_update(&self, delta_time: f64) {
+        let mut borrow = self.moving_quad.borrow_mut();
+        let moving_quad = borrow.as_mut().unwrap();
+        moving_quad.set_rotation(moving_quad.rotation() + delta_time as f32);
+
         let mut renderer = self.renderer.borrow_mut();
+        renderer.modify(moving_quad);
+
         renderer.begin_scene(&self.camera.borrow());
         renderer.draw_vertices();
         renderer.end_scene();
     }
 
     fn on_event(&self, event: &Event) -> bool {
-        match event.typ() {
-            EventType::WindowResize(x, y) => {
-              //  let aspect_ratio = *x as f32 / *y as f32;
-              //  let screen_width = Self::TEST_SCREEN_WIDTH / 2.0;
-              //  let screen_height = Self::TEST_SCREEN_WIDTH / 2.0 / aspect_ratio;
-              //  self.camera.borrow_mut().set_projection(-screen_width, screen_width, screen_height, -screen_height, -1.0, 1.0);
-                true
-            }
-            _ => false
-        }
+        false
     }
 }

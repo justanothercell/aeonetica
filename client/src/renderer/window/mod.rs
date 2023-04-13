@@ -192,7 +192,7 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut Context, delta_time: usize) {
+    pub(crate) fn render(&mut self, context: &mut Context, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         
@@ -209,7 +209,6 @@ impl Window {
         context.on_update(delta_time);
 
         self.framebuffer.unbind();
-
         
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);                

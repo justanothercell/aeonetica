@@ -66,7 +66,7 @@ impl Context {
         log!("Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_update(&mut self, delta_time: usize) {
+    pub(crate) fn on_update(&mut self, delta_time: f64) {
         self.layer_stack.layers.iter().for_each(|layer| layer.on_update(delta_time));
     }
 

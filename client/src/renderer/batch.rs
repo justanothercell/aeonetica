@@ -3,7 +3,7 @@ use std::rc::Rc;
 use crate::{uniform_str, renderer::shader::UniformStr};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id, log};
 
 pub type BatchID = Id;
 
@@ -118,9 +118,9 @@ impl Batch {
             return Err(());
         }
 
-
         if let Some(texture) = texture {
-            patch_texture_id(data, &self.layout, *self.textures.iter().find(|t| t == &&texture).ok_or(())?);            
+            let slot = self.textures.iter().position(|t| *t == texture).ok_or(())?;            
+            patch_texture_id(data, &self.layout, slot as u32);            
         }
 
         let offset = location.offset() * self.layout.stride();
@@ -223,8 +223,8 @@ impl<'a> VertexData<'a> {
         &self.layout
     }
 
-    pub fn vertices(&self) -> &&'a mut [u8] {
-        &self.vertices
+    pub fn vertices(&mut self) -> &mut [u8] {
+        self.vertices
     }
 
     pub fn num_vertices(&self) -> u32 {
