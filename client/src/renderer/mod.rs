@@ -14,7 +14,7 @@ pub use quad::*;
 
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, log};
 use buffer::*;
 use shader::*;
 use texture::*;
@@ -107,13 +107,11 @@ impl Renderer {
         }
     }
 
-    pub fn modify_vertices(&self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
-        if let Some(batch) = self.batches.get(location.batch()) {
-            batch.modify_vertices(location, data, texture)
-        }
-        else {
-            Err(())
-        }
+    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+        self.batches.get_mut(
+            location.batch(), 
+            |batch| batch.modify_vertices(location, data, texture)
+        ).ok_or(()).flatten()
     }
 
     pub fn add(&mut self, item: &mut impl Renderable) {
@@ -121,7 +119,7 @@ impl Renderer {
         item.set_location(location);
     }
 
-    pub fn modify(&self, item: &mut impl Renderable) -> Result<(), ()> {
+    pub fn modify(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
         let texture = item.texture_id();
         self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
     }

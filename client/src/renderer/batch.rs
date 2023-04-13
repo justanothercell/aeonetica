@@ -1,9 +1,9 @@
-use std::rc::Rc;
+use std::{rc::Rc, cell::Cell};
 
 use crate::{uniform_str, renderer::shader::UniformStr};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id, log};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
 
 pub type BatchID = Id;
 
@@ -12,6 +12,12 @@ pub(super) struct Batch {
 
     layout: Rc<BufferLayout>,
     vertex_array: VertexArray,
+
+    vertices: Vec<u8>,
+    vertices_dirty: Cell<bool>,
+    indices: Vec<u32>,
+    indices_dirty: Cell<bool>,
+
     shader: shader::Program,
     textures: Vec<RenderID>,
     z_index: u8
@@ -43,10 +49,20 @@ impl Batch {
         )?;
         vertex_array.set_index_buffer(index_buffer);
 
+        let vertices = Vec::with_capacity((Self::MAX_BATCH_VERTEX_COUNT * data.layout().stride()) as usize);
+        let indices = Vec::with_capacity(Self::MAX_BATCH_INDEX_COUNT as usize * std::mem::size_of::<u32>());
+
         Some(Self {
             id: Id::new(),
+
             layout: data.layout().clone(),
             vertex_array,
+            
+            vertices,
+            vertices_dirty: Cell::new(false),
+            indices,
+            indices_dirty: Cell::new(false),
+
             shader: data.shader(),
             textures: vec![],
             z_index: data.z_index
@@ -73,36 +89,13 @@ impl Batch {
             data.patch_texture_id(index as u32);
         }
 
-        let num_new_vertices = data.num_vertices();
-
-        let vertex_buffer = self.vertex_array.vertex_buffer_mut().as_mut().unwrap();
-        let num_vertices = vertex_buffer.count();
-        vertex_buffer.bind();
-        unsafe {
-            gl::BufferSubData(
-                vertex_buffer.gl_typ(), 
-                (self.layout.stride() * num_vertices) as isize, 
-                data.vertices().len() as isize, 
-                data.vertices().as_ptr() as *const _
-            );
-        }     
-        vertex_buffer.set_count(num_vertices + num_new_vertices);
-
-        let indices = data.indices().iter().map(|i| i + num_vertices).collect::<Vec<_>>();
-
-        let index_buffer = self.vertex_array.index_buffer_mut().as_mut().unwrap();
-        let num_indices = index_buffer.count();
-        let index_size = std::mem::size_of::<u32>() as isize;
-        index_buffer.bind();
-        unsafe {
-            gl::BufferSubData(
-                index_buffer.gl_typ(),
-                num_indices as isize * index_size,
-                index_size * indices.len() as isize,
-                indices.as_ptr() as *const _
-            )
-        }
-        index_buffer.set_count(index_buffer.count() + indices.len() as u32);
+        let num_vertices = self.vertices.len() as u32 / self.layout.stride();
+        self.vertices.extend_from_slice(data.vertices);
+        self.vertices_dirty.set(true);
+        
+        let indices = data.indices().iter().map(|i| i + num_vertices);
+        self.indices.extend(indices);
+        self.indices_dirty.set(true);
 
         VertexLocation {
             batch: self.id, 
@@ -111,9 +104,9 @@ impl Batch {
         }
     }
 
-    pub fn modify_vertices(&self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
-        let num_bytes = location.count() * self.layout.stride();
-        if num_bytes < data.len() as u32 {
+    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+        let num_bytes = (location.count() * self.layout.stride()) as usize;
+        if num_bytes < data.len() {
             log_err!("unexpected vertices lenght; got {}, expected {}", data.len(), num_bytes);
             return Err(());
         }
@@ -123,23 +116,22 @@ impl Batch {
             patch_texture_id(data, &self.layout, slot as u32);            
         }
 
-        let offset = location.offset() * self.layout.stride();
-        let vertex_buffer = self.vertex_array.vertex_buffer().as_ref().unwrap();
-        vertex_buffer.bind();
-        unsafe {
-            gl::BufferSubData(
-                vertex_buffer.gl_typ(),
-                offset as isize,
-                data.len() as isize,
-                data.as_ptr() as *const _
-            );
-        }
-        vertex_buffer.unbind();
+        let offset = (location.offset() * self.layout.stride()) as usize;
+        self.vertices[offset..offset + num_bytes].copy_from_slice(data);
+        self.vertices_dirty.set(true);
 
         Ok(())
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
+        if self.indices_dirty.get() {
+            self.update_indices();
+        }
+
+        if self.vertices_dirty.get() {
+            self.update_vertices();
+        }
+
         renderer.load_shader(self.shader.clone());
 
         for (slot, texture) in self.textures.iter().enumerate() {
@@ -170,6 +162,44 @@ impl Batch {
 
     pub fn id(&self) -> &BatchID {
         &self.id
+    }
+
+    pub fn update_indices(&self) {
+        let num_indices = self.indices.len();
+
+        let index_buffer = self.vertex_array.index_buffer().as_ref().unwrap();
+        index_buffer.bind();
+
+        unsafe {
+            gl::BufferData(
+                index_buffer.gl_typ(),
+                (num_indices * std::mem::size_of::<u32>()) as isize,
+                self.indices.as_ptr() as *const _,
+                gl::DYNAMIC_DRAW
+            )
+        }
+        index_buffer.set_count(num_indices as u32);
+
+        self.indices_dirty.set(false);
+    }
+
+    pub fn update_vertices(&self) {
+        let num_bytes = self.vertices.len();
+
+        let vertex_buffer = self.vertex_array.vertex_buffer().as_ref().unwrap();
+        vertex_buffer.bind();
+
+        unsafe {
+            gl::BufferData(
+                vertex_buffer.gl_typ(),
+                num_bytes as isize,
+                self.vertices.as_ptr() as *const _,
+                gl::DYNAMIC_DRAW
+            );
+        }
+        vertex_buffer.set_count(num_bytes as u32 / self.layout.stride());
+
+        self.vertices_dirty.set(false);
     }
 }
 
