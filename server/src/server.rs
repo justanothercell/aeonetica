@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use aeonetica_engine::{log, log_err};
 use crate::ecs::Engine;
 use crate::server_runtime::ServerRuntime;
@@ -18,8 +18,6 @@ pub fn run(ip: &str) {
         m.start(mut_engine_ref);
     });
 
-    let mut time = 0;
-
     loop {
         let t = Instant::now();
 
@@ -29,18 +27,11 @@ pub fn run(ip: &str) {
 
         engine.timeout_inactive();
 
-        if time > 1_000_000_000 / TPS {
-            time -= 1_000_000_000 / TPS;
-            engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
-            engine.run_tasks();
-            engine.tick += 1;
-        }
+        engine.for_each_module(|engine, id, m| m.tick_dyn(id, engine));
+        engine.run_tasks();
+        engine.tick += 1;
 
-        if time > 10_000_000_000 / TPS {
-            time -= 10_000_000_000 / TPS;
-            log!("WARINING: running 10 ticks {}ms behind, skipping!", time / 1_000_000);
-        }
-
-        time += t.elapsed().as_nanos() as usize;
+        let to_wait = t.elapsed().as_nanos() as usize - 1_000_000_000 / TPS;
+        std::thread::sleep(Duration::from_nanos(to_wait as u64));
     }
 }
