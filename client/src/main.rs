@@ -1,4 +1,6 @@
 #![feature(let_chains)]
+#![feature(result_flattening)]
+
 use aeonetica_engine::log;
 use client::client::run;
 fn main() {

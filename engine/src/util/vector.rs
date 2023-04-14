@@ -44,6 +44,20 @@ impl Vector2<f32> {
     pub fn mag(&self) -> f32 {
         f32::sqrt(self.mag_sq())
     }
+
+    pub fn half(mut self) -> Self {
+        self.x /= 2.0;
+        self.y /= 2.0;
+        self
+    }
+
+    pub fn rotate(mut self, theta: f32) -> Self {
+        let (x, y) = (self.x, self.y);
+        self.x = x * theta.cos() - y * theta.sin();
+        self.y = x * theta.sin() + y * theta.cos();
+
+        self
+    }
 }
 
 impl Vector2<f64> {
@@ -61,6 +75,12 @@ impl Vector2<f64> {
 
     pub fn mag(&self) -> f64 {
         f64::sqrt(self.mag_sq())
+    }
+
+    pub fn half(mut self) -> Self {
+        self.x /= 2.0;
+        self.y /= 2.0;
+        self
     }
 }
 
@@ -90,6 +110,12 @@ impl<T> From<(T, T)> for Vector2<T> {
             x: value.0,
             y: value.1
         }
+    }
+}
+
+impl<T> Into<(T, T)> for Vector2<T> {
+    fn into(self) -> (T, T) {
+        (self.x, self.y)
     }
 }
 
@@ -177,6 +203,17 @@ impl<T: DivAssign> DivAssign for Vector2<T> {
     fn div_assign(&mut self, rhs: Self) {
         self.x /= rhs.x;
         self.y /= rhs.y;
+    }
+}
+
+impl<T: Neg<Output = T>> Neg for Vector2<T> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            x: -self.x,
+            y: -self.y
+        }
     }
 }
 

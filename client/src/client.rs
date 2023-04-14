@@ -34,7 +34,7 @@ pub fn run(ip: &str, server_ip: &str) {
     while !window.should_close() {
         let t = Instant::now();
 
-        window.render(&mut context, delta_time);
+        window.render(&mut context, delta_time as f64 / 1_000_000_000.0);
 
         let _ = client.handle_queued().map_err(|e| {
             log_err!("{e}")

@@ -94,6 +94,7 @@ impl Window {
             Ok(mut glfw) => {
                 glfw.window_hint(WindowHint::ContextVersion(4, 5));
                 glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
+                glfw.window_hint(WindowHint::DoubleBuffer(true));
 
                 let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {
                     glfw.create_window(
@@ -192,7 +193,7 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut Context, delta_time: usize) {
+    pub(crate) fn render(&mut self, context: &mut Context, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         
@@ -209,7 +210,6 @@ impl Window {
         context.on_update(delta_time);
 
         self.framebuffer.unbind();
-
         
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);                

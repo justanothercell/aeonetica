@@ -6,3 +6,5 @@ server/mods/**.zip
 .vscode/
 local_testing/
 **/Cargo.lock
+*.zip
+perf.data*

@@ -14,7 +14,7 @@ pub use quad::*;
 
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, log};
 use buffer::*;
 use shader::*;
 use texture::*;
@@ -28,6 +28,10 @@ pub(self) type RenderID = gl::types::GLuint;
 
 pub trait Renderable {
     fn vertex_data<'a>(&'a mut self) -> VertexData<'a>;
+    fn texture_id(&self) -> Option<RenderID>;
+
+    fn location(&self) -> &Option<VertexLocation>;
+    fn set_location(&mut self, location: VertexLocation);
 }
 
 pub struct Renderer {
@@ -103,17 +107,21 @@ impl Renderer {
         }
     }
 
-    pub fn modify_vertices(&self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
-        if let Some(batch) = self.batches.get(location.batch()) {
-            batch.modify_vertices(location, data, texture)
-        }
-        else {
-            Err(())
-        }
+    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+        self.batches.get_mut(
+            location.batch(), 
+            |batch| batch.modify_vertices(location, data, texture)
+        ).ok_or(()).flatten()
     }
 
-    pub fn add(&mut self, item: &mut impl Renderable) -> VertexLocation {
-        self.add_vertices(&mut item.vertex_data())
+    pub fn add(&mut self, item: &mut impl Renderable) {
+        let location = self.add_vertices(&mut item.vertex_data());
+        item.set_location(location);
+    }
+
+    pub fn modify(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
+        let texture = item.texture_id();
+        self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: Program, z_index: u8) {

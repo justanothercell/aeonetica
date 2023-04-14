@@ -1,4 +1,5 @@
 #![feature(let_chains)]
+#![feature(result_flattening)]
 
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};

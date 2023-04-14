@@ -31,7 +31,10 @@ pub fn run(ip: &str) {
         engine.run_tasks();
         engine.tick += 1;
 
-        let to_wait = 1_000_000_000 / TPS - t.elapsed().as_nanos() as usize;
-        std::thread::sleep(Duration::from_nanos(to_wait as u64));
+        let elapsed = t.elapsed().as_nanos() as usize;
+        if elapsed < 1_000_000_000 / TPS {
+            let to_wait = 1_000_000_000 / TPS - elapsed;
+            std::thread::sleep(Duration::from_nanos(to_wait as u64));
+        }
     }
 }
