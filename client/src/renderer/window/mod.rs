@@ -94,6 +94,7 @@ impl Window {
             Ok(mut glfw) => {
                 glfw.window_hint(WindowHint::ContextVersion(4, 5));
                 glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
+                glfw.window_hint(WindowHint::DoubleBuffer(true));
 
                 let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {
                     glfw.create_window(

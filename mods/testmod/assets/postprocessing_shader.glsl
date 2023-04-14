@@ -2,7 +2,7 @@
 Default shader used when no postprocessing shader is set up
 
 #[vertex]
-#version 400 core
+#version 450 core
 
 layout (location = 0) in vec3 a_Position;
 layout (location = 1) in vec2 a_FrameCoord;
@@ -15,7 +15,7 @@ void main() {
 }
 
 #[fragment]
-#version 400 core
+#version 450 core
 
 in vec2 v_FrameCoord;
 
