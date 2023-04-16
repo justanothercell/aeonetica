@@ -126,7 +126,7 @@ mod benches {
         }
         b.iter(|| {
             let _ = black_box({
-                map.iter().map(|(k, i)| {
+                map.iter().map(|(_k, i)| {
                     *i
                 }).sum::<usize>()
             });

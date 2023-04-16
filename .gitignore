@@ -4,7 +4,11 @@ server/runtime/
 server/mods/**.zip
 .idea/
 .vscode/
-local_testing/
 **/Cargo.lock
 *.zip
 perf.data*
+
+local_testing/
+
+assets/font_and_glyphs/generated.png
+assets/font_and_glyphs/generated_x16.png

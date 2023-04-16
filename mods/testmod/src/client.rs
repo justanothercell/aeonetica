@@ -9,6 +9,7 @@ use aeonetica_client::{
     renderer::{*, shader::*, texture::{*, font::BitmapFont}, window::{OpenGlContextProvider, events::*}, layer::Layer},
     networking::messaging::{ClientHandle, ClientMessenger},
 };
+use aeonetica_client::data_store::DataStore;
 
 use aeonetica_engine::{
     Id, log,
@@ -49,13 +50,13 @@ impl ClientHandle for MyClientHandle {
         log!("my client handle initialized")
     }
 
-    fn start(&mut self, messenger: &mut ClientMessenger) {
+    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {
         messenger.register_receiver(MyClientHandle::receive_server_msg);
         messenger.call_server_fn(MyModule::receive_client_msg, "Hello from client server call function".to_string(), SendMode::Safe);
         log!("receive_server_msg registered in start");
     }
 
-    fn remove(&mut self, _messenger: &mut ClientMessenger) {
+    fn remove(&mut self, _messenger: &mut ClientMessenger, store: &mut DataStore) {
         log!("my client handle removed")
     }
 

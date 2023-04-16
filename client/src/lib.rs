@@ -13,6 +13,7 @@ pub mod networking;
 pub mod client_runtime;
 pub mod client;
 pub mod renderer;
+pub mod data_store;
 
 pub trait ClientMod {
     #[allow(unused_variables)]

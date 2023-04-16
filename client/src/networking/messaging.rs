@@ -8,14 +8,15 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
+use crate::data_store::DataStore;
 use crate::networking::NetworkClient;
 
 pub trait ClientHandle: ClientEntity {
     fn init(&mut self) {}
 	#[allow(unused_variables)]
-    fn start(&mut self, messenger: &mut ClientMessenger) {}
+    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
 	#[allow(unused_variables)]
-    fn remove(&mut self, messenger: &mut ClientMessenger) {}
+    fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
 }
 
 pub struct ClientMessenger {
