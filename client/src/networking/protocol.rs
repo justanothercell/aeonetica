@@ -5,12 +5,13 @@ use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use crate::client_runtime::{ClientHandleBox, ClientRuntime};
+use crate::data_store::DataStore;
 use crate::networking::messaging::ClientMessenger;
 
 impl ClientRuntime {
-    pub(crate) fn handle_queued(&mut self) -> Result<(), AError> {
+    pub(crate) fn handle_queued(&mut self, store: &mut DataStore) -> Result<(), AError> {
         let packets = self.nc.borrow_mut().queued_packets();
-        packets.into_iter().map(|packet| self.handle_packet(&packet))
+        packets.into_iter().map(|packet| self.handle_packet(&packet, store))
         .reduce(|acc, r| {
             acc?;
             r?;
@@ -18,7 +19,7 @@ impl ClientRuntime {
         }).unwrap_or(Ok(()))
     }
 
-    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket) -> Result<(), AError>{
+    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket, store: &mut DataStore) -> Result<(), AError>{
         if let Some(handler) = self.awaiting_replies.remove(&packet.conv_id) {
             handler(self, packet);
             return Ok(())
@@ -39,7 +40,7 @@ impl ClientRuntime {
                     let mut handle = creator();
                     handle.init();
                     let mut messenger = ClientMessenger::new(self.nc.clone(), self.client_id, *eid);
-                    handle.start(&mut messenger);
+                    handle.start(&mut messenger, &mut store);
                     self.handles.insert(*eid, ClientHandleBox {
                         handle,
                         messenger,
@@ -49,7 +50,7 @@ impl ClientRuntime {
             ServerMessage::RemoveClientHandle(id) => {
                 log!("remove client handle");
                 if let Some(mut h) = self.handles.remove(id) {
-                    h.handle.remove(&mut h.messenger)
+                    h.handle.remove(&mut h.messenger, &mut store)
                 }
             }
             ServerMessage::ModMessage(eid, rid, data) => {

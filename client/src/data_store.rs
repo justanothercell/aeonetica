@@ -8,6 +8,12 @@ pub struct DataStore {
 }
 
 impl DataStore {
+    pub(crate) fn new() -> Self {
+        Self {
+            stores: Default::default()
+        }
+    }
+
     pub fn add_store<T: Sized + 'static>(&mut self, mut store: T) -> bool {
         if let std::collections::hash_map::Entry::Vacant(e) = self.stores.entry(type_to_id::<T>()) {
             e.insert(Box::new(store));

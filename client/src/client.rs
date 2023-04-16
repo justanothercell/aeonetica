@@ -3,6 +3,7 @@ use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use crate::client_runtime::ClientRuntime;
+use crate::data_store::DataStore;
 use crate::renderer::context::Context;
 use crate::renderer::window::Window;
 
@@ -27,16 +28,18 @@ pub fn run(ip: &str, server_ip: &str) {
     let mut last_full_sec = 0;
     let mut delta_time = 0;
 
+    let mut store =  DataStore::new();
     let mut context = Context::new();
+
     client.loaded_mods.iter()
-        .for_each(|loaded_mod| loaded_mod.client_mod.init_context(&mut context, window.context_provider()));
+        .for_each(|loaded_mod| loaded_mod.client_mod.start(&mut context, &mut store, window.context_provider()));
 
     while !window.should_close() {
         let t = Instant::now();
 
         window.render(&mut context, delta_time as f64 / 1_000_000_000.0);
 
-        let _ = client.handle_queued().map_err(|e| {
+        let _ = client.handle_queued(&mut store).map_err(|e| {
             log_err!("{e}")
         });
 

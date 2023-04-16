@@ -31,7 +31,7 @@ impl ClientMod for TestModClient {
         handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle { }));
     }
 
-    fn init_context(&self, context: &mut aeonetica_client::renderer::context::Context, gl_context_provider: &OpenGlContextProvider) {
+    fn start(&self, context: &mut aeonetica_client::renderer::context::Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
