@@ -39,6 +39,20 @@ impl DataStore {
         self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 })
     }
 
+    pub fn get_or_create<T: Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
+        self.stores.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).unwrap_or_else(||{
+            self.add_store(creator());
+            self.get_store().unwrap()
+        })
+    }
+
+    pub fn mut_or_create<T: Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
+        self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 } ).unwrap_or_else(||{
+            self.add_store(creator());
+            self.mut_store().unwrap()
+        })
+    }
+
     pub fn has_store<T: Sized + 'static>(&self) -> bool {
         self.stores.contains_key(&type_to_id::<T>())
     }

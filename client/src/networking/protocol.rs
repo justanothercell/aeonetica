@@ -40,7 +40,7 @@ impl ClientRuntime {
                     let mut handle = creator();
                     handle.init();
                     let mut messenger = ClientMessenger::new(self.nc.clone(), self.client_id, *eid);
-                    handle.start(&mut messenger, &mut store);
+                    handle.start(&mut messenger, store);
                     self.handles.insert(*eid, ClientHandleBox {
                         handle,
                         messenger,
@@ -50,7 +50,7 @@ impl ClientRuntime {
             ServerMessage::RemoveClientHandle(id) => {
                 log!("remove client handle");
                 if let Some(mut h) = self.handles.remove(id) {
-                    h.handle.remove(&mut h.messenger, &mut store)
+                    h.handle.remove(&mut h.messenger, store)
                 }
             }
             ServerMessage::ModMessage(eid, rid, data) => {

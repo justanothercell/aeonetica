@@ -50,6 +50,21 @@ impl Entity {
         self.modules.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 })
     }
 
+    pub fn get_or_create<T: Module + Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
+        self.modules.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).unwrap_or_else(||{
+            self.add_module(creator());
+            self.mut_module().unwrap()
+        })
+    }
+
+    pub fn mut_or_create<T: Module + Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
+        self.modules.get_mut(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 } ).unwrap_or_else(||{
+            self.add_module(creator());
+            self.mut_module().unwrap()
+        })
+    }
+
+
     pub fn has_module<T: Module + Sized + 'static>(&self) -> bool {
         self.modules.contains_key(&type_to_id::<T>())
     }

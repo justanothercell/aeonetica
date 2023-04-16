@@ -44,6 +44,7 @@ mod paths_util_common {
 
 pub(crate) use paths_util::*;
 use crate::client_runtime::paths_util_common::mod_hash;
+use crate::data_store::DataStore;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ClientState {
@@ -201,7 +202,7 @@ impl ClientRuntime {
         while self.state != ClientState::Registered {
             let packets = self.nc.borrow_mut().queued_packets();
             for packet in packets {
-                self.handle_packet(&packet)?;
+                self.handle_packet(&packet, &mut DataStore::new())?;
             }
         }
         Ok(mod_list)
@@ -252,7 +253,7 @@ impl ClientRuntime {
         while self.state != ClientState::DownloadedMods {
             let packets = self.nc.borrow_mut().queued_packets();
             for packet in packets {
-                self.handle_packet(&packet)?;
+                self.handle_packet(&packet, &mut DataStore::new())?;
             }
 
             let mut downloaded = 0;
