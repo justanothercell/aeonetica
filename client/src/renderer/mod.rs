@@ -14,7 +14,7 @@ pub use quad::*;
 
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, log};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
 use buffer::*;
 use shader::*;
 use texture::*;
@@ -37,7 +37,9 @@ pub trait Renderable {
 pub struct Renderer {
     shader: Option<Program>,
     view_projection: Option<Matrix4<f32>>,
-    batches: OrderedMap<BatchID, Batch, u8>
+    batches: OrderedMap<BatchID, Batch, u8>,
+
+    batch_counter: BatchID
 }
 
 impl Renderer {
@@ -48,6 +50,7 @@ impl Renderer {
             shader: None,
             view_projection: None,
             batches: OrderedMap::new(),
+            batch_counter: 0,
         }
     }
 
@@ -94,12 +97,17 @@ impl Renderer {
         self.unload_shader();
     }
 
+    fn next_id(&mut self) -> BatchID {
+        self.batch_counter += 1;
+        self.batch_counter
+    }
+
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
         if let Some(idx) = self.batches.iter().position(|(_, batch)| batch.has_space_for(data)) {
             self.batches.nth_mut(idx, |batch| batch.add_vertices(data)).unwrap()
         }
         else {
-            let mut batch = Batch::new(data).expect("Error creating new render batch");
+            let mut batch = Batch::new(self.next_id(), data).expect("Error creating new render batch");
             let location = batch.add_vertices(data);
             self.batches.insert(*batch.id(), batch);
 

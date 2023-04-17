@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, Cell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -79,7 +79,9 @@ struct TestLayer {
     spritesheet: SpriteSheet,
     font: BitmapFont,
     aeonetica_font: BitmapFont,
-    
+
+    post_processing_enabled: Cell<bool>,
+
     moving_quad: RefCell<Option<TexturedQuad>>
 }
 
@@ -90,6 +92,10 @@ impl TestLayer {
 impl PostProcessingLayer for TestLayer {
     fn on_attach(&self) {}
     fn on_detach(&self) {}
+
+    fn enabled(&self) -> bool {
+        self.post_processing_enabled.get()
+    }
 
     fn post_processing_shader(&self) -> &shader::Program {
         &self.post_processing_shader
@@ -140,6 +146,9 @@ impl Layer for TestLayer {
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
             font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, false).expect("error crating font"),
             aeonetica_font: BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font"),
+            
+            post_processing_enabled: Cell::new(true),
+
             moving_quad: RefCell::new(None)
         }
     }
@@ -215,6 +224,13 @@ impl Layer for TestLayer {
     }
 
     fn on_event(&self, event: &Event) -> bool {
-        false
+        match event.typ() {
+            EventType::KeyPressed(33) => {
+                /* key P */
+                self.post_processing_enabled.set(!self.post_processing_enabled.get());
+                true
+            },
+            _ => false
+        }
     }
 }

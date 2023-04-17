@@ -5,7 +5,7 @@ use crate::{uniform_str, renderer::shader::UniformStr};
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
 use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
 
-pub type BatchID = Id;
+pub type BatchID = u32;
 
 pub(super) struct Batch {
     id: BatchID,
@@ -30,7 +30,7 @@ impl Batch {
     const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
     const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();
 
-    pub fn new(data: &VertexData) -> Option<Batch> {
+    pub fn new(id: BatchID, data: &VertexData) -> Option<Batch> {
         let mut vertex_array = VertexArray::new()?;
 
         let vertex_buffer = Buffer::new_sized(
@@ -53,7 +53,7 @@ impl Batch {
         let indices = Vec::with_capacity(Self::MAX_BATCH_INDEX_COUNT as usize * std::mem::size_of::<u32>());
 
         Some(Self {
-            id: Id::new(),
+            id,
 
             layout: data.layout().clone(),
             vertex_array,

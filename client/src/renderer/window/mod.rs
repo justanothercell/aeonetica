@@ -158,7 +158,7 @@ impl Window {
                     gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
                 }
 
-                Self {
+                let mut window = Self {
                     glfw_handle: glfw,
                     glfw_window: window,
                     event_receiver: events,
@@ -167,7 +167,11 @@ impl Window {
                     default_post_processing_shader,
                     context_provider,
                     framebuffer_viewport: Viewport::default()
-                }
+                };
+
+                window.framebuffer_viewport = Viewport::calculate(&window);
+
+                window
             },
             Err(err) => panic!("Error creating window: {err}!") 
         }
@@ -221,6 +225,7 @@ impl Window {
         // post-processing
         let post_processing_shader = context.post_processing_layer()
             .as_ref()
+            .filter(|layer| layer.enabled())
             .map(|layer| layer.post_processing_shader())
             .unwrap_or(&self.default_post_processing_shader);
 
