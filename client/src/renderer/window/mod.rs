@@ -290,7 +290,7 @@ fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
             let mut pixels = Vec::with_capacity((width * height) as usize * std::mem::size_of::<u32>());
             for i in (0..bytes.len()).step_by(4) {
                 let pixel = &bytes[i..i+4];
-                pixels.push(((pixel[0] as u32) << 24) | ((pixel[1] as u32) << 16) | ((pixel[2] as u32) << 8) | pixel[3] as u32); 
+                pixels.push(u32::from_ne_bytes(pixel.try_into().unwrap())); 
             }
 
             Ok(vec![PixelImage {width, height, pixels}])
