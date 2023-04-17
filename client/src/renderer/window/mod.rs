@@ -274,8 +274,7 @@ impl Window {
     }
 }
 
-fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
-    let bytes = include_bytes!("../../../assets/logo.png");
+fn pixels_from_bytes<const N: usize>(bytes: &[u8; N]) -> Result<glfw::PixelImage, ImageError> {
     let cursor = std::io::Cursor::new(bytes);
     let icon = ImageReader::new(cursor)
         .with_guessed_format()?
@@ -293,8 +292,17 @@ fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
                 pixels.push(u32::from_ne_bytes(pixel.try_into().unwrap())); 
             }
 
-            Ok(vec![PixelImage {width, height, pixels}])
+            Ok(PixelImage {width, height, pixels})
         }
         _ => Err(ImageError::Unsupported(format!("image format {:?} not supported", icon)))
     }
+}
+
+fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
+    Ok(vec![
+        pixels_from_bytes(include_bytes!("../../../assets/logo-15.png"))?,
+        pixels_from_bytes(include_bytes!("../../../assets/logo-30.png"))?,
+        pixels_from_bytes(include_bytes!("../../../assets/logo-60.png"))?,
+        pixels_from_bytes(include_bytes!("../../../assets/logo-120.png"))?
+    ])
 }
