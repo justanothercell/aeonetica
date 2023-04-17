@@ -3,11 +3,12 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::log;
+use aeonetica_engine::{log, log_err};
 use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
+use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
-use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader};
+use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader, texture::ImageError};
 
 pub struct OpenGlContextProvider(HashMap<&'static str, GLProc>);
 
@@ -110,6 +111,11 @@ impl Window {
                 
                 window.make_current();
                 window.set_key_polling(true);
+
+                match load_window_icons() {
+                    Ok(icons) => window.set_icon_from_pixels(icons),
+                    Err(err) => log_err!("error loading window icon: {}", err.to_string())
+                }
                 
                 let mut context_provider = OpenGlContextProvider::new();
 
@@ -265,5 +271,30 @@ impl Window {
         self.default_post_processing_shader.delete();
         self.framebuffer_vao.delete();
         self.framebuffer.delete();
+    }
+}
+
+fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
+    let bytes = include_bytes!("../../../assets/logo.png");
+    let cursor = std::io::Cursor::new(bytes);
+    let icon = ImageReader::new(cursor)
+        .with_guessed_format()?
+        .decode()?;
+
+    let (width, height) = (icon.width(), icon.height());
+
+    match icon {
+        DynamicImage::ImageRgba8(bytes) => {
+            let bytes = bytes.as_bytes();
+
+            let mut pixels = Vec::with_capacity((width * height) as usize * std::mem::size_of::<u32>());
+            for i in (0..bytes.len()).step_by(4) {
+                let pixel = &bytes[i..i+4];
+                pixels.push(((pixel[0] as u32) << 24) | ((pixel[1] as u32) << 16) | ((pixel[2] as u32) << 8) | pixel[3] as u32); 
+            }
+
+            Ok(vec![PixelImage {width, height, pixels}])
+        }
+        _ => Err(ImageError::Unsupported(format!("image format {:?} not supported", icon)))
     }
 }
