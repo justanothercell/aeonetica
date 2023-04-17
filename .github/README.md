@@ -1,6 +1,6 @@
 <div align="center">
 
-![](../assets/logo_banner_upscaled_x10.png)
+![logo](../assets/font_and_glyphs/logo_banner_upscaled_x10.png)
 
 <h1>The Aeonetica Muliplayer Game Engine</h1>
 
