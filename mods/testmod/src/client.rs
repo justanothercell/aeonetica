@@ -59,8 +59,6 @@ impl ClientHandle for MyClientHandle {
     fn remove(&mut self, _messenger: &mut ClientMessenger, store: &mut DataStore) {
         log!("my client handle removed")
     }
-
-
 }
 
 impl MyClientHandle {

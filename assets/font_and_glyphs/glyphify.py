@@ -67,29 +67,34 @@ rows_len = re.sub(r'\[.*?\]', 'x', out).split('\\')
 max_w = max([len(r) for r in rows_len])
 h = len(rows_len)
 
-outimg = np.zeros((h * 9 + 1, int(max_w * 1) * 9 + 1, 3), dtype=np.uint8)
+outimg = np.zeros((h * 9 + 2, max_w * 9 + 2, 3), dtype=np.uint8)
 
 x = 0
 y = 0
+mx = 0
 
 for item in re.findall(r'\[[^\]]*\]|.', out):
     p = glyphs_pos.get(item)
     mdx = 0
-    if p is not None:
-        for dx in range(9):
-            for dy in range(9):
-                if sum(glyphs[p[1] * 9 + dy][p[0] * 9  + dx]) > 0:
-                    mdx = dx
-                outimg[y + dy + 1][x + dx + 1] = glyphs[p[1] * 9  + dy][p[0] * 9  + dx]
-    else:
-        mdx = 5
-    x += mdx + 1
     if item == '\\':
+        mx = max(x, mx)
         x = 0
         y += 9
+    else:
+        if p is not None:
+            for dx in range(9):
+                for dy in range(9):
+                    if sum(glyphs[p[1] * 9 + dy][p[0] * 9  + dx]) > 0:
+                        mdx = dx
+                    outimg[y + dy + 1][x + dx + 1] = glyphs[p[1] * 9  + dy][p[0] * 9  + dx]
+        else:
+            mdx = 5
+        x += mdx + 1
 
-im = Image.fromarray(outimg, mode='RGB')
+mx = max(x, mx)
+
+im = Image.fromarray(outimg[:,:mx+3], mode='RGB')
 im.save('generated.png')
 
-im.resize((im.width * 16, im.height * 16), resample=Image.NEAREST).save('generated_x16.png')
+im.resize((im.width * 16, im.height * 16), resample=Image.Resampling.NEAREST).save('generated_x16.png')
 
