@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::server::MyModule;
 
+use aeonetica_client::renderer::text_area::TextArea;
 use aeonetica_client::{
     ClientMod,
     renderer::{*, shader::*, texture::{*, font::BitmapFont}, window::{OpenGlContextProvider, events::*}, layer::Layer},
@@ -77,11 +78,11 @@ struct TestLayer {
     texture: Texture,
     texture2: Texture,
     spritesheet: SpriteSheet,
-    font: BitmapFont,
-    aeonetica_font: BitmapFont,
+    aeonetica_font: Rc<BitmapFont>,
 
     post_processing_enabled: Cell<bool>,
 
+    fps_display: RefCell<TextArea>,
     moving_quad: RefCell<Option<TexturedQuad>>
 }
 
@@ -104,49 +105,28 @@ impl PostProcessingLayer for TestLayer {
 
 impl Layer for TestLayer {
     fn instantiate() -> Self {
-        let charmap = HashMap::from([
-            ('A', 0),
-            ('B', 1),
-            ('C', 2),
-            ('D', 3),
-            ('E', 4),
-            ('F', 5),
-            ('G', 6),
-            ('H', 7),
-            ('I', 8),
-            ('J', 9),
-            ('K', 10),
-            ('L', 11),
-            ('M', 12),
-            ('N', 13),
-            ('O', 14),
-            ('P', 15),
-            ('Q', 16),
-            ('R', 17),
-            ('S', 18),
-            ('T', 19),
-            ('U', 10),
-            ('V', 21),
-            ('W', 22),
-            ('X', 23),
-            ('Y', 24),
-            ('Z', 25),
-            (',', 26),
-            ('!', 27),
-            (' ', 28)
-        ]);
+        let texture_shader = shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader");
+        let aeonetica_font = Rc::new(BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font"));
 
         Self {
             renderer: RefCell::new(Renderer::new()),
             camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
-            texture_shader: shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader"),
+            texture_shader,
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
             post_processing_shader: shader::Program::from_source(include_str!("../assets/postprocessing_shader.glsl")).expect("error loading post processing shader"),
-            font: BitmapFont::from_texture(Texture::from_bytes(include_bytes!("../assets/bitmapfont.png")).unwrap(), (5, 8).into(), charmap, false).expect("error crating font"),
-            aeonetica_font: BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font"),
+            aeonetica_font: aeonetica_font.clone(),
             
+            fps_display: RefCell::new(
+                TextArea::from_string(
+                    Vector2::new(10.0, 10.0), 
+                    1, 
+                    50.0, 2.0,
+                    texture_shader, aeonetica_font, 
+                    String::from("F")
+                )
+            ),
             post_processing_enabled: Cell::new(true),
 
             moving_quad: RefCell::new(None)
@@ -175,11 +155,6 @@ impl Layer for TestLayer {
             self.renderer.borrow_mut().add(&mut quad);
         }
 
-        self.renderer.borrow_mut().static_string("HELLO WORLD", &(-80.0, -130.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("WWWWWWWWWW", &(-80.0, -100.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-        self.renderer.borrow_mut().static_string("IIIIIIIIII", &(-80.0, -70.0).into(), 20.0, 4.0, &self.font, self.texture_shader.clone(), 1);
-
-
         for (i, row) in ["#![no_main]",
 "",
 "use std::fs::File;",
@@ -204,6 +179,8 @@ impl Layer for TestLayer {
         let mut moving_quad = TexturedQuad::new(Vector2::new(-250.0, -170.0), Vector2::new(75.0, 75.0), 2, self.texture.id(), self.texture_shader.clone());
         self.renderer.borrow_mut().add(&mut moving_quad);
         *self.moving_quad.borrow_mut() = Some(moving_quad);
+
+        self.renderer.borrow_mut().add(&mut *self.fps_display.borrow_mut());
     }
 
     fn on_detach(&self) {

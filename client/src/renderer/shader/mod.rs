@@ -62,7 +62,7 @@ pub enum ShaderType {
     Fragment = gl::FRAGMENT_SHADER as isize
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Shader(RenderID);
 impl Shader {
     pub fn from_source(ty: ShaderType, source: &str) -> Result<Self, String> {
@@ -134,7 +134,7 @@ impl Shader {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Program(RenderID);
 impl Program {
     pub(super) fn new() -> Option<Self> {

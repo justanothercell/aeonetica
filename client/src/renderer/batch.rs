@@ -3,7 +3,7 @@ use std::{rc::Rc, cell::Cell};
 use crate::{uniform_str, renderer::shader::UniformStr};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
 
 pub type BatchID = u32;
 
