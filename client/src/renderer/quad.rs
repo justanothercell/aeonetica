@@ -25,15 +25,15 @@ pub trait Quad {
     fn is_dirty(&self) -> bool;
 
     fn rotate_edges(&self) -> [(f32, f32); 4] {
-        let center = self.position().clone() + self.size().clone() / Vector2::new(2.0, 2.0);
+        let center = *self.position() + *self.size() / Vector2::new(2.0, 2.0);
 
         let theta = self.rotation();
         [
-            (-self.size().clone().half()),
-            (self.size().clone().half() * Vector2::new(1.0, -1.0)),
-            self.size().clone().half(),
-            (self.size().clone().half() * Vector2::new(-1.0, 1.0)),
-        ].map(|v| (v.rotate(theta) + (&center).clone()).into())
+            (-(*self.size()).half()),
+            ((*self.size()).half() * Vector2::new(1.0, -1.0)),
+            (*self.size()).half(),
+            ((*self.size()).half() * Vector2::new(-1.0, 1.0)),
+        ].map(|v| (v.rotate(theta) + center).into())
     }
 }
 
