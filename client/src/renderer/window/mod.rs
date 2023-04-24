@@ -103,7 +103,7 @@ impl Window {
                     Self::DEFAULT_WINDOW_HEIGHT,
                     Self::DEFAULT_WINDOW_TITLE,
                     if full_screen {
-                        monitor.map_or(WindowMode::Windowed, |m| WindowMode::FullScreen(m))
+                        monitor.map_or(WindowMode::Windowed, WindowMode::FullScreen)
                     } else {
                         WindowMode::Windowed
                     }

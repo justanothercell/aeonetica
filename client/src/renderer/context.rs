@@ -86,6 +86,6 @@ impl Context {
         for layer in self.layer_stack.layers.iter() {
             layer.on_detach();
         }
-        self.post_processing_layer.map(|layer| layer.on_detach());
+        if let Some(layer) = self.post_processing_layer { layer.on_detach() }
     }
 }

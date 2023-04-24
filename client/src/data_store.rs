@@ -14,7 +14,7 @@ impl DataStore {
         }
     }
 
-    pub fn add_store<T: Sized + 'static>(&mut self, mut store: T) -> bool {
+    pub fn add_store<T: Sized + 'static>(&mut self, store: T) -> bool {
         if let std::collections::hash_map::Entry::Vacant(e) = self.stores.entry(type_to_id::<T>()) {
             e.insert(Box::new(store));
             true

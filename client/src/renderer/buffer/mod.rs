@@ -64,9 +64,9 @@ pub(super) enum BufferUsage {
     DYNAMIC = gl::DYNAMIC_DRAW as isize,
 }
 
-impl Into<gl::types::GLenum> for BufferUsage {
-    fn into(self) -> gl::types::GLenum {
-        self as gl::types::GLenum
+impl From<BufferUsage> for gl::types::GLenum {
+    fn from(val: BufferUsage) -> Self {
+        val as gl::types::GLenum
     }
 }
 
@@ -76,9 +76,9 @@ pub(super) enum BufferType {
     ElementArray = gl::ELEMENT_ARRAY_BUFFER as isize
 }
 
-impl Into<gl::types::GLenum> for BufferType {
-    fn into(self) -> gl::types::GLenum {
-        self as gl::types::GLenum
+impl From<BufferType> for gl::types::GLenum {
+    fn from(val: BufferType) -> Self {
+        val as gl::types::GLenum
     }
 }
 

@@ -27,7 +27,7 @@ use self::{sprite_sheet::Sprite, font::BitmapFont};
 pub(self) type RenderID = gl::types::GLuint;
 
 pub trait Renderable {
-    fn vertex_data<'a>(&'a mut self) -> VertexData<'a>;
+    fn vertex_data(&mut self) -> VertexData<'_>;
     fn texture_id(&self) -> Option<RenderID>;
 
     fn location(&self) -> &Option<VertexLocation>;

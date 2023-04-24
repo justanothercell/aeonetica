@@ -21,6 +21,9 @@ impl<T> Matrix4<T> {
         Self(array::from_fn(|_| value.clone()))
     }
 
+    /// Returns a raw pointer to the slice's buffer.
+    /// # Safety
+    /// Usual safety rules for raw pointers apply.
     pub unsafe fn value_ptr(&self) -> *const T {
         self.0.as_ptr()
     }

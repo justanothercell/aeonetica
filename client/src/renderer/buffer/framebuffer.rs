@@ -70,6 +70,6 @@ impl FrameBuffer {
     }
 
     pub fn size(&self) -> &Vector2<u32> {
-        &self.texture.size()
+        self.texture.size()
     }
 }

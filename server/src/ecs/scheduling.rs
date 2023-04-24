@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap};
 use std::collections::hash_map::Entry;
 use std::marker::PhantomData;
 use std::ops::{Generator, GeneratorState};
@@ -56,7 +56,7 @@ macro_rules! yield_task {
 }
 
 impl Engine {
-    pub fn yield_fn<'a>(&'a mut self, waiter: WaitFor) -> Yielder<'a> {
+    pub fn yield_fn(&mut self, waiter: WaitFor) -> Yielder<'_> {
         Yielder(PrivateYielder, PhantomData::default(), waiter)
     }
 
@@ -77,7 +77,7 @@ impl Engine {
     }
 
     pub fn fire_raw_event(&mut self, id: &EventId) {
-        if let Some(q) = self.tasks.event_queue.remove(&id) {
+        if let Some(q) = self.tasks.event_queue.remove(id) {
             for task in q {
                 self.run_task(task);
             }

@@ -1,5 +1,5 @@
 use core::f32;
-use std::ops::Div;
+
 
 use super::*;
 
@@ -149,7 +149,7 @@ impl Quad for ColoredQuad {
 }
 
 impl Renderable for ColoredQuad {
-    fn vertex_data<'a>(&'a mut self) -> VertexData<'a> {
+    fn vertex_data(&mut self) -> VertexData<'_> {
         if self.vertices.is_none() {
             self.recalculate_vertex_data();
         }
@@ -289,7 +289,7 @@ impl Quad for TexturedQuad {
 }
 
 impl Renderable for TexturedQuad {
-    fn vertex_data<'a>(&'a mut self) -> VertexData<'a> {
+    fn vertex_data(&mut self) -> VertexData<'_> {
         if self.is_dirty() {
             self.recalculate_vertex_data();
         }
@@ -442,7 +442,7 @@ impl Quad for SpriteQuad {
 }
 
 impl Renderable for SpriteQuad {
-    fn vertex_data<'a>(&'a mut self) -> VertexData<'a> {
+    fn vertex_data(&mut self) -> VertexData<'_> {
         if self.is_dirty() {
             self.recalculate_vertex_data();
         }

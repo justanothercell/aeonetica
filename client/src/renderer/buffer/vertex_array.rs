@@ -93,7 +93,7 @@ impl VertexArray {
 
     pub fn delete(self) {
         unsafe { gl::DeleteVertexArrays(1, &self.id); }
-        self.index_buffer.map(|ibo| ibo.delete());
-        self.vertex_buffer.map(|vbo| vbo.delete());
+        if let Some(ibo) = self.index_buffer { ibo.delete() }
+        if let Some(vbo) = self.vertex_buffer { vbo.delete() }
     }
 }

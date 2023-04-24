@@ -31,7 +31,7 @@ impl ClientMod for TestModClient {
         handlers.insert(type_to_id::<MyClientHandle>(), || Box::new(MyClientHandle { }));
     }
 
-    fn start(&self, context: &mut aeonetica_client::renderer::context::Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
+    fn start(&self, context: &mut aeonetica_client::renderer::context::Context, _store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
         let test_layer = Rc::new(TestLayer::instantiate());
         context.push(test_layer.clone());
@@ -50,13 +50,13 @@ impl ClientHandle for MyClientHandle {
         log!("my client handle initialized")
     }
 
-    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {
+    fn start(&mut self, messenger: &mut ClientMessenger, _store: &mut DataStore) {
         messenger.register_receiver(MyClientHandle::receive_server_msg);
         messenger.call_server_fn(MyModule::receive_client_msg, "Hello from client server call function".to_string(), SendMode::Safe);
         log!("receive_server_msg registered in start");
     }
 
-    fn remove(&mut self, _messenger: &mut ClientMessenger, store: &mut DataStore) {
+    fn remove(&mut self, _messenger: &mut ClientMessenger, _store: &mut DataStore) {
         log!("my client handle removed")
     }
 }

@@ -3,7 +3,7 @@ use std::{rc::Rc, cell::Cell};
 use crate::{uniform_str, renderer::shader::UniformStr};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, Id};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err};
 
 pub type BatchID = u32;
 
@@ -270,7 +270,7 @@ impl<'a> VertexData<'a> {
     }
 
     fn patch_texture_id(&mut self, slot: u32) {
-        patch_texture_id(&mut self.vertices, &self.layout, slot)
+        patch_texture_id(self.vertices, &self.layout, slot)
     }
 
     pub fn z_index(&self) -> u8 {
