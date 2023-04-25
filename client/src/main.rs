@@ -1,5 +1,6 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
+#![feature(inherent_associated_types)]
 
 use aeonetica_engine::log;
 use client::client::run;

@@ -10,13 +10,17 @@ use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
 use crate::data_store::DataStore;
 use crate::networking::NetworkClient;
+use crate::renderer::Renderer;
+use crate::renderer::window::events::Event;
 
+#[allow(unused_variables)]
 pub trait ClientHandle: ClientEntity {
     fn init(&mut self) {}
-	#[allow(unused_variables)]
     fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
-	#[allow(unused_variables)]
     fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
+    
+    fn update(&mut self, renderer: &Renderer) {}
+    fn on_event(&mut self, event: Event) {}
 }
 
 pub struct ClientMessenger {

@@ -16,7 +16,7 @@ macro_rules! shader_tuple_impls {
 
         #[repr(C)]
         #[allow(unused)]
-        #[derive(Clone)]
+        #[derive(Clone, Debug)]
         pub struct $tuple_struct<$($name: IntoShaderDataType),+>($(pub $name,)+);
     };
 }
