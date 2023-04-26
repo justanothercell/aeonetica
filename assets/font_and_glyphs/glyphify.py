@@ -86,14 +86,39 @@ for item in re.findall(r'\[[^\]]*\]|.', out):
                 for dy in range(9):
                     if sum(glyphs[p[1] * 9 + dy][p[0] * 9  + dx]) > 0:
                         mdx = dx
-                    outimg[y + dy + 1][x + dx + 1] = glyphs[p[1] * 9  + dy][p[0] * 9  + dx]
+                    outimg[y + dy + 1,x + dx + 1,:] = glyphs[p[1] * 9  + dy,p[0] * 9  + dx,:]
         else:
             mdx = 5
         x += mdx + 1
 
 mx = max(x, mx)
 
-im = Image.fromarray(outimg[:,:mx+3], mode='RGB')
+outimg = outimg[:,:mx+3]
+
+print()
+
+ascii_img = ''
+ascii_opts = [' ', '▄', '▀', '█']
+
+for y in range(0, outimg.shape[0]-1, 2):
+    for x in range(outimg.shape[1]):
+        ascii_img += ascii_opts[(outimg[y, x].max() > 0) * 2 + (outimg[y+1, x].max() > 0)]
+    ascii_img += '\n'
+
+print(ascii_img)
+
+print()
+
+discord_img = ''
+
+for y in range(1, outimg.shape[0]-1):
+    for x in range(outimg.shape[1]):
+        discord_img += '⬛' if outimg[y, x].max() > 0 else '⬜'
+    discord_img += '\n'
+
+print(discord_img)
+
+im = Image.fromarray(outimg, mode='RGB')
 im.save('generated.png')
 
 im.resize((im.width * 16, im.height * 16), resample=Image.Resampling.NEAREST).save('generated_x16.png')
