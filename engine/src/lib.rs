@@ -13,13 +13,13 @@ mod tests;
 
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hasher, SipHasher};
-use std::ptr::hash;
 pub use nanoserde;
 pub use libloading;
 pub use chrono;
 use nanoserde::{DeBin, DeRon, SerBin, SerRon};
 pub use sha2;
 use uuid::Uuid;
+pub extern crate colored;
 
 pub mod networking;
 pub mod error;
@@ -84,6 +84,22 @@ pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s
 
 #[macro_export]
+macro_rules! log_format {
+    ($color:ident, $level:literal, $($arg:tt)*) => {
+        $crate::colored::Colorize::$color(
+            format!(
+                "[@{}]\n{} [{} - {}]: {}",
+                format!("{}:{}:{}",file!(), line!(), column!()),
+                $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                env!("CARGO_PKG_NAME"),
+                $level,
+                format!($($arg)*)
+            ).as_str()
+        )
+    }
+}
+
+#[macro_export]
 macro_rules! log {
     () => {
         println!()
@@ -109,8 +125,18 @@ macro_rules! log_err {
         eprintln!()
     };
     ($($arg:tt)*) => {
-        eprintln!("[@{}]\n{} [{} - ERR]: {}", format!("{}:{}:{}", file!(), line!(), column!()), $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
+        eprintln!("{}", $crate::log_format!(red, "ERR", $($arg)*))
     };
+}
+
+#[macro_export]
+macro_rules! log_warn {
+    () => {
+        println!()
+    };
+    ($($arg:tt)*) => {
+        eprintln!("{}", $crate::log_format!(bright_yellow, "WARN", $($arg)*))
+    }
 }
 
 #[macro_export]
