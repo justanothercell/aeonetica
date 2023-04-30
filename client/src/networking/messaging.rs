@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, Id};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
@@ -19,8 +19,8 @@ pub trait ClientHandle: ClientEntity {
     fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     
-    fn update(&mut self, renderer: &Renderer) {}
-    fn on_event(&mut self, event: Event) {}
+    fn update(&mut self, renderer: &RefMut<Renderer>, delta_time: f64) {}
+    fn on_event(&mut self, event: &Event) -> bool { false }
 }
 
 pub struct ClientMessenger {

@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::server::MyModule;
 
+use aeonetica_client::client_runtime::ClientHandleBox;
 use aeonetica_client::renderer::text_area::TextArea;
 use aeonetica_client::{
     ClientMod,
@@ -12,6 +13,7 @@ use aeonetica_client::{
 };
 use aeonetica_client::data_store::DataStore;
 
+use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::{
     Id, log,
     util::{camera::Camera, vector::*, type_to_id},
@@ -59,6 +61,14 @@ impl ClientHandle for MyClientHandle {
 
     fn remove(&mut self, _messenger: &mut ClientMessenger, _store: &mut DataStore) {
         log!("my client handle removed")
+    }
+
+    fn update(&mut self, renderer: &std::cell::RefMut<Renderer>, delta_time: f64) {
+        
+    }
+
+    fn on_event(&mut self, event: &Event) -> bool {
+        false
     }
 }
 
@@ -185,7 +195,7 @@ impl Layer for TestLayer {
         log!("TestLayer detached!");
     }
 
-    fn on_update(&self, delta_time: f64) {
+    fn on_update(&self, handles: &mut IdMap<ClientHandleBox>, delta_time: f64) {
         let mut borrow = self.moving_quad.borrow_mut();
         let moving_quad = borrow.as_mut().unwrap();
         moving_quad.set_rotation(moving_quad.rotation() + delta_time as f32);
@@ -193,12 +203,22 @@ impl Layer for TestLayer {
         let mut renderer = self.renderer.borrow_mut();
         renderer.modify(moving_quad);
 
+        for handle in handles.values_mut() {
+            handle.update(&renderer, delta_time);   
+        }
+
         renderer.begin_scene(&self.camera.borrow());
         renderer.draw_vertices();
         renderer.end_scene();
     }
 
-    fn on_event(&self, event: &Event) -> bool {
+    fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
+        for handle in handles.values_mut() {
+            if handle.on_event(event) {
+                return true
+            }
+        }
+        
         match event.typ() {
             EventType::KeyPressed(33) => {
                 /* key P */

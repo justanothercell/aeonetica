@@ -37,13 +37,13 @@ pub fn run(ip: &str, server_ip: &str) {
     while !window.should_close() {
         let t = Instant::now();
 
-        window.render(&mut context, delta_time as f64 / 1_000_000_000.0);
-
+        window.poll_events(&mut client, &mut context);
+        
         let _ = client.handle_queued(&mut store).map_err(|e| {
             log_err!("{e}")
         });
-
-        window.poll_events(&mut context);
+        
+        window.render(&mut context, &mut client, delta_time as f64 / 1_000_000_000.0);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;

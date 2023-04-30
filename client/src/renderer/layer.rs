@@ -1,3 +1,7 @@
+use aeonetica_engine::util::id_map::IdMap;
+
+use crate::client_runtime::ClientHandleBox;
+
 use super::window::events::Event;
 
 pub trait Layer {
@@ -6,8 +10,8 @@ pub trait Layer {
     fn on_attach(&self); // run on layer creation
     fn on_detach(&self); // run on layer deletion
     
-    fn on_update(&self, delta_time: f64); // run on every client update
-    fn on_event(&self, event: &Event) -> bool;
+    fn on_update(&self, handles: &mut IdMap<ClientHandleBox>, delta_time: f64); // run on every client update
+    fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool;
 
     fn name(&self) -> &'static str {
         "Layer"

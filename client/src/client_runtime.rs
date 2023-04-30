@@ -1,5 +1,5 @@
 
-use std::cell::{RefCell};
+use std::cell::{RefCell, RefMut};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
@@ -16,6 +16,8 @@ use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
+use crate::renderer::Renderer;
+use crate::renderer::window::events::Event;
 use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -81,6 +83,18 @@ pub struct ClientHandleBox {
     pub(crate) messenger: ClientMessenger
 }
 
+impl ClientHandleBox {
+    #[inline(always)]
+    pub fn update(&mut self, renderer: &RefMut<Renderer>, delta_time: f64) {
+        self.handle.update(renderer, delta_time);
+    }
+
+    #[inline(always)]
+    pub fn on_event(&mut self, event: &Event) -> bool {
+        self.handle.on_event(event)
+    }
+}
+
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
 
 impl ClientRuntime {
@@ -124,6 +138,10 @@ impl ClientRuntime {
 
         log!("finished client creation");
         Ok(client)
+    }
+
+    pub(crate) fn handles(&mut self) -> &mut IdMap<ClientHandleBox> {
+        &mut self.handles
     }
 
     pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> Result<(), AError> {
