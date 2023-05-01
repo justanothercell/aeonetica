@@ -60,4 +60,9 @@ pub fn run(ip: &str, server_ip: &str) {
     log!("shutting down client after {time} ns");
     context.finish();
     window.finish();
+    client.nc.borrow().send(&ClientPacket {
+        client_id: client.client_id,
+        conv_id: Id::new(),
+        message: ClientMessage::Logout,
+    }, SendMode::Safe).expect("couldnt exit client");
 }

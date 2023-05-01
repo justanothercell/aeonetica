@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 use aeonetica_engine::error::{AError, AET};
-use aeonetica_engine::{Id, log_err};
+use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::ClientPacket;
@@ -65,16 +65,21 @@ impl NetworkServer {
                 let recv_udp_inner = recv_udp.clone();
                 thread::spawn(move || {
                     loop {
-                        let mut size = [0u8;4];
-                        stream.read_exact(&mut size).unwrap();
-                        let size = u32::from_le_bytes(size);
-                        let mut buffer: Vec<u8> = vec![0;size as usize];
-                        stream.read_exact(&mut buffer[..]).unwrap();
-                        match DeBin::deserialize_bin(&buffer[..]) {
-                            Ok(packet) => recv_udp_inner.lock().unwrap().push((addr, packet)),
-                            Err(e) => log_err!("invalid client packet from {addr}: {e}")
-                        }
+                        let r = (||{
+                            let mut size = [0u8; 4];
+                            stream.read_exact(&mut size)?;
+                            let size = u32::from_le_bytes(size);
+                            let mut buffer: Vec<u8> = vec![0; size as usize];
+                            stream.read_exact(&mut buffer[..])?;
+                            match DeBin::deserialize_bin(&buffer[..]) {
+                                Ok(packet) => recv_udp_inner.lock().unwrap().push((addr, packet)),
+                                Err(e) => log_err!("invalid client packet from {addr}: {e}")
+                            }
+                            Ok::<_, std::io::Error>(())
+                        })();
+                        if r.is_err() { break }
                     }
+                    log!("terminated tcp connection with {}", addr)
                 });
             }
         });

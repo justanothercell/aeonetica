@@ -76,7 +76,7 @@ impl ColoredQuad {
 }
 
 thread_local! {
-    static COLORED_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<ColoredQuad as quad::Quad>::Layout::build()));
+    static COLORED_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<ColoredQuad as quad::Quad>::Layout::build());
 }
 
 //const COLORED_QUAD_LAYOUT: BufferLayout = <ColoredQuad as quad::Quad>::Layout::build();
@@ -86,7 +86,7 @@ impl Quad for ColoredQuad {
 
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
-            let x: *const Rc<BufferLayout> = COLORED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            let x: *const Rc<BufferLayout> = COLORED_QUAD_LAYOUT.with(|l| l as *const _);
             x.as_ref().unwrap_unchecked()
         }
     }
@@ -221,7 +221,7 @@ impl TexturedQuad {
 }
 
 thread_local! {
-    static TEXTURED_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<TexturedQuad as quad::Quad>::Layout::build()));
+    static TEXTURED_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<TexturedQuad as quad::Quad>::Layout::build());
 }
 
 impl Quad for TexturedQuad {
@@ -229,7 +229,7 @@ impl Quad for TexturedQuad {
 
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
-            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| l as *const _);
             x.as_ref().unwrap_unchecked()
         }
     }
@@ -377,7 +377,7 @@ impl SpriteQuad {
 }
 
 thread_local! {
-    static SPRITE_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<SpriteQuad as quad::Quad>::Layout::build()));
+    static SPRITE_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<SpriteQuad as quad::Quad>::Layout::build());
 }
 
 impl Quad for SpriteQuad {
@@ -385,7 +385,7 @@ impl Quad for SpriteQuad {
 
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
-            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| l as *const _);
             x.as_ref().unwrap_unchecked()
         }
     }

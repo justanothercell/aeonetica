@@ -122,8 +122,11 @@ impl Engine {
             ClientMessage::Logout => {
                 if self.clients.contains(&packet.client_id) {
                     log!("client logged out: {}", packet.client_id);
+                    self.for_each_module_of_type::<ConnectionListener, _>(|engine, id, m| (m.on_leave)(id, engine, &packet.client_id));
                     self.clients.remove(&packet.client_id);
-                    self.for_each_module_of_type::<ConnectionListener, _>(|engine, id, m| (m.on_leave)(id, engine, &packet.client_id))
+                    let mut ns = self.runtime.ns.borrow_mut();
+                    ns.clients.remove(&packet.client_id);
+                    ns.tcp.lock().unwrap().remove(&addr);
                 }
             }
             ClientMessage::ModMessage(eid, rid, data) => {

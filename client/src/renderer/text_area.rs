@@ -32,7 +32,7 @@ impl Renderable for TextArea {
         Some(self.font.sprite_sheet().texture().id())
     }
 
-    fn vertex_data<'a>(&'a mut self) -> VertexData<'a> {
+    fn vertex_data(&mut self) -> VertexData {
         if self.vertices.is_empty() {
             self.recalculate_vertex_data();
         }
@@ -51,7 +51,7 @@ impl Renderable for TextArea {
 }
 
 thread_local! {
-    static TEXT_AREA_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(TextArea::Vertices::build()));
+    static TEXT_AREA_LAYOUT: Rc<BufferLayout> = Rc::new(TextArea::Vertices::build());
 }
 
 impl TextArea {
@@ -59,7 +59,7 @@ impl TextArea {
 
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
-            let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| &**l as *const _);
+            let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| l as *const _);
             x.as_ref().unwrap_unchecked()
         }
     }
