@@ -61,7 +61,7 @@ impl TextArea {
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
             let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| &**l as *const _);
-            x.as_ref().unwrap()
+            x.as_ref().unwrap_unchecked()
         }
     }
 

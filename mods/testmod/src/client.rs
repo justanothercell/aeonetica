@@ -228,6 +228,11 @@ impl Layer for TestLayer {
                 self.post_processing_enabled.set(!self.post_processing_enabled.get());
                 true
             },
+            // TODO: translate screen to world coords
+            // Event::MouseMoved(pos) => {
+            //     self.moving_quad.borrow_mut().as_mut().unwrap().set_position(pos.clone());
+            //     true
+            // }
             _ => false
         }
     }

@@ -87,7 +87,7 @@ impl Quad for ColoredQuad {
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
             let x: *const Rc<BufferLayout> = COLORED_QUAD_LAYOUT.with(|l| &**l as *const _);
-            x.as_ref().unwrap()
+            x.as_ref().unwrap_unchecked()
         }
     }
 
@@ -230,7 +230,7 @@ impl Quad for TexturedQuad {
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
             let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
-            x.as_ref().unwrap()
+            x.as_ref().unwrap_unchecked()
         }
     }
 
@@ -386,7 +386,7 @@ impl Quad for SpriteQuad {
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
             let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
-            x.as_ref().unwrap()
+            x.as_ref().unwrap_unchecked()
         }
     }
 
