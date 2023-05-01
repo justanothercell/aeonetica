@@ -34,7 +34,6 @@ impl Renderable for TextArea {
 
     fn vertex_data<'a>(&'a mut self) -> VertexData<'a> {
         if self.vertices.is_empty() {
-            self.vertices.clear();
             self.recalculate_vertex_data();
         }
 
@@ -74,23 +73,23 @@ impl TextArea {
         indices
     }
 
-    pub fn new(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: u32, shader: Rc<shader::Program>, font: Rc<BitmapFont>) -> Self {
+    pub fn with_max_len(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: usize, shader: Rc<shader::Program>, font: Rc<BitmapFont>) -> Self {
         Self {
             position,
             z_index,
-            max_len,
-            content: String::with_capacity(max_len as usize),
+            max_len: max_len as u32,
+            content: String::with_capacity(max_len),
             shader,
             font,
             font_size,
             spacing,
             location: None,
-            vertices: Vec::with_capacity(4 * max_len as usize),
-            indices: Self::gen_indices(max_len as usize)
+            vertices: Vec::with_capacity(4 * max_len),
+            indices: Self::gen_indices(max_len)
         }
     }
 
-    pub fn from_string(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
+    pub fn with_string(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
         let len = content.len();
         Self {
             position,
@@ -105,6 +104,48 @@ impl TextArea {
             vertices: Vec::with_capacity(4 * len),
             indices: Self::gen_indices(len)
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_string_and_max_len(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: usize, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
+        let len = content.len().max(max_len);
+        Self {
+            position,
+            z_index,
+            max_len: len as u32,
+            content,
+            shader,
+            font,
+            font_size,
+            spacing,
+            location: None,
+            vertices: Vec::with_capacity(4 * len),
+            indices: Self::gen_indices(len)
+        }
+    }
+
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+
+    pub fn len(&self) -> usize {
+        self.content.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty()
+    }
+
+    pub fn max_len(&self) -> usize {
+        self.max_len as usize
+    }
+
+    /// Sets the content of the text area. Fails if string length exceeds max_len
+    pub fn set_content<S: Into<String>>(&mut self, content: S) -> Result<(), String> {
+        let content = content.into();
+        if content.len() >= self.max_len as usize { return Err(format!("string exceeded max length of {} (had length of {}]", self.max_len, content.len()))}
+        self.content = content;
+        Ok(())
     }
 
     pub fn recalculate_vertex_data(&mut self) {

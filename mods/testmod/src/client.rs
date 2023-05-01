@@ -129,7 +129,7 @@ impl Layer for TestLayer {
             aeonetica_font: aeonetica_font.clone(),
             
             fps_display: RefCell::new(
-                TextArea::from_string(
+                TextArea::with_string(
                     Vector2::new(10.0, 10.0), 
                     1, 
                     50.0, 2.0,
