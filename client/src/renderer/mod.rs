@@ -36,7 +36,7 @@ pub trait Renderable {
 }
 
 pub struct Renderer {
-    shader: Option<Program>,
+    shader: Option<Rc<Program>>,
     view_projection: Option<Matrix4<f32>>,
     batches: OrderedMap<BatchID, Batch, u8>,
 
@@ -66,7 +66,7 @@ impl Renderer {
         self.view_projection = None;
     }
 
-    pub fn load_shader(&mut self, shader: Program) {
+    pub fn load_shader(&mut self, shader: Rc<Program>) {
         if self.shader.as_ref() == Some(&shader) {
             return;
         }
@@ -85,7 +85,7 @@ impl Renderer {
         self.shader = None;
     }
 
-    pub fn shader(&self) -> &Option<Program> {
+    pub fn shader(&self) -> &Option<Rc<Program>> {
         &self.shader
     }
 
@@ -133,7 +133,7 @@ impl Renderer {
         self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
     }
 
-    pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: Program, z_index: u8) {
+    pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {
         type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
         let layout = Rc::new(Vertices::build());
 
@@ -176,8 +176,8 @@ impl Renderer {
                 &mut VertexData::new_textured(
                     util::to_raw_byte_slice!(&vertices),
                     INDICES.as_slice(),
-                    layout.clone(),
-                    shader.clone(),
+                    &layout,
+                    shader,
                     z_index,
                     texture_id
                 )

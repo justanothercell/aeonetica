@@ -64,7 +64,6 @@ impl ClientHandle for MyClientHandle {
     }
 
     fn update(&mut self, renderer: &std::cell::RefMut<Renderer>, delta_time: f64) {
-        
     }
 
     fn on_event(&mut self, event: &Event) -> bool {
@@ -81,7 +80,7 @@ impl MyClientHandle {
 struct TestLayer {
     renderer: RefCell<Renderer>,
     camera: RefCell<Camera>,
-    texture_shader: shader::Program,
+    texture_shader: Rc<shader::Program>,
     post_processing_shader: shader::Program,
     texture: Texture,
     texture2: Texture,
@@ -109,17 +108,20 @@ impl PostProcessingLayer for TestLayer {
     fn post_processing_shader(&self) -> &shader::Program {
         &self.post_processing_shader
     }
+
+    fn uniforms<'a>(&self) -> &'a[(&'a UniformStr, &'a dyn shader::Uniform)] {
+        &[]
+    }
 }
 
 impl Layer for TestLayer {
     fn instantiate() -> Self {
-        let texture_shader = shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader");
+        let texture_shader = Rc::new(shader::Program::from_source(include_str!("../assets/test_texture_shader.glsl")).expect("error loading texture shader"));
         let aeonetica_font = Rc::new(BitmapFont::from_texture_and_fontdata(Texture::from_bytes(include_bytes!("../assets/aeonetica_font.png")).unwrap(), include_str!("../assets/aeonetica_font.bmf")).expect("error crating font"));
 
         Self {
             renderer: RefCell::new(Renderer::new()),
             camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0)),
-            texture_shader,
             texture: Texture::from_bytes(include_bytes!("../assets/aeonetica_logo.png")).expect("error loading texture"),
             texture2: Texture::from_bytes(include_bytes!("../assets/directions.png")).expect("error loading texture"),
             spritesheet: SpriteSheet::from_texture(Texture::from_bytes(include_bytes!("../assets/spritesheet.png")).expect("error loading texture"), (15, 15).into()).expect("error loading spritesheet"),
@@ -131,10 +133,11 @@ impl Layer for TestLayer {
                     Vector2::new(10.0, 10.0), 
                     1, 
                     50.0, 2.0,
-                    texture_shader, aeonetica_font, 
+                    texture_shader.clone(), aeonetica_font, 
                     String::from("F")
                 )
             ),
+            texture_shader,
             post_processing_enabled: Cell::new(true),
 
             moving_quad: RefCell::new(None)
@@ -178,7 +181,7 @@ impl Layer for TestLayer {
 "    let mut stdout = stdout();",
 "    stdout.write(b\"Hello, world!\\n\").unwrap();",
 "}"].into_iter().enumerate() {
-            self.renderer.borrow_mut().static_string(row, &(-120.0, -40.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, self.texture_shader.clone(), 1);
+            self.renderer.borrow_mut().static_string(row, &(-120.0, -40.0 + i as f32 * 10.0).into(), 10.0, 2.0, &self.aeonetica_font, &self.texture_shader, 1);
         }
 
         let (fb_width, fb_height) = (640.0 / 2.0, 360.0 / 2.0);

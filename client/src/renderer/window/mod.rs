@@ -3,8 +3,8 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err, util::id_map::IdMap};
-use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::{ClientRuntime, ClientHandleBox}};
+use aeonetica_engine::{log, log_err};
+use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 

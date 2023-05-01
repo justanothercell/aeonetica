@@ -18,7 +18,7 @@ pub(super) struct Batch {
     indices: Vec<u32>,
     indices_dirty: Cell<bool>,
 
-    shader: shader::Program,
+    shader: Rc<shader::Program>,
     textures: Vec<RenderID>,
     z_index: u8
 }
@@ -63,7 +63,7 @@ impl Batch {
             indices,
             indices_dirty: Cell::new(false),
 
-            shader: data.shader(),
+            shader: data.shader().clone(),
             textures: vec![],
             z_index: data.z_index
         })
@@ -73,7 +73,7 @@ impl Batch {
         if self.z_index != data.z_index { return false }
         self.vertex_array.vertex_buffer().as_ref().unwrap().count() < Self::MAX_BATCH_VERTEX_COUNT &&
         self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() <= Self::MAX_BATCH_INDEX_COUNT &&
-        self.shader == data.shader() &&
+        &self.shader == data.shader() &&
         self.layout.eq(data.layout()) &&
         if let Some(t) = data.texture { self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS } else { true } 
     }
@@ -212,14 +212,14 @@ impl ExtractComparable<u8> for Batch {
 pub struct VertexData<'a> {
     vertices: &'a mut [u8],
     indices: &'a[u32],
-    layout: Rc<BufferLayout>,
-    shader: shader::Program,
+    layout: &'a Rc<BufferLayout>,
+    shader: &'a Rc<shader::Program>,
     z_index: u8,
     texture: Option<RenderID>,
 }
 
 impl<'a> VertexData<'a> {
-    pub fn new(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, z_index: u8) -> Self {
+    pub fn new(vertices: &'a mut [u8], indices: &'a[u32], layout: &'a Rc<BufferLayout>, shader: &'a Rc<shader::Program>, z_index: u8) -> Self {
         Self {
             vertices,
             indices,
@@ -230,7 +230,7 @@ impl<'a> VertexData<'a> {
         }
     }
 
-    pub fn new_textured(vertices: &'a mut [u8], indices: &'a[u32], layout: Rc<BufferLayout>, shader: shader::Program, z_index: u8, texture: RenderID) -> Self {
+    pub fn new_textured(vertices: &'a mut [u8], indices: &'a[u32], layout: &'a Rc<BufferLayout>, shader: &'a Rc<shader::Program>, z_index: u8, texture: RenderID) -> Self {
         Self {
             vertices,
             indices,
@@ -250,7 +250,7 @@ impl<'a> VertexData<'a> {
     }
 
     pub fn layout(&self) -> &Rc<BufferLayout> {
-        &self.layout
+        self.layout
     }
 
     pub fn vertices(&mut self) -> &mut [u8] {
@@ -265,8 +265,8 @@ impl<'a> VertexData<'a> {
         self.texture
     }
 
-    pub fn shader(&self) -> shader::Program {
-        self.shader.clone()
+    pub fn shader(&self) -> &Rc<shader::Program> {
+        &self.shader
     }
 
     fn patch_texture_id(&mut self, slot: u32) {

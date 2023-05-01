@@ -9,7 +9,7 @@ pub struct TextArea {
     max_len: u32,
     content: String,
     
-    shader: shader::Program,
+    shader: Rc<shader::Program>,
     font: Rc<BitmapFont>,
     font_size: f32,
     spacing: f32,
@@ -43,8 +43,8 @@ impl Renderable for TextArea {
         VertexData::new_textured(
             unsafe { std::mem::transmute::<_, &mut [u8]>(self.vertices.as_mut_slice()) }, 
             self.indices.as_slice(), 
-            TEXT_AREA_LAYOUT.with(|l| l.clone()),
-            self.shader,
+            Self::layout(),
+            &self.shader,
             self.z_index,
             self.font.sprite_sheet().texture().id()
         )
@@ -52,11 +52,18 @@ impl Renderable for TextArea {
 }
 
 thread_local! {
-    static TEXT_AREA_LAYOUT: Rc<BufferLayout> = Rc::new(TextArea::Vertices::build());
+    static TEXT_AREA_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(TextArea::Vertices::build()));
 }
 
 impl TextArea {
     type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
+
+    fn layout<'a>() -> &'a Rc<BufferLayout> {
+        unsafe {
+            let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| &**l as *const _);
+            x.as_ref().unwrap()
+        }
+    }
 
     fn gen_indices(num_chars: usize) -> Vec<u32> {
         let mut indices = Vec::with_capacity(num_chars * 6);
@@ -67,7 +74,7 @@ impl TextArea {
         indices
     }
 
-    pub fn new(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: u32, shader: shader::Program, font: Rc<BitmapFont>) -> Self {
+    pub fn new(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: u32, shader: Rc<shader::Program>, font: Rc<BitmapFont>) -> Self {
         Self {
             position,
             z_index,
@@ -83,7 +90,7 @@ impl TextArea {
         }
     }
 
-    pub fn from_string(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, shader: shader::Program, font: Rc<BitmapFont>, content: String) -> Self {
+    pub fn from_string(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
         let len = content.len();
         Self {
             position,

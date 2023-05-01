@@ -7,8 +7,9 @@ const QUAD_INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
 
 pub trait Quad {
     type Layout;
-    fn layout() -> Rc<BufferLayout>;
 
+    fn layout<'a>() -> &'a Rc<BufferLayout>;
+    
     fn position(&self) -> &Vector2<f32>;
     fn size(&self) -> &Vector2<f32>;
     fn z_index(&self) -> u8;
@@ -44,7 +45,7 @@ pub struct ColoredQuad {
     rotation: f32,
     z_index: u8,
 
-    shader: shader::Program,
+    shader: Rc<shader::Program>,
     color: [f32; 4],
     vertices: Option<[VertexTuple2<[f32; 3], [f32; 4]>; 4]>,
 
@@ -52,7 +53,7 @@ pub struct ColoredQuad {
 }
 
 impl ColoredQuad {
-    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, color: [f32; 4], shader: shader::Program) -> Self {
+    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, color: [f32; 4], shader: Rc<shader::Program>) -> Self {
         Self {
             position,
             size,
@@ -75,14 +76,19 @@ impl ColoredQuad {
 }
 
 thread_local! {
-    static COLORED_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<ColoredQuad as quad::Quad>::Layout::build());
+    static COLORED_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<ColoredQuad as quad::Quad>::Layout::build()));
 }
+
+//const COLORED_QUAD_LAYOUT: BufferLayout = <ColoredQuad as quad::Quad>::Layout::build();
 
 impl Quad for ColoredQuad {
     type Layout = BufferLayoutBuilder<(Vertex, Color)>;
 
-    fn layout() -> Rc<BufferLayout> {
-        COLORED_QUAD_LAYOUT.with(|layout| layout.clone())
+    fn layout<'a>() -> &'a Rc<BufferLayout> {
+        unsafe {
+            let x: *const Rc<BufferLayout> = COLORED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            x.as_ref().unwrap()
+        }
     }
 
     fn position(&self) -> &Vector2<f32> {
@@ -159,8 +165,8 @@ impl Renderable for ColoredQuad {
         VertexData::new(
             util::to_raw_byte_slice!(vertices),
             QUAD_INDICES.as_slice(),
-            Self::layout(),
-            self.shader.clone(),
+            &Self::layout(),
+            &self.shader,
             self.z_index
         )
     }
@@ -185,14 +191,14 @@ pub struct TexturedQuad {
     z_index: u8,
     rotation: f32,
 
-    shader: shader::Program,
+    shader: Rc<shader::Program>,
     texture_id: RenderID,
     vertices: Option<[VertexTuple3<[f32; 3], [f32; 2], Sampler2D>; 4]>,
     location: Option<VertexLocation>,
 }
 
 impl TexturedQuad {
-    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture_id: RenderID, shader: shader::Program) -> Self {
+    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture_id: RenderID, shader: Rc<shader::Program>) -> Self {
         Self {
             position,
             size,
@@ -215,14 +221,17 @@ impl TexturedQuad {
 }
 
 thread_local! {
-    static TEXTURED_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<TexturedQuad as quad::Quad>::Layout::build());
+    static TEXTURED_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<TexturedQuad as quad::Quad>::Layout::build()));
 }
 
 impl Quad for TexturedQuad {
     type Layout = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
 
-    fn layout() -> Rc<BufferLayout> {
-        TEXTURED_QUAD_LAYOUT.with(|layout| layout.clone())
+    fn layout<'a>() -> &'a Rc<BufferLayout> {
+        unsafe {
+            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            x.as_ref().unwrap()
+        }
     }
 
     fn position(&self) -> &Vector2<f32> {
@@ -299,8 +308,8 @@ impl Renderable for TexturedQuad {
         VertexData::new_textured(
             util::to_raw_byte_slice!(vertices),
             QUAD_INDICES.as_slice(),
-            Self::layout(), 
-            self.shader.clone(),
+            &Self::layout(), 
+            &self.shader,
             self.z_index,
             self.texture_id
         )
@@ -326,7 +335,7 @@ pub struct SpriteQuad {
     z_index: u8,
     rotation: f32,
 
-    shader: shader::Program,
+    shader: Rc<shader::Program>,
     sprite: Sprite,
     vertices: Option<[VertexTuple3<[f32; 3], [f32; 2], Sampler2D>; 4]>,
 
@@ -334,7 +343,7 @@ pub struct SpriteQuad {
 }
 
 impl SpriteQuad {
-    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, shader: shader::Program) -> Self {
+    pub fn new(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, shader: Rc<shader::Program>) -> Self {
         Self {
             position,
             size,
@@ -368,14 +377,17 @@ impl SpriteQuad {
 }
 
 thread_local! {
-    static SPRITE_QUAD_LAYOUT: Rc<BufferLayout> = Rc::new(<SpriteQuad as quad::Quad>::Layout::build());
+    static SPRITE_QUAD_LAYOUT: Box<Rc<BufferLayout>> = Box::new(Rc::new(<SpriteQuad as quad::Quad>::Layout::build()));
 }
 
 impl Quad for SpriteQuad {
     type Layout = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
 
-    fn layout() -> Rc<BufferLayout> {
-        SPRITE_QUAD_LAYOUT.with(|layout| layout.clone())
+    fn layout<'a>() -> &'a Rc<BufferLayout> {
+        unsafe {
+            let x: *const Rc<BufferLayout> = TEXTURED_QUAD_LAYOUT.with(|l| &**l as *const _);
+            x.as_ref().unwrap()
+        }
     }
 
     fn position(&self) -> &Vector2<f32> {
@@ -452,8 +464,8 @@ impl Renderable for SpriteQuad {
         VertexData::new_textured(
             util::to_raw_byte_slice!(vertices),
             QUAD_INDICES.as_slice(),
-            Self::layout(), 
-            self.shader.clone(),
+            &Self::layout(), 
+            &self.shader,
             self.z_index,
             self.sprite.texture()
         )

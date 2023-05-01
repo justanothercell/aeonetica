@@ -134,7 +134,7 @@ impl Shader {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub struct Program(RenderID);
 impl Program {
     pub(super) fn new() -> Option<Self> {
