@@ -120,6 +120,25 @@ impl Vector2<f64> {
     }
 }
 
+impl<T: PartialOrd> Vector2<T> {
+    pub fn clamp(mut self, lo: Self, hi: Self) -> Self {
+        if self.x < lo.x {
+            self.x = lo.x
+        }
+        if self.y < lo.y {
+            self.y = lo.y
+        }
+        if self.x > hi.x {
+            self.x = hi.x
+        }
+        if self.y > hi.y {
+            self.y = hi.y
+        }
+
+        self
+    }
+}
+
 impl<T: Into<f64> + Copy> Vector2<T> {
     pub fn dist(&self, other: &Self) -> f64 {
         let x = self.x.into() - other.x.into();

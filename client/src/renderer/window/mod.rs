@@ -60,7 +60,8 @@ impl Viewport {
     }
 
     fn translate(&self, input: Vector2<f32>) -> Vector2<f32> {
-        (input - self.offset.to_f32()) / self.size.to_f32() * Window::FRAMEBUFFER_SIZE.to_f32()
+        let fb_size = Window::FRAMEBUFFER_SIZE.to_f32();
+        ((input - self.offset.to_f32()) / self.size.to_f32() * fb_size).clamp(Vector2::default(), fb_size)
     }
 }
 
