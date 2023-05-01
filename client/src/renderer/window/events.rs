@@ -1,3 +1,5 @@
+use aeonetica_engine::util::vector::Vector2;
+
 extern crate glfw;
 
 pub type KeyCode = i32;
@@ -22,25 +24,23 @@ impl From<glfw::MouseButton> for MouseButton {
 }
 
 #[derive(Debug)]
-pub enum EventType {
+pub enum Event {
     KeyPressed(KeyCode),
     KeyReleased(KeyCode),
     MouseButtonPressed(MouseButton),
     MouseButtonReleased(MouseButton),
-    MouseScrolled(f32, f32),
-    MouseMoved(f32, f32),
+    MouseScrolled(Vector2<f32>),
+    MouseMoved(Vector2<f32>),
     WindowClose(),
-    WindowResize(i32, i32),
-    WindowMoved(i32, i32),
+    WindowResize(Vector2<i32>),
 
     Unknown()
 }
 
-impl From<glfw::WindowEvent> for EventType {
-    fn from(event: glfw::WindowEvent) -> Self {
-        match event {
-            glfw::WindowEvent::Pos(x, y) => Self::WindowMoved(x, y),
-            glfw::WindowEvent::FramebufferSize(x, y) => Self::WindowResize(x, y),
+impl Event {
+    pub(super) fn from_glfw(glfw_event: glfw::WindowEvent) -> Self {
+        match glfw_event {
+            glfw::WindowEvent::FramebufferSize(x, y) => Self::WindowResize(Vector2::new(x, y)),
             glfw::WindowEvent::Close => Self::WindowClose(),
             glfw::WindowEvent::Key(_, scancode, action, _) => match action {
                 glfw::Action::Release => Self::KeyReleased(scancode),
@@ -52,36 +52,9 @@ impl From<glfw::WindowEvent> for EventType {
                 glfw::Action::Release => Self::MouseButtonReleased(button.into()),
                 _ => Self::Unknown()
             }
-            glfw::WindowEvent::Scroll(v, h) => Self::MouseScrolled(v as f32, h as f32),
-            glfw::WindowEvent::CursorPos(x, y) => Self::MouseMoved(x as f32, y as f32),
+            glfw::WindowEvent::Scroll(v, h) => Self::MouseScrolled(Vector2::new(v as f32, h as f32)),
+            glfw::WindowEvent::CursorPos(x, y) => Self::MouseMoved(Vector2::new(x as f32, y as f32)),
             _ => Self::Unknown()
         }
-    }
-}
-
-#[derive(Debug)]
-pub struct Event {
-    event_type: EventType,
-}
-
-impl From<EventType> for Event {
-    fn from(value: EventType) -> Self {
-        Self::new(value)
-    }
-}
-
-impl Event {
-    pub fn new(event_type: EventType) -> Self {
-        Self {
-            event_type,
-        }
-    }
-
-    pub fn typ(&self) -> &EventType {
-        &self.event_type
-    } 
-
-    pub(super) fn from_glfw(event: glfw::WindowEvent) -> Self {
-        Self::new(event.into())
     }
 }

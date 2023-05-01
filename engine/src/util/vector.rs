@@ -1,10 +1,24 @@
 use std::ops::*;
 use std::f64;
 
+pub trait IntoVector<T> {
+    type Vector;
+
+    fn into_vector(self) -> Self::Vector;
+}
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T
+}
+
+impl<T> IntoVector<T> for (T, T) {
+    type Vector = Vector2<T>;
+
+    fn into_vector(self) -> Self::Vector {
+        Self::Vector::from(self)
+    }
 }
 
 impl<T> Vector2<T> {
@@ -25,6 +39,28 @@ impl<T> Vector2<T> {
 
     pub fn area(&self) -> T where T: Mul<Output=T> + Copy  {
         self.x * self.y
+    }
+}
+
+impl Vector2<i32> {
+    pub fn half(mut self) -> Self {
+        self.x >>= 1;
+        self.y >>= 1;
+        self
+    }
+
+    pub fn to_f32(&self) -> Vector2<f32> {
+        Vector2::new(self.x as f32, self.y as f32)
+    }
+}
+
+impl Vector2<u32> {
+    pub fn to_f32(&self) -> Vector2<f32> {
+        Vector2::new(self.x as f32, self.y as f32)
+    }
+
+    pub fn signed(&self) -> Vector2<i32> {
+        Vector2::new(self.x as i32, self.y as i32)
     }
 }
 

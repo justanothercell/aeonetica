@@ -3,10 +3,12 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err};
+use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}};
 use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
+
+use self::events::Event;
 
 use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader, texture::ImageError};
 
@@ -32,40 +34,39 @@ impl OpenGlContextProvider {
 }
 
 struct Viewport {
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32
+    offset: Vector2<i32>,
+    size: Vector2<i32>,
 }
 
 impl Viewport {
     fn calculate(window: &Window) -> Self {
-        let (width, height) = window.glfw_window.get_size();
+        let size = window.glfw_window.get_size().into_vector();
         let aspect_ratio = window.target_aspect_ratio();
-            
-        let mut aspect_width = width;
-        let mut aspect_height = (aspect_width as f32 / aspect_ratio) as i32;
-        if aspect_height > height {
-            aspect_height = height;
-            aspect_width = (aspect_height as f32 * aspect_ratio) as i32;
+
+        let mut aspect = Vector2::new(size.x(), (size.x() as f32 / aspect_ratio) as i32);
+        if aspect.y() > size.y() {
+            aspect.y = size.y();
+            aspect.x = (size.y() as f32 * aspect_ratio) as i32;
         }
 
         Self {
-            x: width / 2 - aspect_width / 2,
-            y: height / 2 - aspect_height / 2,
-            width: aspect_width,
-            height: aspect_height
+            offset: size.half() - aspect.half(),
+            size: aspect
         }
     }
 
     fn apply(&self) {
-        unsafe { gl::Viewport(self.x, self.y, self.width, self.height) }
+        unsafe { gl::Viewport(self.offset.x(), self.offset.y(), self.size.x(), self.size.y()) }
+    }
+
+    fn translate(&self, input: Vector2<f32>) -> Vector2<f32> {
+        (input - self.offset.to_f32()) / self.size.to_f32() * Window::FRAMEBUFFER_SIZE.to_f32()
     }
 }
 
 impl Default for Viewport {
     fn default() -> Self {
-        Self { x: 0, y: 0, width: 1920, height: 1080 } 
+        Self { offset: Vector2::default(), size: Vector2::new(1920, 1080) } 
     }
 }
 
@@ -87,8 +88,7 @@ impl Window {
     const DEFAULT_WINDOW_WIDTH: u32 = 1280;
     const DEFAULT_WINDOW_HEIGHT: u32 = 720;
     const DEFAULT_WINDOW_TITLE: &'static str = "Aeonetica Game Engine";
-    const DEFAULT_FRAMEBUFFER_WIDTH: u32 = 1920;
-    const DEFAULT_FRAMEBUFFER_HEIGHT: u32 = 1080;
+    const FRAMEBUFFER_SIZE: Vector2<u32> = Vector2 { x: 1920, y: 1080 };
 
     pub(crate) fn new(full_screen: bool) -> Self {
         match glfw::init(glfw::FAIL_ON_ERRORS) {
@@ -135,7 +135,7 @@ impl Window {
 
                 let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))
                     .expect("error loading default post processing shader");
-                let framebuffer = FrameBuffer::new(Self::DEFAULT_FRAMEBUFFER_WIDTH, Self::DEFAULT_FRAMEBUFFER_HEIGHT)
+                let framebuffer = FrameBuffer::new(Self::FRAMEBUFFER_SIZE)
                     .expect("error creating framebuffer");
 
                 let mut framebuffer_vao = VertexArray::new().expect("Error creating vertex array");
@@ -186,15 +186,23 @@ impl Window {
     pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut Context) {
         self.glfw_handle.poll_events();
         for (_, event) in flush_messages(&self.event_receiver) {
-            let event = events::Event::from_glfw(event);
+            let mut event = Event::from_glfw(event);
+            let mut handled = false;
 
-            match event.typ() {
-                events::EventType::WindowClose() => self.glfw_window.set_should_close(true),
-                events::EventType::WindowResize(_, _) => self.framebuffer_viewport = Viewport::calculate(self),
+            match &mut event {
+                Event::WindowClose() => self.glfw_window.set_should_close(true),
+                Event::WindowResize(_) => {
+                    self.framebuffer_viewport = Viewport::calculate(self);
+                    handled = true
+                }
+                Event::MouseMoved(pos) => *pos = self.framebuffer_viewport.translate(pos.clone()),
+                Event::Unknown() => handled = true,
                 _ => ()
             }
 
-            context.on_event(client, event);
+            if !handled {
+                context.on_event(client, event);
+            }
         }
     }
 

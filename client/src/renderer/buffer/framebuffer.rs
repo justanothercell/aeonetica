@@ -9,13 +9,13 @@ pub struct FrameBuffer {
 }
 
 impl FrameBuffer {
-    pub fn new(width: u32, height: u32) -> Result<Self, ImageError> {
+    pub fn new(size: Vector2<u32>) -> Result<Self, ImageError> {
         unsafe { 
             let mut fbo_id = 0;
             gl::GenFramebuffers(1, &mut fbo_id);
             gl::BindFramebuffer(gl::FRAMEBUFFER, fbo_id);
             
-            let texture = Texture::create((width, height).into());
+            let texture = Texture::create(size);
             gl::BindTexture(gl::TEXTURE_2D, 0);
             
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
@@ -29,7 +29,7 @@ impl FrameBuffer {
             gl::GenRenderbuffers(1, &mut rbo_id);
           
             gl::BindRenderbuffer(gl::RENDERBUFFER, rbo_id);
-            gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH24_STENCIL8, width as i32, height as i32);
+            gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH24_STENCIL8, size.x() as i32, size.y() as i32);
             gl::BindRenderbuffer(gl::RENDERBUFFER, 0);
           
             gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rbo_id);

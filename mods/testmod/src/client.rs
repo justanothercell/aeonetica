@@ -222,8 +222,8 @@ impl Layer for TestLayer {
             }
         }
         
-        match event.typ() {
-            EventType::KeyPressed(33) => {
+        match event {
+            Event::KeyPressed(33) => {
                 /* key P */
                 self.post_processing_enabled.set(!self.post_processing_enabled.get());
                 true
