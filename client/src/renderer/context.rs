@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
-use aeonetica_engine::{log, util::id_map::IdMap};
+use aeonetica_engine::log;
 
 use crate::{
     renderer::window::events::Event,
-    renderer::layer::Layer, client_runtime::{ClientRuntime, ClientHandleBox}
+    renderer::layer::Layer, client_runtime::ClientRuntime
 };
 
 use super::shader::PostProcessingLayer;

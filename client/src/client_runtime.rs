@@ -68,6 +68,7 @@ pub struct ClientRuntime {
 }
 
 pub(crate) struct LoadingMod{
+    #[allow(unused)]
     name: String,
     path: String,
     flags: Vec<String>,

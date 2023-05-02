@@ -142,6 +142,7 @@ impl Engine {
         Ok(())
     }
 
+    #[allow(unused)]
     pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F, mode: SendMode) -> Result<(), AError> {
         match self.runtime.ns.borrow_mut().clients.get_mut(client_id) {
             Some(client) => {

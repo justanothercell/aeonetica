@@ -12,6 +12,7 @@ extern crate test;
 mod tests;
 
 use std::fmt::{Debug, Display, Formatter};
+#[allow(deprecated)]
 use std::hash::{Hasher, SipHasher};
 pub use nanoserde;
 pub use libloading;
@@ -36,6 +37,7 @@ pub type TypeId = Id;
 impl Id {
     #[inline]
     pub fn new() -> Self {
+        #[allow(deprecated)]
         let mut hasher = SipHasher::default();
         hasher.write(&Uuid::new_v4().into_bytes());
         Self::from_u64(hasher.finish())

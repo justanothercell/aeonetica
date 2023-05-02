@@ -6,6 +6,7 @@ pub struct VertexArray {
     index_buffer: Option<Buffer>,
 }
 
+#[allow(unused)]
 impl VertexArray {
     pub fn new() -> Option<Self> {
         let mut vao = 0;

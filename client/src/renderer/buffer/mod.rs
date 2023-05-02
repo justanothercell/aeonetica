@@ -58,6 +58,7 @@ impl<T: Layout> BufferLayoutBuilder<T> {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum BufferUsage {
     STATIC = gl::STATIC_DRAW as isize,
@@ -89,6 +90,7 @@ pub struct Buffer {
     count: Cell<u32>,
 }
 
+#[allow(unused)]
 impl Buffer {
     pub(super) fn new(typ: BufferType, data: &[u8], layout: Option<Rc<BufferLayout>>, usage: BufferUsage) -> Option<Self> {
         let mut id = 0;
