@@ -57,7 +57,7 @@ impl Context {
 
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {
         let handles = client.handles();
-        for layer in self.layer_stack.layers.iter().rev() {
+        for layer in self.layer_stack.layers.iter().filter(|layer| layer.active()).rev() {
             let handled = layer.on_event(handles, &event);
             if handled {
                 return;
@@ -69,7 +69,7 @@ impl Context {
 
     pub(crate) fn on_update(&mut self, client: &mut ClientRuntime, delta_time: f64) {
         let handles = client.handles();
-        self.layer_stack.layers.iter().for_each(|layer| layer.on_update(handles, delta_time));
+        self.layer_stack.layers.iter().filter(|layer| layer.active()).for_each(|layer| layer.on_update(handles, delta_time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {

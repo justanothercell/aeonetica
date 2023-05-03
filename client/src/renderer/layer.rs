@@ -13,6 +13,8 @@ pub trait Layer {
     fn on_update(&self, handles: &mut IdMap<ClientHandleBox>, delta_time: f64); // run on every client update
     fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool;
 
+    fn active(&self) -> bool { true }
+
     fn name(&self) -> &'static str {
         "Layer"
     }
