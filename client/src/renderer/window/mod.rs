@@ -264,6 +264,10 @@ impl Window {
 
         post_processing_shader.unbind();
 
+        unsafe {
+            gl::Finish();
+        }
+
         self.glfw_window.swap_buffers();
     }
 
