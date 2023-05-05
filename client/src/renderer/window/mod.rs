@@ -4,7 +4,7 @@ use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}};
-use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime};
+use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -212,7 +212,7 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut Context, client: &mut ClientRuntime, delta_time: f64) {
+    pub(crate) fn render(&mut self, context: &mut Context, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         
@@ -226,7 +226,7 @@ impl Window {
             gl::Enable(gl::BLEND);
         }
 
-        context.on_update(client, delta_time);
+        context.on_update(client, store, delta_time);
 
         self.framebuffer.unbind();
         

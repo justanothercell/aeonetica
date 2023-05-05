@@ -5,6 +5,9 @@ use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id, camera::Camera
 
 use crate::common::{Chunk, CHUNK_SIZE};
 
+#[derive(PartialEq)]
+pub struct CameraPosition(Vector2<f32>);
+
 pub struct WorldModClient {
 
 }
@@ -23,6 +26,7 @@ impl ClientMod for WorldModClient {
         gl_context_provider.make_context();
 
         context.push(Rc::new(WorldLayer::instantiate()));
+        store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
     }
 }
 
@@ -97,7 +101,7 @@ impl Layer for WorldLayer {
     fn instantiate() -> Self where Self: Sized {
         Self {
             renderer: RefCell::new(Renderer::new()),
-            camera: RefCell::new(Camera::new(0.0, 640.0, 360.0, 0.0, -1.0, 1.0))
+            camera: RefCell::new(Camera::new(-320.0, 320.0, 180.0, -180.0, -1.0, 1.0))
         }
     }
 
@@ -109,9 +113,16 @@ impl Layer for WorldLayer {
         log!("WorldLayer detached");
     }
 
-    fn on_update(&self, handles: &mut IdMap<ClientHandleBox>, delta_time: f64) {
+    fn on_update(&self, store: &mut DataStore, handles: &mut IdMap<ClientHandleBox>, delta_time: f64) {
         let mut renderer = self.renderer.borrow_mut();
-        renderer.begin_scene(&*self.camera.borrow());
+        let mut camera = self.camera.borrow_mut();
+
+        let new_pos = store.get_store::<CameraPosition>().unwrap().0;
+        if new_pos != *camera.position() {
+            camera.set_position(new_pos);
+        }
+
+        renderer.begin_scene(&*camera);
         handles.iter_mut().for_each(|(_, h)| h.update(&mut renderer, delta_time));
         renderer.draw_vertices();
         renderer.end_scene();

@@ -4,7 +4,7 @@ use aeonetica_engine::log;
 
 use crate::{
     renderer::window::events::Event,
-    renderer::layer::Layer, client_runtime::ClientRuntime
+    renderer::layer::Layer, client_runtime::ClientRuntime, data_store::DataStore
 };
 
 use super::shader::PostProcessingLayer;
@@ -67,9 +67,9 @@ impl Context {
         log!("Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_update(&mut self, client: &mut ClientRuntime, delta_time: f64) {
+    pub(crate) fn on_update(&mut self, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         let handles = client.handles();
-        self.layer_stack.layers.iter().filter(|layer| layer.active()).for_each(|layer| layer.on_update(handles, delta_time));
+        self.layer_stack.layers.iter().filter(|layer| layer.active()).for_each(|layer| layer.on_update(store, handles, delta_time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
