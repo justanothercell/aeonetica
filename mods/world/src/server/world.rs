@@ -1,6 +1,13 @@
-use aeonetica_engine::EntityId;
+use std::io::empty;
+use std::process::id;
+use aeonetica_engine::{EntityId, log};
+use aeonetica_engine::networking::SendMode;
+use aeonetica_engine::util::vector::Vector2;
 use aeonetica_server::ecs::Engine;
+use aeonetica_server::ecs::events::ConnectionListener;
+use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
+use crate::client::WorldHandle;
 use crate::common::{Chunk, Tile};
 
 pub const WORLD: &str = "WORLD";
@@ -10,9 +17,9 @@ struct ChunkHolder {
 }
 
 impl ChunkHolder {
-    pub(crate) fn new() -> ChunkHolder {
+    pub(crate) fn new(chunk_pos: Vector2<u32>) -> ChunkHolder {
         ChunkHolder {
-            chunk: Chunk::new(),
+            chunk: Chunk::new(chunk_pos),
         }
     }
 }
@@ -25,8 +32,22 @@ impl World {
     pub(crate) fn new_wold_entity(engine: &mut Engine) -> EntityId {
         let eid = engine.new_entity();
         engine.tag_entity(eid, WORLD);
-        engine.mut_entity(&eid).unwrap().add_module(World {
-            origin: ChunkHolder::new()
+        let entity = engine.mut_entity(&eid).unwrap();
+        entity.add_module(Messenger::new::<WorldHandle>());
+
+        engine.mut_entity(&eid).unwrap().add_module(ConnectionListener::new(
+            |id, engine, client| {
+                log!("sent chunk whether they wanted or not: {user}");
+                let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
+                messenger.add_client(*user);
+                messenger.call_client_fn_for(WorldHandle::receive_chunk_data, &client, Chunk::new((0, 0).into()), SendMode::Safe);
+            },
+            |_id, _engine, _user| {
+                log!("user said bye bye to world: {user}");
+
+            }));
+        entity.add_module(World {
+            origin: ChunkHolder::new((0, 0).into())
         });
         eid
     }

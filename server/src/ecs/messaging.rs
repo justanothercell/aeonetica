@@ -21,7 +21,7 @@ pub struct Messenger {
     handle_type: TypeId,
     entity_id: EntityId,
     pub(crate) receivers: HashSet<ClientId>,
-    pub(crate) receiver_functions: IdMap<Box<dyn Fn(&EntityId, &mut Engine, &Vec<u8>)>>
+    pub(crate) receiver_functions: IdMap<Box<dyn Fn(&EntityId, &mut Engine, &ClientId, &Vec<u8>)>>
 }
 
 impl Module for Messenger {
@@ -44,13 +44,13 @@ impl Messenger {
         }
     }
 
-    pub fn register_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
-        let m = move |id: &Id, engine: &mut Engine, data: &Vec<u8>|
-            f(id, engine, M::deserialize_bin(data).unwrap());
+    pub fn register_receiver<F: Fn(&EntityId, &mut Engine, &ClientId, M) + 'static, M: SerBin + DeBin>(&mut self, f: F) {
+        let m = move |id: &Id, engine: &mut Engine, sender: &ClientId, data: &Vec<u8>|
+            f(id, engine, sender, M::deserialize_bin(data).unwrap());
         self.receiver_functions.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn unregister_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, _: F) {
+    pub fn unregister_receiver<F: Fn(&EntityId, &mut Engine, &ClientId, M) + 'static, M: SerBin + DeBin>(&mut self, _: F) {
         self.receiver_functions.remove(&type_to_id::<F>());
     }
 
