@@ -14,3 +14,5 @@ server = []
 aeonetica_engine = { package="engine", path="../../engine" }
 aeonetica_client = { package="client", path="../../client" }
 aeonetica_server = { package="server", path="../../server" }
+
+rand = "0.8.5"

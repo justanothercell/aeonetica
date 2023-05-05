@@ -123,7 +123,8 @@ impl Engine {
     /// Returns `true` if tagging is successful.
     /// Tagging fails if `tag_exists(tag)` returns true or `entity_exists(id)` returns false.
     #[inline]
-    pub fn tag_entity(&mut self, id: EntityId, tag: String) -> bool {
+    pub fn tag_entity<S: Into<String>>(&mut self, id: EntityId, tag: S) -> bool {
+        let tag = tag.into();
         if !self.tag_exists(&tag) && self.entity_exists(&id) {
             self.tagged.insert(tag, id);
             true

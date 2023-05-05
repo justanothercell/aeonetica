@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aeonetica_client::{ClientMod, networking::messaging::ClientHandle, data_store::DataStore, renderer::window::OpenGlContextProvider};
-use aeonetica_engine::{log, util::type_to_id, Id};
+use aeonetica_engine::{log, Id};
 
 pub struct WorldModClient {
 
