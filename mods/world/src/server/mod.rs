@@ -1,4 +1,5 @@
 mod world;
+mod gen;
 
 use aeonetica_server::ServerMod;
 
