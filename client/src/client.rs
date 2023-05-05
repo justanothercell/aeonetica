@@ -43,7 +43,7 @@ pub fn run(ip: &str, server_ip: &str) {
             log_err!("{e}")
         });
         
-        window.render(&mut context, &mut client, delta_time as f64 / 1_000_000_000.0);
+        window.render(&mut context, &mut client, &mut store, delta_time as f64 / 1_000_000_000.0);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;
