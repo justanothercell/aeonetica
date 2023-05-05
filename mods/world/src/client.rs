@@ -97,7 +97,7 @@ impl Layer for WorldLayer {
     fn instantiate() -> Self where Self: Sized {
         Self {
             renderer: RefCell::new(Renderer::new()),
-            camera: RefCell::new(Camera::new(0.0, 1280.0, 720.0, 0.0, -1.0, 1.0))
+            camera: RefCell::new(Camera::new(0.0, 640.0, 360.0, 0.0, -1.0, 1.0))
         }
     }
 
