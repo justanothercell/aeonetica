@@ -1,13 +1,15 @@
 use std::ops::*;
 use std::f64;
 
+use crate::nanoserde::{self, SerBin, DeBin};
+
 pub trait IntoVector<T> {
     type Vector;
 
     fn into_vector(self) -> Self::Vector;
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(SerBin, DeBin, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T
