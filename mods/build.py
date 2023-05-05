@@ -44,13 +44,14 @@ def get_mod_file_ext():
     else:
         raise Exception('Unsupported platform {sys.platform}')
 
-def build(prefix: str, feature: str): 
+def build(feature: str):
     # run cargo build command
-    build_cmd = f'cargo build --features={feature}'
+    build_cmd = f'cargo build --features="{feature}"'
     if build_mode == 'release':
         build_cmd += ' --release'
     system(build_cmd)
-    
+
+def zippify(prefix: str, feature: str):
     # cd into the build directory
     with pushd(prefix):
         # check if compilation was successful
@@ -83,7 +84,16 @@ def clean():
     
 def compile_mod(prefix: str, archive: str):    
     print(f'Building \'{mod_name}\' in {build_mode} mode...')
-    archives = [build(prefix, 'client'), build(prefix, 'server')]
+
+    if build_mode == 'release':
+        build('client')
+        zc = zippify(prefix, 'client')
+        build('server')
+        zs = zippify(prefix, 'server')
+        archives = [zc, zs]
+    else:
+        build('client server')
+        archives = [zippify(prefix, 'server'), zippify(prefix, 'client')]
 
     # build the final zip file
     with pushd(prefix):
