@@ -57,7 +57,7 @@ impl DataStore {
         self.stores.contains_key(&type_to_id::<T>())
     }
 
-    pub fn has_module_type(&self, ty: &TypeId) -> bool {
+    pub fn has_store_type(&self, ty: &TypeId) -> bool {
         self.stores.contains_key(ty)
     }
 }

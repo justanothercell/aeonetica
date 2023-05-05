@@ -8,15 +8,27 @@ pub const CHUNK_SIZE: usize = 16;
 
 #[derive(SerBin, DeBin)]
 pub struct Chunk {
-    pub chunk_pos: Vector2<u32>,
+    pub chunk_pos: Vector2<i32>,
     pub tiles: [Tile; CHUNK_SIZE*CHUNK_SIZE]
 }
 
 impl Chunk {
-    pub(crate) fn new(chunk_pos: Vector2<u32>) -> Self {
+    pub(crate) fn new(chunk_pos: Vector2<i32>) -> Self {
         Self {
             chunk_pos,
             tiles: [0; CHUNK_SIZE*CHUNK_SIZE]
         }
+    }
+
+    pub fn get_tile(&self, pos: Vector2<i32>) -> Tile {
+        self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
+    }
+
+    pub fn mut_tile(&mut self, pos: Vector2<i32>) -> &mut Tile {
+        &mut self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
+    }
+
+    pub fn set_tile(&mut self, pos: Vector2<i32>, tile: Tile) {
+        self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
     }
 }
