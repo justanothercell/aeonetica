@@ -27,16 +27,21 @@ impl ClientMod for WorldModClient {
 }
 
 pub(crate) struct WorldHandle {
-
+    chunk: Option<Chunk>,
+    new: bool
 }
 
 impl WorldHandle {
     fn new() -> Self {
-        Self {}
+        Self {
+            chunk: None,
+            new: false
+        }
     }
 
-    fn receive_chunk_data(&mut self, data: Chunk) {
-        log_warn!("receive_chunk_data() called")
+    pub(crate) fn receive_chunk_data(&mut self, data: Chunk) {
+        log_warn!("receive_chunk_data() called");
+        self.chunk = Some(data);
     }
 }
 
@@ -50,7 +55,13 @@ impl ClientHandle for WorldHandle {
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &std::cell::RefMut<Renderer>, delta_time: f64) {
+        if self.new {
+            self.new = false;
         
+            log!("new chunk detected");
+        }
+
+        log!("update...")
     }
 }
 
@@ -75,7 +86,6 @@ impl Layer for WorldLayer {
 
     fn on_update(&self, handles: &mut IdMap<ClientHandleBox>, delta_time: f64) {
         let mut renderer = self.renderer.borrow_mut();
-
         handles.iter_mut().for_each(|(_, h)| h.update(&renderer, delta_time));
 
         renderer.draw_vertices();
