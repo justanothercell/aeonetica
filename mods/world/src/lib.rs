@@ -3,7 +3,8 @@
 
 use aeonetica_engine::register;
 
-pub mod client;
-pub mod server;
+mod client;
+mod server;
+mod common;
 
 register!(client::TestModClient{}, server::TestModServer{});
