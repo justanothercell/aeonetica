@@ -7,4 +7,4 @@ mod client;
 mod server;
 mod common;
 
-register!(client::TestModClient{}, server::TestModServer{});
+register!(client::WorldModClient{}, server::WorldModServer{});
