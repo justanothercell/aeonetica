@@ -63,14 +63,14 @@ impl ClientHandle for WorldHandle {
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, delta_time: f64) {
         self.chunk_queue.drain(..).for_each(|chunk| {
-            for (i, _) in chunk.tiles().iter().enumerate() {
+            for (i, tile) in chunk.tiles().iter().enumerate() {
                 let x = (i % CHUNK_SIZE * 16) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
                 let y = (i / CHUNK_SIZE * 16) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
                 let mut quad = SpriteQuad::new(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(16.0, 16.0), 
                     0, 
-                    self.tile_sprites.get(0).unwrap(), 
+                    self.tile_sprites.get(*tile as u32).unwrap(), 
                     self.shader.clone()
                 );
                 renderer.add(&mut quad);
