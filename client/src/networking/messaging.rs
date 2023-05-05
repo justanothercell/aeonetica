@@ -19,7 +19,7 @@ pub trait ClientHandle: ClientEntity {
     fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     
-    fn update(&mut self, renderer: &RefMut<Renderer>, delta_time: f64) {}
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &RefMut<Renderer>, delta_time: f64) {}
     fn on_event(&mut self, event: &Event) -> bool { false }
 }
 

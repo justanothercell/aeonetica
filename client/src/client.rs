@@ -28,7 +28,7 @@ pub fn run(ip: &str, server_ip: &str) {
     let mut last_full_sec = 0;
     let mut delta_time = 0;
 
-    let mut store =  DataStore::new();
+    let mut store = DataStore::new();
     let mut context = Context::new();
 
     client.loaded_mods.iter()
