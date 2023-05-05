@@ -37,13 +37,13 @@ impl World {
 
         engine.mut_entity(&eid).unwrap().add_module(ConnectionListener::new(
             |id, engine, client| {
-                log!("sent chunk whether they wanted or not: {user}");
+                log!("sent chunk whether they wanted or not: {client}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
-                messenger.add_client(*user);
+                messenger.add_client(*client);
                 messenger.call_client_fn_for(WorldHandle::receive_chunk_data, &client, Chunk::new((0, 0).into()), SendMode::Safe);
             },
-            |_id, _engine, _user| {
-                log!("user said bye bye to world: {user}");
+            |_id, _engine, client| {
+                log!("user said bye bye to world: {client}");
 
             }));
         entity.add_module(World {
