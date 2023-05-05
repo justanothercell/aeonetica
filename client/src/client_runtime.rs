@@ -86,7 +86,7 @@ pub struct ClientHandleBox {
 
 impl ClientHandleBox {
     #[inline(always)]
-    pub fn update(&mut self, renderer: &RefMut<Renderer>, delta_time: f64) {
+    pub fn update(&mut self, renderer: &mut RefMut<Renderer>, delta_time: f64) {
         self.handle.update(&mut self.messenger, renderer, delta_time);
     }
 

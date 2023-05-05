@@ -235,6 +235,28 @@ impl<T: Div<Output = T>> Div for Vector2<T> {
     }
 }
 
+impl<T: Div<Output = T> + Copy> Div<T> for Vector2<T> {
+    type Output = Self;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x / rhs,
+            y: self.y / rhs
+        }
+    }
+}
+
+impl<T: Rem<Output = T> + Copy> Rem<T> for Vector2<T> {
+    type Output = Self;
+
+    fn rem(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x % rhs,
+            y: self.y % rhs
+        }
+    }
+}
+
 impl<T: AddAssign> AddAssign for Vector2<T> {
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
