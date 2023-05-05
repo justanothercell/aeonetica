@@ -35,7 +35,7 @@ impl World {
         let entity = engine.mut_entity(&eid).unwrap();
         entity.add_module(Messenger::new::<WorldHandle>());
 
-        engine.mut_entity(&eid).unwrap().add_module(ConnectionListener::new(
+        entity.add_module(ConnectionListener::new(
             |id, engine, client| {
                 log!("sent chunk whether they wanted or not: {client}");
                 let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
@@ -46,6 +46,7 @@ impl World {
                 log!("user said bye bye to world: {client}");
 
             }));
+        
         entity.add_module(World {
             origin: ChunkHolder::new((0, 0).into())
         });
