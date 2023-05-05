@@ -133,7 +133,7 @@ impl Engine {
                 let mut_engine_ref = unsafe { &mut *(self as *mut Self) };
                 if let Some(m) = self.get_module_of::<Messenger>(eid) {
                     if let Some(f) = m.receiver_functions.get(rid) {
-                        f(eid, mut_engine_ref, data)
+                        f(eid, mut_engine_ref, &packet.client_id, data)
                     }
                 }
             }
