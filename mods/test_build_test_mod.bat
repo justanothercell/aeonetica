@@ -1,1 +1,1 @@
-py build.py -w testmod -d ../server/mods
+py build.py -w world -d ../server/mods

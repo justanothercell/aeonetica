@@ -3,6 +3,6 @@
     version: "0.1.0",
     modstack: {
         // path:name
-        "testmod:testmod": []
+        "world:world": [ "42" ]
     }
 )
