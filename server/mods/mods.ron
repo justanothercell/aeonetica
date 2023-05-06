@@ -3,6 +3,7 @@
     version: "0.1.0",
     modstack: {
         // path:name
-        "world:world": [ "42" ]
+        "world:world": [ "42" ],
+		"player:player": []
     }
 )

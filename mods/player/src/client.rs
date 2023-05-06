@@ -2,7 +2,9 @@ use std::cell::RefMut;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
+use aeonetica_client::renderer::context::Context;
 use aeonetica_client::renderer::Renderer;
+use aeonetica_client::renderer::window::OpenGlContextProvider;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
@@ -16,8 +18,12 @@ pub struct PlayerModClient {
 }
 
 impl ClientMod for PlayerModClient {
+    fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
+        log!("started client player mod");
+    }
     fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>) {
         handlers.insert(type_to_id::<PlayerHandle>(), || Box::new(PlayerHandle { is_controlling: false, p_position: Default::default(), position: Default::default() }));
+        log!("registered  client player mod stuffs");
     }
 }
 
@@ -37,6 +43,8 @@ impl PlayerHandle {
         if !self.is_controlling {
             log!("received position from foreign client");
             self.position = position
+        } else {
+            log!("received position pongback");
         }
     }
 }
@@ -51,8 +59,8 @@ impl ClientHandle for PlayerHandle {
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, delta_time: f64) {
         if self.is_controlling {
-            self.position.x += 1.0 / delta_time as f32;
-            if (self.position - self.p_position).mag_sq() > 0.01 {
+            self.position.x += delta_time as f32;
+            if (self.position - self.p_position).mag_sq() > 70.0 {
                 messenger.call_server_fn(Player::client_position_update, self.position, SendMode::Quick);
                 log!("told server i moved");
                 self.p_position = self.position;
