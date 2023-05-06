@@ -74,11 +74,11 @@ impl ClientHandle for WorldHandle {
                     continue;
                 }
 
-                let x = (i % CHUNK_SIZE * 16) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
-                let y = (i / CHUNK_SIZE * 16) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
+                let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
+                let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
                 let mut quad = SpriteQuad::new(
                     Vector2::new(x as f32, y as f32), 
-                    Vector2::new(16.0, 16.0), 
+                    Vector2::new(1.0, 1.0), 
                     0, 
                     self.tile_sprites.get(*tile as u32 - 1).unwrap(), 
                     self.shader.clone()
@@ -101,7 +101,7 @@ impl Layer for WorldLayer {
     fn instantiate() -> Self where Self: Sized {
         Self {
             renderer: RefCell::new(Renderer::new()),
-            camera: RefCell::new(Camera::new(-320.0, 320.0, 180.0, -180.0, -1.0, 1.0))
+            camera: RefCell::new(Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0))
         }
     }
 

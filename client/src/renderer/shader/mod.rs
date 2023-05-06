@@ -1,7 +1,7 @@
 pub mod postprocessing;
 pub use postprocessing::*;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, cell::Cell};
 use super::*;
 
 use aeonetica_engine::util::{matrix::Matrix4, vector::Vector2};
@@ -191,7 +191,16 @@ impl Program {
         unsafe { gl::DeleteProgram(self.0) }
     }
 
-    pub(super) fn upload_uniform<U: Uniform + ?Sized>(&self, name: &UniformStr, data: &U) {
+    pub fn upload_uniforms<U: Uniform + ?Sized>(&self, uniforms: &[(&UniformStr, &U)]) {
+        for (name, data) in uniforms {
+            unsafe {
+                let location = gl::GetUniformLocation(self.0, name.0 as *const i8);
+                data.upload(location);
+            }
+        }
+    }
+
+    pub fn upload_uniform<U: Uniform + ?Sized>(&self, name: &UniformStr, data: &U) {
         unsafe {
             let location = gl::GetUniformLocation(self.0, name.0 as *const i8);
             data.upload(location);
