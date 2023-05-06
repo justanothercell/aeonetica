@@ -48,11 +48,11 @@ impl ClientMessenger {
         self.client_receivers.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn unregister_receiver<F: Fn(&EntityId, &mut Engine, M) + 'static, M: SerBin + DeBin>(&mut self, _: F) {
+    pub fn unregister_receiver<F: Fn(&mut T, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, _: F) {
         self.client_receivers.remove(&type_to_id::<F>());
     }
 
-    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, M), M: SerBin + DeBin>(&mut self, _: F, message: M, mode: SendMode) {
+    pub fn call_server_fn<F: Fn(&EntityId, &mut Engine, &ClientId, M), M: SerBin + DeBin>(&mut self, _: F, message: M, mode: SendMode) {
         let id = type_to_id::<F>();
         let _ = self.nc.borrow().send(&ClientPacket {
             client_id: self.client_id,

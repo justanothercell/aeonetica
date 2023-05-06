@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::Id;
 use aeonetica_engine::libloading::Library;
+use aeonetica_engine::util::id_map::IdMap;
 use renderer::context::Context;
 use renderer::window::OpenGlContextProvider;
 use crate::data_store::DataStore;
@@ -21,7 +22,7 @@ pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
     #[allow(unused_variables)]
-    fn register_handlers(&self, handlers: &mut HashMap<Id, fn() -> Box<dyn ClientHandle>>) {}
+    fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>) {}
     #[allow(unused_variables)]
     fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {}
 }
