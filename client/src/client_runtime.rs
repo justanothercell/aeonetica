@@ -229,7 +229,6 @@ impl ClientRuntime {
 
     fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
         log!("downloading {} mod(s)", mod_list.borrow().values().filter(|m| !m.borrow().available).count());
-        let mut total = 0;
         let mut borrowed_ml = mod_list.borrow_mut();
         for (name_path, lm) in borrowed_ml.iter_mut() {
             let lmb = lm.borrow_mut();
@@ -238,7 +237,6 @@ impl ClientRuntime {
             }
             let total_size = lmb.total_size;
             drop(lmb);
-            total += total_size;
             for i in (0..total_size).step_by(MOD_DOWNLOAD_CHUNK_SIZE) {
                 let lm = lm.clone();
                 self.request_response(&ClientPacket {
@@ -274,19 +272,18 @@ impl ClientRuntime {
             for packet in packets {
                 self.handle_packet(&packet, &mut DataStore::new())?;
             }
-
+            let mut total = 0;
             let mut downloaded = 0;
             for (key, lm) in borrowed_ml.iter_mut(){
                 let mut lm = lm.borrow_mut();
-                if !lm.available {
-                    downloaded += lm.size;
-                    if lm.size == lm.total_size {
-                        lm.available = true;
-                        log!("unzipping...");
-                        unzip_archive(Cursor::new(&lm.data), &format!("runtime/{}", lm.path))?;
-                        File::create(mod_hash(&lm.path)).unwrap().write_all(lm.hash.as_bytes())?;
-                        log!("finished downloading mod {}", key)
-                    }
+                downloaded += lm.size;
+                total += lm.total_size;
+                if !lm.available && lm.size == lm.total_size {
+                    lm.available = true;
+                    log!("unzipping...");
+                    unzip_archive(Cursor::new(&lm.data), &format!("runtime/{}", lm.path))?;
+                    File::create(mod_hash(&lm.path)).unwrap().write_all(lm.hash.as_bytes())?;
+                    log!("finished downloading mod {}", key)
                 }
             }
             if downloaded as f32 / total as f32 - p > 0.2 {
