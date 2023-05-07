@@ -4,7 +4,7 @@
 
 <h1>The Aeonetica Muliplayer Game Engine</h1>
 
-##### [📑Documentation](docs/README.md)
+##### [📑Documentation](docs/README.md) [⚖️License](../LICENSE)
 
 </div>
 
