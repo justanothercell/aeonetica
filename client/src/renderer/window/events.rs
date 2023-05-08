@@ -2,7 +2,7 @@ use aeonetica_engine::util::vector::Vector2;
 
 extern crate glfw;
 
-pub type KeyCode = i32;
+pub use glfw::Key as KeyCode;
 
 #[derive(Debug, Clone, Copy)]
 pub enum MouseButton {
@@ -42,9 +42,9 @@ impl Event {
         match glfw_event {
             glfw::WindowEvent::FramebufferSize(x, y) => Self::WindowResize(Vector2::new(x, y)),
             glfw::WindowEvent::Close => Self::WindowClose(),
-            glfw::WindowEvent::Key(_, scancode, action, _) => match action {
-                glfw::Action::Release => Self::KeyReleased(scancode),
-                glfw::Action::Press => Self::KeyPressed(scancode),
+            glfw::WindowEvent::Key(key, _, action, _) => match action {
+                glfw::Action::Release => Self::KeyReleased(key),
+                glfw::Action::Press => Self::KeyPressed(key),
                 _ => Self::Unknown()
             }
             glfw::WindowEvent::MouseButton(button, action, _) => match action {
