@@ -3,7 +3,7 @@
 #![feature(inherent_associated_types)]
 
 use aeonetica_engine::log;
-use client::client::run;
+use client::{client::run, data_store::DataStore};
 fn main() {
     // nc -u 127.0.01 6090
     // cargo run -- 127.0.0.1:9000 127.0.0.1:6090
@@ -16,5 +16,6 @@ fn main() {
         //e.log_exit();
     }
 
-    run(&args[0], &args[1])
+    let mut store = DataStore::new();
+    run(&args[0], &args[1], &mut store)
 }

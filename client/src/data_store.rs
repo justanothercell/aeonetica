@@ -8,7 +8,7 @@ pub struct DataStore {
 }
 
 impl DataStore {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             stores: Default::default()
         }

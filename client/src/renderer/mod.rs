@@ -33,6 +33,8 @@ pub trait Renderable {
 
     fn location(&self) -> &Option<VertexLocation>;
     fn set_location(&mut self, location: VertexLocation);
+    fn is_dirty(&self) -> bool;
+    fn has_location(&self) -> bool;
 }
 
 pub struct Renderer {
@@ -131,6 +133,20 @@ impl Renderer {
     pub fn modify(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
         let texture = item.texture_id();
         self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
+    }
+
+    // add or modify a given item, if needed
+    pub fn draw(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
+        if !item.has_location() {
+            let location = self.add_vertices(&mut item.vertex_data());
+            item.set_location(location);
+        }
+        else if item.is_dirty() {
+            let texture = item.texture_id();
+            self.modify_vertices(&item.location().clone().unwrap(), item.vertex_data().vertices(), texture)?
+        }
+
+        Ok(())
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {

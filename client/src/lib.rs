@@ -22,7 +22,7 @@ pub trait ClientMod {
     #[allow(unused_variables)]
     fn init(&mut self, flags: &Vec<String>){}
     #[allow(unused_variables)]
-    fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>) {}
+    fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>, store: &mut DataStore) {}
     #[allow(unused_variables)]
     fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {}
 }

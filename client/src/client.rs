@@ -7,10 +7,10 @@ use crate::data_store::DataStore;
 use crate::renderer::context::Context;
 use crate::renderer::window::Window;
 
-pub fn run(ip: &str, server_ip: &str) {
+pub fn run(ip: &str, server_ip: &str, store: &mut DataStore) {
     let client_id = Id::new();
 
-    let mut client = ClientRuntime::create(client_id, ip, server_ip).map_err(|e| {
+    let mut client = ClientRuntime::create(client_id, ip, server_ip, store).map_err(|e| {
         e.log_exit();
     }).unwrap();
 
@@ -28,22 +28,21 @@ pub fn run(ip: &str, server_ip: &str) {
     let mut last_full_sec = 0;
     let mut delta_time = 0;
 
-    let mut store = DataStore::new();
     let mut context = Context::new();
 
     client.loaded_mods.iter()
-        .for_each(|loaded_mod| loaded_mod.client_mod.start(&mut context, &mut store, window.context_provider()));
+        .for_each(|loaded_mod| loaded_mod.client_mod.start(&mut context, store, window.context_provider()));
 
     while !window.should_close() {
         let t = Instant::now();
 
         window.poll_events(&mut client, &mut context);
         
-        let _ = client.handle_queued(&mut store).map_err(|e| {
+        let _ = client.handle_queued(store).map_err(|e| {
             log_err!("{e}")
         });
         
-        window.render(&mut context, &mut client, &mut store, delta_time as f64 / 1_000_000_000.0);
+        window.render(&mut context, &mut client, store, delta_time as f64 / 1_000_000_000.0);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;

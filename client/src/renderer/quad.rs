@@ -23,8 +23,6 @@ pub trait Quad {
 
     fn recalculate_vertex_data(&mut self);
 
-    fn is_dirty(&self) -> bool;
-
     fn rotate_edges(&self) -> [(f32, f32); 4] {
         let center = *self.position() + *self.size() / Vector2::new(2.0, 2.0);
 
@@ -148,13 +146,17 @@ impl Quad for ColoredQuad {
             ]));
         }
     }
-
-    fn is_dirty(&self) -> bool {
-        self.vertices.is_none()
-    }
 }
 
 impl Renderable for ColoredQuad {
+    fn is_dirty(&self) -> bool {
+        self.vertices.is_none()
+    }
+
+    fn has_location(&self) -> bool {
+        self.location.is_some()
+    }
+
     fn vertex_data(&mut self) -> VertexData<'_> {
         if self.vertices.is_none() {
             self.recalculate_vertex_data();
@@ -213,10 +215,6 @@ impl TexturedQuad {
 
     pub fn texture_id(&self) -> RenderID {
         self.texture_id
-    }
-
-    pub fn set_dirty(&mut self) {
-        self.vertices = None;
     }
 }
 
@@ -291,15 +289,19 @@ impl Quad for TexturedQuad {
             ]));
         }
     }
-
-    fn is_dirty(&self) -> bool {
-        self.vertices.is_none()
-    }
 }
 
 impl Renderable for TexturedQuad {
+    fn is_dirty(&self) -> bool {
+        self.vertices.is_none()
+    }
+
+    fn has_location(&self) -> bool {
+        self.location.is_some()
+    }
+
     fn vertex_data(&mut self) -> VertexData<'_> {
-        if self.is_dirty() {
+        if self.vertices.is_none() {
             self.recalculate_vertex_data();
         }
 
@@ -447,15 +449,19 @@ impl Quad for SpriteQuad {
             ]));
         }
     }
-
-    fn is_dirty(&self) -> bool {
-        self.vertices.is_none()
-    }
 }
 
 impl Renderable for SpriteQuad {
+    fn is_dirty(&self) -> bool {
+        self.vertices.is_none()
+    }
+
+    fn has_location(&self) -> bool {
+        self.location.is_some()
+    }
+
     fn vertex_data(&mut self) -> VertexData<'_> {
-        if self.is_dirty() {
+        if self.vertices.is_none() {
             self.recalculate_vertex_data();
         }
 

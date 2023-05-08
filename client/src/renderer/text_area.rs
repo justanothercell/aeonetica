@@ -20,6 +20,14 @@ pub struct TextArea {
 }
 
 impl Renderable for TextArea {
+    fn has_location(&self) -> bool {
+        self.location.is_some()
+    }
+
+    fn is_dirty(&self) -> bool {
+        return false;
+    }
+
     fn location(&self) -> &Option<VertexLocation> {
         &self.location
     }

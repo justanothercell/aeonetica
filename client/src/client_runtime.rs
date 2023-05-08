@@ -99,7 +99,7 @@ impl ClientHandleBox {
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
 
 impl ClientRuntime {
-    pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str) -> Result<Self, AError>{
+    pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, AError>{
         let nc = NetworkClient::start(addr, server_addr).map_err(|e| {
             e.log_exit();
         }).unwrap();
@@ -135,7 +135,7 @@ impl ClientRuntime {
         log!("started timeout preventer");
         let _ = client.download_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
 
-        let _ = client.enable_mods(&mod_list).map_err(|e| client.gracefully_abort(e));
+        let _ = client.enable_mods(&mod_list, store).map_err(|e| client.gracefully_abort(e));
 
         log!("finished client creation");
         Ok(client)
@@ -299,13 +299,13 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn enable_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
+    fn enable_mods(&mut self, mod_list: &LoadingModList, store: &mut DataStore) -> Result<(), AError>{
         for (name_path, lm) in mod_list.borrow_mut().iter_mut() {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
             loaded_mod.init(&lm.borrow().flags);
             let mut handles = Default::default();
-            loaded_mod.register_handlers(&mut handles);
+            loaded_mod.register_handlers(&mut handles, store);
             self.registered_handles.extend(handles);
             self.loaded_mods.push(loaded_mod);
             log!("loaded mod {} ...", name_path);

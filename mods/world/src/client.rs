@@ -17,7 +17,7 @@ impl ClientMod for WorldModClient {
         log!("hello from client testmod!");
     }
 
-    fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>) {
+    fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>, _store: &mut DataStore) {
         log!("handles registered");
         handlers.insert(type_to_id::<WorldHandle>(), || Box::new(WorldHandle::new()));
     }
