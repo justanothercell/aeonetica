@@ -20,13 +20,13 @@ pub struct PlayerModClient {
 }
 
 impl ClientMod for PlayerModClient {
-    fn start(&self, _context: &mut Context, _store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
-        log!("started client player mod");
-        gl_context_provider.make_context();
-    }
     fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>, _store: &mut DataStore) {
         handlers.insert(type_to_id::<PlayerHandle>(), || Box::new(PlayerHandle::new()));
         log!("registered  client player mod stuffs");
+    }
+    fn start(&self, _context: &mut Context, _store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
+        log!("started client player mod");
+        gl_context_provider.make_context();
     }
 }
 
