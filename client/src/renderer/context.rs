@@ -1,6 +1,9 @@
+use std::any::type_name;
 use std::rc::Rc;
 
 use aeonetica_engine::log;
+use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::type_to_id;
 
 use crate::{
     renderer::window::events::Event,
@@ -10,6 +13,7 @@ use crate::{
 use super::shader::PostProcessingLayer;
 
 struct LayerStack {
+    layer_checker: IdMap<()>,
     layers: Vec<Rc<dyn Layer>>,
     insert_index: usize
 }
@@ -17,6 +21,7 @@ struct LayerStack {
 impl LayerStack {
     fn new() -> Self {
         Self {
+            layer_checker: Default::default(),
             layers: Vec::new(),
             insert_index: 0
         }
@@ -45,7 +50,12 @@ impl Context {
         }
     }
 
-    pub fn push(&mut self, layer: Rc<impl Layer + 'static>) {
+    /// Fails if the layer already exists.
+    pub fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) -> Result<(), String> {
+        if self.layer_stack.layer_checker.contains_key(&type_to_id::<L>()) {
+            return Err(format!("Layer {} was already pushed onto the layer stack", type_name::<L>()));
+        }
+        self.layer_stack.layer_checker.insert(type_to_id::<L>(), ());
         layer.on_attach();
         if layer.is_overlay() {
             self.layer_stack.push_overlay(layer);
@@ -53,6 +63,7 @@ impl Context {
         else {
             self.layer_stack.push(layer);
         }
+        Ok(())
     }
 
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {

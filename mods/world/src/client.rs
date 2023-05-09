@@ -25,7 +25,7 @@ impl ClientMod for WorldModClient {
     fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
 
-        context.push(Rc::new(WorldLayer::instantiate()));
+        context.push(Rc::new(WorldLayer::instantiate())).expect("duplicate layer");
         store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
     }
 }

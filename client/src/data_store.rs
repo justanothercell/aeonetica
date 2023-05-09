@@ -8,6 +8,7 @@ pub struct DataStore {
 }
 
 impl DataStore {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             stores: Default::default()
