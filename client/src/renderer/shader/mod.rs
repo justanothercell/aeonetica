@@ -51,6 +51,12 @@ impl Uniform for Texture {
     }
 }
 
+impl Uniform for [f32; 3] {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform3f(location, self[0], self[1], self[2]) }
+    }
+}
+
 impl Uniform for &[i32] {
     fn upload(&self, location: i32) {
         unsafe { gl::Uniform1iv(location, self.len() as i32, self.as_ptr()) }

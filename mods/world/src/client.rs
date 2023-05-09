@@ -128,7 +128,7 @@ impl Layer for WorldLayer {
         renderer.end_scene();
     }
 
-    fn on_event(&self, _handles: &mut IdMap<ClientHandleBox>, _event: &Event) -> bool {
-        false
+    fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
+        handles.iter_mut().position(|(_, h)| h.on_event(event)).is_some()
     }
 }

@@ -4,10 +4,11 @@ use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_client::renderer::context::Context;
+use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, TexturedQuad, Renderable, Quad, shader};
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::OpenGlContextProvider;
-use aeonetica_engine::log;
+use aeonetica_engine::{log, log_warn};
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
@@ -63,6 +64,10 @@ pub struct PlayerHandle {
 
     // rendering stuff
     quad: Option<TexturedQuad>,
+
+    // movement stuff
+    key_state: [bool; 4],
+    speed: f32,
 }
 
 impl PlayerHandle {
@@ -72,6 +77,8 @@ impl PlayerHandle {
             p_position: Default::default(),
             position: Default::default(),
             quad: None,
+            key_state: [false; 4],
+            speed: 2.0
         }
     }
 
@@ -109,7 +116,18 @@ impl ClientHandle for PlayerHandle {
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, delta_time: f64) {
         let quad = self.quad.as_mut().unwrap();
         if self.is_controlling {
-            self.position.x += delta_time as f32;
+            match self.key_state {
+                [true, _, false, _] => self.position.y -= self.speed * delta_time as f32,
+                [false, _, true, _] => self.position.y += self.speed * delta_time as f32,
+                _ => {}
+            }
+
+            match self.key_state {
+                [_, true, _, false] => self.position.x -= self.speed * delta_time as f32,
+                [_, false, _, true] => self.position.x += self.speed * delta_time as f32,
+                _ => {}
+            }
+
             if (self.position - self.p_position).mag_sq() > 1.0 {
                 messenger.call_server_fn(Player::client_position_update, self.position, SendMode::Quick);
                 log!("told server i moved");
@@ -120,5 +138,43 @@ impl ClientHandle for PlayerHandle {
         }
 
         let _ = renderer.draw(quad);
+    }
+
+    fn on_event(&mut self, event: &Event) -> bool {
+        match event {
+            Event::KeyPressed(KeyCode::W) => {
+                self.key_state[0] = true;
+                true
+            }
+            Event::KeyPressed(KeyCode::A) => {
+                self.key_state[1] = true;
+                true
+            }
+            Event::KeyPressed(KeyCode::S) => {
+                self.key_state[2] = true;
+                true
+            }
+            Event::KeyPressed(KeyCode::D) => {
+                self.key_state[3] = true;
+                true
+            }
+            Event::KeyReleased(KeyCode::W) => {
+                self.key_state[0] = false;
+                true
+            }
+            Event::KeyReleased(KeyCode::A) => {
+                self.key_state[1] = false;
+                true
+            }
+            Event::KeyReleased(KeyCode::S) => {
+                self.key_state[2] = false;
+                true
+            }
+            Event::KeyReleased(KeyCode::D) => {
+                self.key_state[3] = false;
+                true
+            }
+            _ => false
+        }
     }
 }

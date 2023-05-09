@@ -6,6 +6,7 @@ pub mod quad;
 pub mod shader;
 pub mod texture;
 pub mod text_area;
+pub mod material;
 
 mod buffer;
 mod batch;
