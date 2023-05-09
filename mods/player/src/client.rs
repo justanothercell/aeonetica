@@ -83,7 +83,9 @@ impl PlayerHandle {
     pub(crate) fn receive_position(&mut self, position: Vector2<f32>) {
         if !self.is_controlling {
             log!("received position from foreign client");
-            self.position = position
+            self.position = position;
+            let quad = self.quad.as_mut().unwrap();
+            quad.set_position(self.position);
         } else {
             log!("received position pongback");
         }
@@ -117,7 +119,7 @@ impl ClientHandle for PlayerHandle {
                 self.p_position = self.position;
             }
 
-            quad.set_position(self.position.clone());
+            quad.set_position(self.position);
         }
 
         let _ = renderer.draw(quad);
