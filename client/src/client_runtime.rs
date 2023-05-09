@@ -7,8 +7,9 @@ use std::process::exit;
 use std::thread;
 use std::rc::Rc;
 use std::time::Duration;
+use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
-use aeonetica_engine::error::{AError,AET};
 use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
@@ -99,7 +100,7 @@ impl ClientHandleBox {
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
 
 impl ClientRuntime {
-    pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, AError>{
+    pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, Error>{
         let nc = NetworkClient::start(addr, server_addr).map_err(|e| {
             e.log_exit();
         }).unwrap();
@@ -125,7 +126,7 @@ impl ClientRuntime {
                     message: ClientMessage::KeepAlive,
                 });
                 let _ = timeout_socket.send(data.as_slice()).map_err(|e|{
-                    let e: AError = e.into();
+                    let e: Error = e.into();
                     log_err!("{e}");
                     exit(1);
                 });
@@ -145,13 +146,13 @@ impl ClientRuntime {
         &mut self.handles
     }
 
-    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> Result<(), AError> {
+    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> Result<(), Error> {
         self.awaiting_replies.insert(packet.conv_id, Box::new(handler));
         self.nc.borrow().send(packet, mode)?;
         Ok(())
     }
 
-    fn register(&mut self) -> Result<LoadingModList, AError>{
+    fn register(&mut self) -> Result<LoadingModList, Error>{
         let mod_list = Rc::new(RefCell::new(HashMap::new()));
         let mod_list_filler = mod_list.clone();
         self.request_response(&ClientPacket {
@@ -227,7 +228,7 @@ impl ClientRuntime {
         Ok(mod_list)
     }
 
-    fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), AError>{
+    fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), Error>{
         log!("downloading {} mod(s)", mod_list.borrow().values().filter(|m| !m.borrow().available).count());
         let mut borrowed_ml = mod_list.borrow_mut();
         for (name_path, lm) in borrowed_ml.iter_mut() {
@@ -299,7 +300,7 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn enable_mods(&mut self, mod_list: &LoadingModList, store: &mut DataStore) -> Result<(), AError>{
+    fn enable_mods(&mut self, mod_list: &LoadingModList, store: &mut DataStore) -> Result<(), Error>{
         for (name_path, lm) in mod_list.borrow_mut().iter_mut() {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
@@ -314,7 +315,7 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn gracefully_abort<E: Into<AError>>(&self, e: E) -> !{
+    fn gracefully_abort<E: Into<Error>>(&self, e: E) -> !{
         let err = e.into();
         err.log();
         log_err!("gracefully aborted client");
@@ -322,12 +323,12 @@ impl ClientRuntime {
     }
 }
 
-pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, AError> {
+pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, Error> {
     let (path, name) = name_path.split_once(':').unwrap();
     let client_lib = unsafe { Library::new(client_lib(path, name))
-        .map_err(|e| AError::new(AET::ModError(format!("could not load mod: {e}"))))? };
+        .map_err(|e| Error::new(ModError(format!("could not load mod: {e}")), Fatality::FATAL, false))? };
     let _create_mod_client: Symbol<fn() -> Box<dyn ClientMod>> = unsafe { client_lib.get("_create_mod_client".as_ref())
-        .map_err(|e| AError::new(AET::ModError(format!("could not load mod create function: {e}"))))? };
+        .map_err(|e| Error::new(ModError(format!("could not load mod create function: {e}")), Fatality::FATAL, false))? };
     let mod_client = _create_mod_client();
     Ok(ClientModBox::new(mod_client, client_lib))
 }

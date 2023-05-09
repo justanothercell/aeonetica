@@ -2,9 +2,7 @@
 #![feature(result_flattening)]
 #![feature(inherent_associated_types)]
 
-use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use aeonetica_engine::Id;
 use aeonetica_engine::libloading::Library;
 use aeonetica_engine::util::id_map::IdMap;
 use renderer::context::Context;

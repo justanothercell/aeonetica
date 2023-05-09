@@ -7,6 +7,7 @@ pub mod shader;
 pub mod texture;
 pub mod text_area;
 pub mod material;
+pub mod glerror;
 
 mod buffer;
 mod batch;

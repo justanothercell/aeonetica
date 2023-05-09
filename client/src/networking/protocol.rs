@@ -1,5 +1,5 @@
 use std::process::exit;
-use aeonetica_engine::error::AError;
+use aeonetica_engine::error::Error;
 use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
@@ -9,7 +9,7 @@ use crate::data_store::DataStore;
 use crate::networking::messaging::ClientMessenger;
 
 impl ClientRuntime {
-    pub(crate) fn handle_queued(&mut self, store: &mut DataStore) -> Result<(), AError> {
+    pub(crate) fn handle_queued(&mut self, store: &mut DataStore) -> Result<(), Error> {
         let packets = self.nc.borrow_mut().queued_packets();
         packets.into_iter().map(|packet| self.handle_packet(&packet, store))
         .reduce(|acc, r| {
@@ -19,7 +19,7 @@ impl ClientRuntime {
         }).unwrap_or(Ok(()))
     }
 
-    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket, store: &mut DataStore) -> Result<(), AError>{
+    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket, store: &mut DataStore) -> Result<(), Error>{
         if let Some(handler) = self.awaiting_replies.remove(&packet.conv_id) {
             handler(self, packet);
             return Ok(())

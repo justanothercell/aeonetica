@@ -12,16 +12,17 @@ use std::fs::File;
 use core::hash::Hasher;
 #[allow(deprecated)]
 use std::hash::SipHasher;
-use crate::error::{AError, AET};
+use crate::error::*;
+use crate::error::builtin::IOError;
 use crate::{Id, TypeId};
 
-pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), AError>{
+pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), Error>{
     let mut archive = zip::read::ZipArchive::new(zip)
-        .map_err(|e| AError::new(AET::IOError(format!("could not read zip file: {e}"))))?;
+        .map_err(|e| Error::new(IOError(format!("could not read zip file: {e}")), Fatality::FATAL, true))?;
     std::fs::create_dir_all(&dest_dir).expect("unable to create directory");
     for i in 0..archive.len() {
         let mut f = archive.by_index(i)
-            .map_err(|e| AError::new(AET::IOError(format!("could not read zip file: {e}"))))?;
+            .map_err(|e| Error::new(IOError(format!("could not read zip file: {e}")), Fatality::FATAL, true))?;
         let full_path = f.enclosed_name().unwrap().to_str().unwrap();
         if f.is_dir() {
             std::fs::create_dir_all(&format!("{dest_dir}/{full_path}"))?;

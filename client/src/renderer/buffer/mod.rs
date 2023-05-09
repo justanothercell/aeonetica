@@ -3,7 +3,7 @@ pub mod vertex_array;
 
 use std::{marker::PhantomData, cell::Cell};
 
-use super::*;
+use super::{*, glerror::GLError};
 
 macro_rules! shader_tuple_impls {
     ($($name: ident)+, $tuple_struct: ident) => {
@@ -92,7 +92,7 @@ pub struct Buffer {
 
 #[allow(unused)]
 impl Buffer {
-    pub(super) fn new(typ: BufferType, data: &[u8], layout: Option<Rc<BufferLayout>>, usage: BufferUsage) -> Option<Self> {
+    pub(super) fn new(typ: BufferType, data: &[u8], layout: Option<Rc<BufferLayout>>, usage: BufferUsage) -> ErrorResult<Self> {
         let mut id = 0;
         unsafe { 
             gl::CreateBuffers(1, &mut id);
@@ -100,7 +100,7 @@ impl Buffer {
             gl::BufferData(typ.into(), data.len() as isize, data.as_ptr() as *const _, usage.into());
         }
         if id != 0 {
-            Some(Self {
+            Ok(Self {
                 id,
                 typ,
                 layout,
@@ -108,11 +108,11 @@ impl Buffer {
             })
         }
         else {
-            None
+            Err(GLError::from_gl_errno().into_error())
         }
     }
 
-    pub(super) fn new_sized(typ: BufferType, num_bytes: isize, layout: Option<Rc<BufferLayout>>, usage: BufferUsage) -> Option<Self> {
+    pub(super) fn new_sized(typ: BufferType, num_bytes: isize, layout: Option<Rc<BufferLayout>>, usage: BufferUsage) -> ErrorResult<Self> {
         let mut id = 0;
         unsafe { 
             gl::CreateBuffers(1, &mut id);
@@ -120,7 +120,7 @@ impl Buffer {
             gl::BufferData(typ.into(), num_bytes, std::ptr::null(), usage.into());
         }
         if id != 0 {
-            Some(Self {
+            Ok(Self {
                 id,
                 typ,
                 layout,
@@ -128,7 +128,7 @@ impl Buffer {
             })
         }
         else {
-            None
+            Err(GLError::from_gl_errno().into_error())
         }
     }
 
@@ -322,4 +322,5 @@ macro_rules! vertex {
     };
 }
 
+use aeonetica_engine::error::{ErrorResult, IntoError};
 pub use vertex;

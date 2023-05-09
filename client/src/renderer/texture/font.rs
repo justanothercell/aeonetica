@@ -68,7 +68,7 @@ impl BitmapFont {
                                 }
                             }
                         }
-                        widths.push(char_size.x)    
+                        widths.push(char_size.x)
                     }
                 }
             }

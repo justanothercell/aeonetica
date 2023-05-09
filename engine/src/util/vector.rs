@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::*;
 use std::f64;
 
@@ -293,6 +294,12 @@ impl<T: Neg<Output = T>> Neg for Vector2<T> {
             x: -self.x,
             y: -self.y
         }
+    }
+}
+
+impl<T: Display> Display for Vector2<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 

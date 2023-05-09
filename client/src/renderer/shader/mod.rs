@@ -1,10 +1,10 @@
 pub mod postprocessing;
 pub use postprocessing::*;
 
-use std::{collections::HashMap, cell::Cell};
+use std::{collections::HashMap, fmt::Display};
 use super::*;
 
-use aeonetica_engine::util::{matrix::Matrix4, vector::Vector2};
+use aeonetica_engine::{util::{matrix::Matrix4, vector::Vector2}, error::{ErrorValue, ErrorResult, Error, Fatality}};
 use regex::Regex;
 
 #[macro_export]
@@ -14,6 +14,19 @@ macro_rules! uniform_str {
     };
 }
 pub use uniform_str;
+
+#[derive(Debug)]
+pub struct ShaderError(pub String);
+
+impl ErrorValue for ShaderError {
+
+}
+
+impl Display for ShaderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "shader error: {}", self.0)
+    }
+}
 
 pub struct UniformStr(pub *const u8);
 
@@ -213,7 +226,7 @@ impl Program {
         }
     }
 
-    fn preprocess_sources(src: &str) -> Result<(String, String), String> {
+    fn preprocess_sources(src: &str) -> ErrorResult<(String, String)> {
         // remove all block comments /* */
         let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();
         let src = comment_re.replace(src, "").to_string();
@@ -236,18 +249,18 @@ impl Program {
                 regions.insert(name, &src[m.end()..]);
             };
         }
-        Ok((regions.remove("vertex").ok_or("did not find vertex region in shader".to_string())?.to_string(),
-            regions.remove("fragment").ok_or("did not find fragment region in shader".to_string())?.to_string()))
+        Ok((regions.remove("vertex").ok_or(Error::new(ShaderError("did not find vertex region in shader".to_string()), Fatality::FATAL, true))?.to_string(),
+            regions.remove("fragment").ok_or(Error::new(ShaderError("did not find fragment region in shader".to_string()), Fatality::FATAL, true))?.to_string()))
     }
 
-    pub fn from_source(src: &str) -> Result<Self, String> {
+    pub fn from_source(src: &str) -> ErrorResult<Self> {
         // find first `#type`
         let (vertex_src, fragment_src) = Self::preprocess_sources(src)?;
-        let p = Self::new().ok_or_else(|| "Couldn't allocate a program".to_string())?;
+        let p = Self::new().ok_or_else(||  Error::new(ShaderError(format!("could not allocate program")), Fatality::FATAL, true))?;
         let v = Shader::from_source(ShaderType::Vertex, &vertex_src)
-            .map_err(|e| format!("Vertex Shader Compile Error: {e}"))?;
+            .map_err(|e| Error::new(ShaderError(format!("vertex shader compile error: {e}")), Fatality::FATAL, true))?;
         let f = Shader::from_source(ShaderType::Fragment, &fragment_src)
-            .map_err(|e| format!("Fragment Shader Compile Error: {e}"))?;
+            .map_err(|e| Error::new(ShaderError(format!("fragment shader compile error: {e}")), Fatality::FATAL, true))?;
         p.attach_shader(&v);
         p.attach_shader(&f);
         p.link();
@@ -257,9 +270,9 @@ impl Program {
             Ok(p)
         }
         else {
-            let out = format!("Program Link Error: {}", p.info_log());
+            let out = format!("program link error: {}", p.info_log());
             p.delete();
-            Err(out)
+            Err(Error::new(ShaderError(out), Fatality::FATAL, true))
         }
     }
 }

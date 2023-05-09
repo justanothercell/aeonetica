@@ -1,4 +1,6 @@
 use std::rc::Rc;
+use aeonetica_engine::error::ErrorResult;
+
 use crate::uniform_str;
 
 use super::shader::{self, UniformStr};
@@ -13,7 +15,7 @@ pub struct FlatColor {
 }
 
 impl FlatColor {
-    pub fn new(color: [f32; 3]) -> Result<Self, String> {
+    pub fn new(color: [f32; 3]) -> ErrorResult<Self> {
         Ok(Self {
             color,
             shader: Rc::new(shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))?)

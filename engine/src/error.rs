@@ -1,84 +1,163 @@
 use std::backtrace::{Backtrace};
 use std::fmt::{Display, Formatter};
-use std::io::Error;
 use std::panic::Location;
 use std::process::exit;
-use crate::{log_err, log_raw};
+use crate::log;
+use colored::Colorize;
 
-#[derive(Debug)]
-pub struct AError(Box<AErrorInner>);
-
-#[derive(Debug)]
-pub struct AErrorInner {
-    et: AET,
-    additional_info: Vec<String>,
-    location: Location<'static>,
-    trace: Backtrace,
+#[derive(Default, Debug)]
+pub enum Fatality {
+    WARN,
+    #[default]
+    DEFAULT,
+    FATAL
 }
 
-impl AError {
-    #[track_caller]
-    pub fn new(et: AET) -> Self {
-        Self(Box::new(AErrorInner {
-            et,
-            additional_info: vec![],
-            location: *std::panic::Location::caller(),
-            trace: Backtrace::force_capture()
-        }))
+impl Fatality {
+    fn color(&self) -> colored::Color {
+        match self {
+            Self::WARN => colored::Color::BrightYellow,
+            Self::DEFAULT => colored::Color::Red,
+            Self::FATAL => colored::Color::BrightRed
+        }
     }
+
+    fn str(&self) -> &'static str {
+        match self {
+            Self::WARN => "warn",
+            Self::DEFAULT => "default",
+            Self::FATAL => "fatal"
+        }
+    }
+}
+
+pub trait ErrorValue: std::fmt::Debug + Display {}
+
+pub trait IntoError {
+    fn into_error(self) -> Error;
+}
+
+#[derive(Debug)]
+pub struct Error {
+    value: Box<dyn ErrorValue>,
+    fatality: Fatality,
+    location: Location<'static>,
+    trace: Option<Backtrace>,
+    additional: Vec<String>
+}
+
+impl Error {
     #[track_caller]
-    pub fn log_exit(&self) -> !{
-        self.log();
-        exit(1)
+    pub fn new(value: impl ErrorValue + 'static, fatality: Fatality, trace: bool) -> Self {
+        Self {
+            value: Box::new(value),
+            fatality,
+            location: *std::panic::Location::caller(),
+            trace: trace.then(|| Backtrace::force_capture()),
+            additional: vec![]
+        }
+    }
+
+    #[track_caller]
+    pub fn add_info(&mut self, info: impl ToString) {
+        self.additional.push(info.to_string())
+    }
+
+    #[track_caller]
+    pub fn value(&self) -> &Box<dyn ErrorValue> {
+        &self.value
+    }
+
+    #[track_caller]
+    pub fn fatality(&self) -> &Fatality {
+        &self.fatality
     }
 
     #[track_caller]
     pub fn log(&self) {
-        log_err!("{self}\nlocation: {}", self.0.location);
-        log_raw!("{}", self.0.trace);
+        log!("{}", self.to_string())
     }
 
     #[track_caller]
-    pub fn add_info(&mut self, info: String) {
-        self.0.additional_info.push(info)
+    pub fn log_exit(&self) -> ! {
+        self.log();
+        exit(1)
     }
 }
 
-#[derive(Debug)]
-pub enum AET {
-    ValueError(String),
-    DataError(String),
-    IOError(String),
-    NetworkError(String),
-    ModError(String),
-    ModConflict(String)
-}
-
-impl Display for AError {
+impl Display for Error {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", match &self.0.et {
-            AET::ValueError(e) => format!("ValueError: {e}"),
-            AET::DataError(e) => format!("DataError: {e}"),
-            AET::IOError(e) => format!("IOError: {e}"),
-            AET::NetworkError(e) => format!("NetworkError: {e}"),
-            AET::ModError(e) => format!("IOError: {e}"),
-            AET::ModConflict(e) => format!("IOError: {e}"),
-        }, if !self.0.additional_info.is_empty() {
-            format!("\n => {}", self.0.additional_info.join("\n => "))
-        } else { String::new() })
+        let color = self.fatality.color();
+
+        write!(f, "{}", self.location.to_string().color(color))?;
+        write!(f, "{}", ": ".color(color))?;
+        write!(f, "{}", self.fatality.str().color(color))?;
+        write!(f, "{}", ": ".color(color))?;
+        write!(f, "{}", self.value.to_string().color(color))?;
+
+        if let Some(trace) = &self.trace {
+            write!(f, "\nin: {}", trace)?
+        }
+
+        Ok(())
     }
 }
 
-impl From<Error> for AError {
-    #[track_caller]
-    fn from(value: Error) -> Self {
-        AError::new(AET::IOError(value.to_string()))
+impl<T: IntoError> From<T> for Error {
+    fn from(value: T) -> Self {
+        value.into_error()
     }
 }
 
-impl From<nanoserde::DeRonErr> for AError {
-    #[track_caller]
-    fn from(value: nanoserde::DeRonErr) -> Self {
-        AError::new(AET::DataError(value.to_string()))
+pub type ErrorResult<T> = Result<T, Error>;
+
+pub mod builtin {
+    use super::*;
+
+    macro_rules! impl_error_value {
+        ($name:ident) => {
+            impl ErrorValue for $name {}
+            impl std::fmt::Display for $name {
+                fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}: {}", stringify!($name), self.0)
+                }
+            }
+        };
+    }
+
+    #[derive(Debug)]
+    pub struct ValueError(pub String);
+    impl_error_value!{ValueError}
+
+    #[derive(Debug)]
+    pub struct DataError(pub String);
+    impl_error_value!{DataError}
+    
+    #[derive(Debug)]
+    pub struct IOError(pub String);
+    impl_error_value!{IOError}
+
+    #[derive(Debug)]
+    pub struct NetworkError(pub String);
+    impl_error_value!{NetworkError}
+    
+    #[derive(Debug)]
+    pub struct ModError(pub String);
+    impl_error_value!{ModError}
+    
+    #[derive(Debug)]
+    pub struct ModConflict(pub String);
+    impl_error_value!{ModConflict}
+
+    impl IntoError for nanoserde::DeRonErr {
+        fn into_error(self) -> Error {
+            Error::new(DataError(self.to_string()), Fatality::DEFAULT, true)
+        }
+    }
+
+    impl IntoError for std::io::Error {
+        fn into_error(self) -> Error {
+            Error::new(IOError(self.to_string()), Fatality::DEFAULT, true)
+        }
     }
 }
