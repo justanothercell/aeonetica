@@ -83,7 +83,6 @@ pub(crate) struct Player {
 
 impl Player {
     pub(crate) fn client_position_update(id: &EntityId, engine: &mut Engine, client_id: &ClientId, position: Vector2<f32>) {
-        log!("ping ponging position of client {client_id}");
         let player = engine.mut_entity(id).unwrap();
         player.mut_module::<Player>().unwrap().position = position;
         player.mut_module::<Messenger>().unwrap().call_client_fn(PlayerHandle::receive_position, position,SendMode::Safe);

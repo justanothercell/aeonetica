@@ -82,12 +82,9 @@ impl PlayerHandle {
 
     pub(crate) fn receive_position(&mut self, position: Vector2<f32>) {
         if !self.is_controlling {
-            log!("received position from foreign client");
             self.position = position;
             let quad = self.quad.as_mut().unwrap();
             quad.set_position(self.position);
-        } else {
-            log!("received position pongback");
         }
     }
 }
@@ -113,7 +110,7 @@ impl ClientHandle for PlayerHandle {
         let quad = self.quad.as_mut().unwrap();
         if self.is_controlling {
             self.position.x += delta_time as f32;
-            if (self.position - self.p_position).mag_sq() > 70.0 {
+            if (self.position - self.p_position).mag_sq() > 1.0 {
                 messenger.call_server_fn(Player::client_position_update, self.position, SendMode::Quick);
                 log!("told server i moved");
                 self.p_position = self.position;
