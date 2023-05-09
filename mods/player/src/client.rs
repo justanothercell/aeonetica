@@ -104,8 +104,8 @@ impl ClientHandle for PlayerHandle {
             self.position,
             Vector2::new(1.0, 1.0),
             1,
-            store.get_or_create(|| PlayerTexture::load()).get().id(),
-            store.get_or_create(|| PlayerShader::load()).get().clone()
+            store.get_or_create(PlayerTexture::load).get().id(),
+            store.get_or_create(PlayerShader::load).get().clone()
         ))
     }
 
