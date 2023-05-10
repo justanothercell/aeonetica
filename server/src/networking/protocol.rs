@@ -127,12 +127,12 @@ impl Engine {
                     self.clients.remove(&packet.client_id);
                     let mut ns = self.runtime.ns.borrow_mut();
                     ns.clients.remove(&packet.client_id);
-                    ns.tcp.lock().unwrap().remove(&addr);
+                    ns.tcp.lock().unwrap().remove(addr);
                 }
             }
             ClientMessage::ModMessage(eid, rid, data) => {
                 let mut_engine_ref = unsafe { &mut *(self as *mut Self) };
-                if let Some(m) = self.get_module_of::<Messenger>(eid) {
+                if let Some(m) = self.get_module_of::<Messenger>(eid).ref_option() {
                     if let Some(f) = m.receiver_functions.get(rid) {
                         f(eid, mut_engine_ref, &packet.client_id, data)
                     }

@@ -4,6 +4,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::vector::Vector2;
 use aeonetica_server::ecs::Engine;
+use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
@@ -23,7 +24,7 @@ impl ServerMod for PlayerModServer {
         handler.add_module(ConnectionListener::new(
             |id, engine, client| {
                 let pid = engine.new_entity();
-                let ph: &mut PlayerHandler = engine.mut_module_of(id).unwrap();
+                let ph: &mut PlayerHandler = &mut engine.mut_module_of(id);
                 // adding player to list of players
                 ph.players.insert(*client, pid);
                 let players = ph.players.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>();
@@ -53,7 +54,7 @@ impl ServerMod for PlayerModServer {
                 let players = engine.get_module_of::<PlayerHandler>(id).unwrap().players.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>();
                 let eid = *engine.get_module_of::<PlayerHandler>(id).unwrap().players.get(client).unwrap();
 				// unregister this player for all other players
-                let messenger: &mut Messenger = engine.mut_module_of(&eid).unwrap();
+                let messenger: &mut Messenger = &mut engine.mut_module_of(&eid);
 				for (pid, _eid) in &players {
                     messenger.remove_client(pid);
                 }
@@ -83,7 +84,7 @@ pub(crate) struct Player {
 
 impl Player {
     pub(crate) fn client_position_update(id: &EntityId, engine: &mut Engine, client_id: &ClientId, position: Vector2<f32>) {
-        let player = engine.mut_entity(id).unwrap();
+        let player = &mut *engine.mut_entity(id);
         player.mut_module::<Player>().unwrap().position = position;
         player.mut_module::<Messenger>().unwrap().call_client_fn(PlayerHandle::receive_position, position,SendMode::Safe);
     }

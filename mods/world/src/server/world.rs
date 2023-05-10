@@ -45,7 +45,7 @@ impl World {
         entity.add_module(ConnectionListener::new(
             |id, engine, client| {
                 log!("sent chunk whether they wanted or not: {client}");
-                let messenger: &mut Messenger = engine.mut_module_of(id).unwrap();
+                let messenger: &mut Messenger = &mut engine.mut_module_of(id);
                 messenger.add_client(*client);
                 messenger.call_client_fn_for(WorldHandle::receive_chunk_data, &client, Chunk::new((0, 0).into()), SendMode::Safe);
             },

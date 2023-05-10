@@ -9,8 +9,10 @@
 #![feature(const_convert)]
 #![feature(const_option_ext)]
 #![feature(const_refs_to_cell)]
+#![feature(try_trait_v2)]
 
 #![feature(test)]
+#![feature(try_trait_v2_residual)]
 extern crate test;
 
 #[cfg(test)]

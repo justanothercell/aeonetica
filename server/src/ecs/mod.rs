@@ -9,6 +9,7 @@ use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
 use crate::ecs::events::ConnectionListener;
 
 use crate::ecs::module::{Module, ModuleDyn};
@@ -153,18 +154,18 @@ impl Engine {
     }
 
     #[inline]
-    pub fn get_entity_by_tag(&self, tag: &str) -> Option<&Entity> {
-        self.entites.get(self.tagged.get(tag)?)
+    pub fn get_entity_by_tag(&self, tag: &str) -> Nullable<&Entity> {
+        self.entites.get(self.tagged.get(tag)?).into()
     }
 
     #[inline]
-    pub fn get_entity_id_by_tag(&self, tag: &str) -> Option<&EntityId> {
-        self.tagged.get(tag)
+    pub fn get_entity_id_by_tag(&self, tag: &str) -> Nullable<&EntityId> {
+        self.tagged.get(tag).into()
     }
 
     #[inline]
-    pub fn mut_entity_by_tag(&mut self, tag: &str) -> Option<&mut Entity> {
-        self.entites.get_mut(self.tagged.get(tag)?)
+    pub fn mut_entity_by_tag(&mut self, tag: &str) -> Nullable<&mut Entity> {
+        self.entites.get_mut(self.tagged.get(tag)?).into()
     }
 
     #[inline]
@@ -178,28 +179,28 @@ impl Engine {
     }
 
     #[inline]
-    pub fn mut_entity(&mut self, id: &EntityId) -> Option<&mut Entity> {
-        self.entites.get_mut(id)
+    pub fn mut_entity(&mut self, id: &EntityId) -> Nullable<&mut Entity> {
+        self.entites.get_mut(id).into()
     }
 
     #[inline]
-    pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Option<&T> {
-        self.entites.get(id)?.get_module()
+    pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Nullable<&T> {
+        self.entites.get(id)?.get_module().into()
     }
 
     #[inline]
-    pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Option<&mut T> {
-        self.entites.get_mut(id)?.mut_module()
+    pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Nullable<&mut T> {
+        self.entites.get_mut(id)?.mut_module().into()
     }
 
     #[inline]
-    pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Option<&T> {
-        self.get_entity_by_tag(tag)?.get_module()
+    pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Nullable<&T> {
+        self.get_entity_by_tag(tag)?.get_module().into()
     }
 
     #[inline]
-    pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Option<&mut T> {
-        self.mut_entity_by_tag(tag)?.mut_module()
+    pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Nullable<&mut T> {
+        self.mut_entity_by_tag(tag)?.mut_module().into()
     }
 
     #[inline]

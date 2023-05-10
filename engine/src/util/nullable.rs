@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 use std::marker::Destruct;
-use std::ops::DerefMut;
+use std::ops::{ControlFlow, DerefMut, FromResidual, Try};
 use std::ops::Deref;
 
 #[derive(Copy, Clone, Debug, Default)]
-enum Nullable<T> {
+pub enum Nullable<T> {
     Value(T),
     #[default]
     Null
@@ -298,6 +298,72 @@ impl<T> const From<Nullable<T>> for Option<T> {
         match value {
             Nullable::Null => None,
             Nullable::Value(v) => Some(v)
+        }
+    }
+}
+
+impl<T> Nullable<Option<T>> {
+    #[inline]
+    pub const fn flatten(self) -> Nullable<T> where T: ~const Destruct {
+        match self {
+            Nullable::Value(inner) => inner.into(),
+            Nullable::Null => Nullable::Null,
+        }
+    }
+    #[inline]
+    pub const fn opt_flatten(self) -> Option<T> where T: ~const Destruct {
+        match self {
+            Nullable::Value(inner) => inner,
+            Nullable::Null => None,
+        }
+    }
+}
+
+impl<T> Nullable<Nullable<T>> {
+    #[inline]
+    pub const fn flatten(self) -> Nullable<T> where T: ~const Destruct {
+        match self {
+            Nullable::Value(inner) => inner,
+            Nullable::Null => Nullable::Null,
+        }
+    }
+    #[inline]
+    pub const fn opt_flatten(self) -> Option<T> where T: ~const Destruct {
+        match self {
+            Nullable::Value(inner) => inner.into(),
+            Nullable::Null => None,
+        }
+    }
+}
+
+impl<T> const FromResidual for Nullable<T> {
+    #[inline]
+    fn from_residual(_residual: Nullable<std::convert::Infallible>) -> Self {
+        Nullable::Null
+    }
+}
+
+impl<T> const FromResidual<Option<std::convert::Infallible>> for Nullable<T> {
+    #[inline]
+    fn from_residual(_residual: Option<std::convert::Infallible>) -> Self {
+        Nullable::Null
+    }
+}
+
+impl<T> const std::ops::Try for Nullable<T> {
+    type Output = T;
+    type Residual = Nullable<std::convert::Infallible>;
+
+    #[inline]
+    fn from_output(output: Self::Output) -> Self {
+        Nullable::Value(output)
+    }
+
+    #[inline]
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> where T: ~const Destruct {
+        match self {
+            Nullable::Value(v) => ControlFlow::Continue(v),
+            Nullable::Null => ControlFlow::Break(Nullable::Null),
         }
     }
 }
