@@ -1,6 +1,7 @@
 use std::any::Any;
 use aeonetica_engine::TypeId;
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
 
 pub struct DataStore {
@@ -32,25 +33,25 @@ impl DataStore {
         self.stores.remove(&type_to_id::<T>()).is_some()
     }
 
-    pub fn get_store<T: Sized + 'static>(&self) -> Option<&T> {
-        self.stores.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } )
+    pub fn get_store<T: Sized + 'static>(&self) -> Nullable<&T> {
+        self.stores.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).into()
     }
 
-    pub fn mut_store<T: Sized + 'static>(&mut self) -> Option<&mut T> {
-        self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 })
+    pub fn mut_store<T: Sized + 'static>(&mut self) -> Nullable<&mut T> {
+        self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 }).into()
     }
 
     pub fn get_or_create<T: Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
         self.stores.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).unwrap_or_else(||{
             self.add_store(creator());
-            self.get_store().unwrap()
+            self.get_store::<T>().unwrap()
         })
     }
 
     pub fn mut_or_create<T: Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
         self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 } ).unwrap_or_else(||{
             self.add_store(creator());
-            self.mut_store().unwrap()
+            self.mut_store::<T>().unwrap()
         })
     }
 

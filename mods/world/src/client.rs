@@ -65,7 +65,7 @@ impl ClientHandle for WorldHandle {
         messenger.register_receiver(Self::receive_chunk_data);
     }
 
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, _delta_time: f64) {
         self.chunk_queue.drain(..).for_each(|chunk| {
             log!("loading chunk {:?}", chunk.chunk_pos);
 
@@ -117,18 +117,18 @@ impl Layer for WorldLayer {
         let mut renderer = self.renderer.borrow_mut();
         let mut camera = self.camera.borrow_mut();
 
-        let new_pos = store.get_store::<CameraPosition>().unwrap().0;
+        let new_pos = store.get_store::<CameraPosition>().0;
         if new_pos != *camera.position() {
             camera.set_position(new_pos);
         }
 
-        renderer.begin_scene(&*camera);
+        renderer.begin_scene(&camera);
         handles.iter_mut().for_each(|(_, h)| h.update(&mut renderer, delta_time));
         renderer.draw_vertices();
         renderer.end_scene();
     }
 
     fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
-        handles.iter_mut().position(|(_, h)| h.on_event(event)).is_some()
+        handles.iter_mut().any(|(_, h)| h.on_event(event))
     }
 }

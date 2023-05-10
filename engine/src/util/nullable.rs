@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use std::marker::Destruct;
-use std::ops::{ControlFlow, DerefMut, FromResidual, Try};
+use std::ops::{ControlFlow, DerefMut, FromResidual};
 use std::ops::Deref;
 
 #[derive(Copy, Clone, Debug, Default)]
