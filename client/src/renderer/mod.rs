@@ -199,7 +199,7 @@ impl Renderer {
 
         let size = size / font.char_size().y;
 
-        let half_size =  font.char_size() * [size, size].into() / Vector2::new(2.0, 2.0);
+        let half_size = font.char_size() * size / 2.0;
 
         let texture_id = font.sprite_sheet().texture().id();
 
