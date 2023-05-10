@@ -150,6 +150,7 @@ impl ClientHandle for PlayerHandle {
     }
 
     fn on_event(&mut self, event: &Event) -> bool {
+        if !self.is_controlling { return false }
         match event {
             Event::KeyPressed(KeyCode::W) => {
                 self.key_state[0] = true;
