@@ -4,11 +4,6 @@
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
-#![feature(const_replace)]
-#![feature(const_option)]
-#![feature(const_convert)]
-#![feature(const_option_ext)]
-#![feature(const_refs_to_cell)]
 #![feature(try_trait_v2)]
 
 #![feature(test)]
