@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::io::{Read, Write};
 use std::net::{TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
-use aeonetica_engine::error::{AError, AET};
+use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::builtin::NetworkError;
 use aeonetica_engine::{log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
@@ -19,7 +20,7 @@ pub(crate) struct NetworkClient {
 }
 
 impl NetworkClient {
-    pub(crate) fn start(addr: &str, server: &str) -> Result<Self, AError>{
+    pub(crate) fn start(addr: &str, server: &str) -> Result<Self, Error>{
         let tcp = TcpStream::connect(server)?;
         tcp.set_nonblocking(false).unwrap();
         let udp = UdpSocket::bind(addr)?;
@@ -69,27 +70,27 @@ impl NetworkClient {
         packets
     }
 
-    pub(crate) fn send(&self, packet: &ClientPacket, mode: SendMode) -> Result<(), AError>{
+    pub(crate) fn send(&self, packet: &ClientPacket, mode: SendMode) -> Result<(), Error>{
         let data = SerBin::serialize_bin(packet);
         match mode {
             SendMode::Quick => {
                 if data.len() > MAX_PACKET_SIZE {
-                    return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
+                    return Err(Error::new(NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE)), Fatality::WARN, false))
                 }
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send(&data[..]).map_err(|e| {
-                    let e: AError = e.into();
+                    let e: Error = e.into();
                     e.log();
                 }));
             }
             SendMode::Safe => {
                 let mut tcp = self.tcp.borrow_mut();
                 let _ = tcp.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
-                    let e: AError = e.into();
+                    let e: Error = e.into();
                     e.log();
                 });
                 let _ = tcp.write_all(&data[..]).map_err(|e| {
-                    let e: AError = e.into();
+                    let e: Error = e.into();
                     e.log();
                 });
             }

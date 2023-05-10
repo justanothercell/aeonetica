@@ -1,6 +1,8 @@
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::{util::vector::Vector2, error::{IntoError, ErrorResult}};
 
-use super::{RenderID, texture::{Texture, ImageError}};
+use crate::renderer::glerror::GLError;
+
+use super::{RenderID, texture::Texture};
 
 pub struct FrameBuffer {
     fbo_id: RenderID,
@@ -9,7 +11,7 @@ pub struct FrameBuffer {
 }
 
 impl FrameBuffer {
-    pub fn new(size: Vector2<u32>) -> Result<Self, ImageError> {
+    pub fn new(size: Vector2<u32>) -> ErrorResult<Self> {
         unsafe { 
             let mut fbo_id = 0;
             gl::GenFramebuffers(1, &mut fbo_id);
@@ -36,7 +38,10 @@ impl FrameBuffer {
 
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
                 gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-                Err(ImageError::OpenGL())
+                
+                let mut err = GLError::from_gl_errno().into_error();
+                err.add_info(format!("error creating framebuffer of size {} px", size));
+                Err(err)
             }
             else {
                 gl::BindFramebuffer(gl::FRAMEBUFFER, 0);

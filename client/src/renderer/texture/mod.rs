@@ -6,6 +6,8 @@ pub mod font;
 use aeonetica_engine::{util::vector::Vector2, log};
 use image::{io::Reader as ImageReader, DynamicImage};
 
+use aeonetica_engine::error::{IntoError, Error, ErrorValue, Fatality};
+
 use super::RenderID;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
@@ -25,6 +27,16 @@ pub enum ImageError {
     Decode(String),
     Unsupported(String),
     OpenGL()
+}
+
+impl IntoError for ImageError {
+    fn into_error(self) -> Error {
+        Error::new(self, Fatality::DEFAULT, true)
+    }
+}
+
+impl ErrorValue for ImageError {
+
 }
 
 impl std::fmt::Display for ImageError {

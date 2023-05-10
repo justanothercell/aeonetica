@@ -3,7 +3,7 @@ pub use ordered_map::OrderedMap;
 
 #[cfg(test)]
 mod benches {
-    use test::{bench, Bencher, black_box};
+    use test::{Bencher, black_box};
 
     use std::collections::BTreeMap;
     use crate::collections::OrderedMap;
@@ -65,7 +65,7 @@ mod benches {
         }
         b.iter(|| {
             let _ = black_box({
-                map.iter().map(|(k, i)| {
+                map.iter().map(|(_, i)| {
                     *i
                 }).sum::<usize>()
             });

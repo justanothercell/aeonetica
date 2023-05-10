@@ -6,7 +6,8 @@ use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
-use aeonetica_engine::error::{AError, AET};
+use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::builtin::NetworkError;
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
@@ -33,7 +34,7 @@ pub(crate) struct ClientHandle {
 }
 
 impl NetworkServer {
-    pub(crate) fn start(addr: &str) -> Result<Self, AError>{
+    pub(crate) fn start(addr: &str) -> Result<Self, Error>{
         let socket = UdpSocket::bind(addr)?;
         let sock = socket.try_clone()?;
         let received = Arc::new(Mutex::new(vec![]));
@@ -97,20 +98,20 @@ impl NetworkServer {
         packets
     }
 
-    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> Result<(), AError>{
+    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
         self.clients.get(client_id).map(|client| {
             self.send_raw(client.client_addr, packet, mode)
-        }).unwrap_or(Err(AError::new(AET::NetworkError(format!("client {client_id} does not exist")))))?;
+        }).unwrap_or(Err(Error::new(NetworkError(format!("client {client_id} does not exist")), Fatality::DEFAULT, true)))?;
 
         Ok(())
     }
 
-    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), AError>{
+    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
         let data = SerBin::serialize_bin(packet);
         match mode {
             SendMode::Quick => {
                 if data.len() > MAX_PACKET_SIZE {
-                    return Err(AError::new(AET::NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE))))
+                    return Err(Error::new(NetworkError(format!("Packet is too large: {} > {}", data.len(), MAX_PACKET_SIZE)), Fatality::WARN, false))
                 }
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send_to(&data[..], ip_addr));

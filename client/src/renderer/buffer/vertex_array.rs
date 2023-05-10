@@ -8,18 +8,18 @@ pub struct VertexArray {
 
 #[allow(unused)]
 impl VertexArray {
-    pub fn new() -> Option<Self> {
+    pub fn new() -> ErrorResult<Self> {
         let mut vao = 0;
         unsafe { gl::GenVertexArrays(1, &mut vao) };
         if vao != 0 {
-            Some(Self {
+            Ok(Self {
                 id: vao,
                 vertex_buffer: None,
                 index_buffer: None
             })
         }
         else {
-            None
+            Err(GLError::from_gl_errno().into_error())
         }
     }
 
