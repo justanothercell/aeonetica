@@ -3,12 +3,12 @@ pub use sprite_sheet::*;
 
 pub mod font;
 
-use aeonetica_engine::{util::vector::Vector2, log};
+use aeonetica_engine::{util::vector::Vector2, log, error::ErrorResult};
 use image::{io::Reader as ImageReader, DynamicImage};
 
 use aeonetica_engine::error::{IntoError, Error, ErrorValue, Fatality};
 
-use super::RenderID;
+use super::{RenderID, glerror::GLError};
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
 pub struct Sampler2D(pub i32);
@@ -26,7 +26,6 @@ pub enum ImageError {
     Io(std::io::Error),
     Decode(String),
     Unsupported(String),
-    OpenGL()
 }
 
 impl IntoError for ImageError {
@@ -45,7 +44,6 @@ impl std::fmt::Display for ImageError {
             Self::Io(err) => f.write_str(format!("ImageError: IO error: {err}").as_str()),
             Self::Decode(err) => f.write_str(format!("ImageError: Decode error: {err}").as_str()),
             Self::Unsupported(err) => f.write_str(format!("ImageError: Unsupported error: {err}").as_str()),
-            Self::OpenGL() => f.write_str("ImageError: OpenGL error")
         }
     }
 }
@@ -70,18 +68,18 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ImageError> {
+    pub fn from_bytes(bytes: &[u8]) -> ErrorResult<Self> {
         let cursor = std::io::Cursor::new(bytes);
         let img = ImageReader::new(cursor)
             .with_guessed_format()?
-            .decode()?;
+            .decode().map_err(|e| ImageError::Decode(e.to_string()).into_error())?;
          //   .flipv();
         Self::load(img)
     }
 
-    pub fn from_file(img_path: &str) -> Result<Self, ImageError> {
+    pub fn from_file(img_path: &str) -> ErrorResult<Self> {
         let img = ImageReader::open(img_path)?
-            .decode()?;
+            .decode().map_err(|e| ImageError::Decode(e.to_string()).into_error())?;
           //  .flipv();
         Self::load(img)
     }
@@ -90,7 +88,7 @@ impl Texture {
         self.data_format
     }
 
-    fn load(img: DynamicImage) -> Result<Self, ImageError> {
+    fn load(img: DynamicImage) -> ErrorResult<Self> {
         let mut t = Self {
             id: 0,
             size: (img.width(), img.height()).into(),
@@ -102,19 +100,20 @@ impl Texture {
             image::DynamicImage::ImageRgb8(_) => {
                 t.internal_format = gl::RGB8;
                 t.data_format = gl::RGB;
-                log!("only rgb  :(");
             }
             image::DynamicImage::ImageRgba8(_) => {
                 t.internal_format = gl::RGBA8;
                 t.data_format = gl::RGBA;
             }
-            _ => return Err(ImageError::Unsupported(format!("Image format {img:?} is unsupported")))
+            _ => return Err(ImageError::Unsupported(format!("Image format {img:?} is unsupported")).into_error())
         }
 
         unsafe {
             gl::CreateTextures(gl::TEXTURE_2D, 1, &mut t.id);
             if t.id == 0 {
-                return Err(ImageError::OpenGL());
+                let mut err = GLError::from_gl_errno().into_error();
+                err.add_info("error creating opengl texture");
+                return Err(err);
             }
             gl::TextureStorage2D(t.id, 1, t.internal_format, t.size.x() as i32, t.size.y() as i32);
 

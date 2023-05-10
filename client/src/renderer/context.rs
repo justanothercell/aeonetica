@@ -1,7 +1,7 @@
-use std::any::type_name;
 use std::rc::Rc;
 
-use aeonetica_engine::log;
+use aeonetica_engine::error::{ErrorValue, IntoError, Error, Fatality};
+use aeonetica_engine::{log, error::ErrorResult};
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 
@@ -11,6 +11,23 @@ use crate::{
 };
 
 use super::shader::PostProcessingLayer;
+
+#[derive(Debug)]
+struct LayerAlreadyExists(&'static str);
+
+impl ErrorValue for LayerAlreadyExists {}
+
+impl std::fmt::Display for LayerAlreadyExists {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "layer \"{}\" already exists", self.0)
+    }
+}
+
+impl IntoError for LayerAlreadyExists {
+    fn into_error(self) -> Error {
+        Error::new(self, Fatality::WARN, false)
+    }
+}
 
 struct LayerStack {
     layer_checker: IdMap<()>,
@@ -51,9 +68,9 @@ impl Context {
     }
 
     /// Fails if the layer already exists.
-    pub fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) -> Result<(), String> {
+    pub fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) -> ErrorResult<()> {
         if self.layer_stack.layer_checker.contains_key(&type_to_id::<L>()) {
-            return Err(format!("Layer {} was already pushed onto the layer stack", type_name::<L>()));
+            return Err(LayerAlreadyExists(layer.name()).into_error());
         }
         self.layer_stack.layer_checker.insert(type_to_id::<L>(), ());
         layer.on_attach();

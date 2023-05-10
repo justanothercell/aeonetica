@@ -3,7 +3,7 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}};
+use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}, error::{ErrorResult, IntoError}};
 use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
@@ -288,11 +288,11 @@ impl Window {
     }
 }
 
-fn pixels_from_bytes<const N: usize>(bytes: &[u8; N]) -> Result<glfw::PixelImage, ImageError> {
+fn pixels_from_bytes<const N: usize>(bytes: &[u8; N]) -> ErrorResult<glfw::PixelImage> {
     let cursor = std::io::Cursor::new(bytes);
     let icon = ImageReader::new(cursor)
         .with_guessed_format()?
-        .decode()?;
+        .decode().map_err(|e| ImageError::Decode(e.to_string()).into_error())?;
 
     let (width, height) = (icon.width(), icon.height());
 
@@ -308,11 +308,11 @@ fn pixels_from_bytes<const N: usize>(bytes: &[u8; N]) -> Result<glfw::PixelImage
 
             Ok(PixelImage {width, height, pixels})
         }
-        _ => Err(ImageError::Unsupported(format!("image format {:?} not supported", icon)))
+        _ => Err(ImageError::Unsupported(format!("image format {:?} not supported", icon)).into_error())
     }
 }
 
-fn load_window_icons() -> Result<Vec<glfw::PixelImage>, ImageError> {
+fn load_window_icons() -> ErrorResult<Vec<glfw::PixelImage>> {
     Ok(vec![
         pixels_from_bytes(include_bytes!("../../../assets/logo-15.png"))?,
         pixels_from_bytes(include_bytes!("../../../assets/logo-30.png"))?,

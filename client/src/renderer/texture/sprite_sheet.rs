@@ -1,8 +1,8 @@
 use std::ops::Div;
 
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::{util::vector::Vector2, error::{ErrorResult, IntoError}};
 
-use super::{Texture, TexCoordFormat, RenderID};
+use super::{Texture, TexCoordFormat, RenderID, ImageError};
 
 #[derive(Debug, Clone)]
 pub struct Sprite {
@@ -81,10 +81,10 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
-    pub fn from_texture(texture: Texture, sprite_size: Vector2<u32>) -> Result<Self, String> {
+    pub fn from_texture(texture: Texture, sprite_size: Vector2<u32>) -> ErrorResult<Self> {
         if texture.size().x() % sprite_size.x() != 0 ||
             texture.size().y() % sprite_size.y() != 0 {
-            Err(format!("Texture size is not multiple of sprite size. ({:?} | {:?})", texture.size(), sprite_size))
+            Err(ImageError::Unsupported(format!("Texture size is not multiple of sprite size. ({:?} | {:?})", texture.size(), sprite_size)).into_error())
         }
         else {
             let num_sprites = (*texture.size()).div(sprite_size);

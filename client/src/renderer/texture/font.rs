@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use aeonetica_engine::error::ErrorResult;
+use aeonetica_engine::error::builtin::{IOError, DataError};
 use aeonetica_engine::nanoserde::{DeRon, SerRon};
 use aeonetica_engine::nanoserde;
 
@@ -22,23 +24,23 @@ pub struct BitmapFont {
 }
 
 impl BitmapFont {
-    pub fn from_texture_and_fontdata(texture: Texture, fontdata: &str) -> Result<Self, String> {
-        let font_data = BMPFontFile::deserialize_ron(fontdata).map_err(|e| e.to_string())?;
+    pub fn from_texture_and_fontdata(texture: Texture, fontdata: &str) -> ErrorResult<Self> {
+        let font_data = BMPFontFile::deserialize_ron(fontdata).map_err(|e| Error::new(IOError(e.to_string()), Fatality::DEFAULT, true))?;
         Self::from_texture(texture,
                            font_data.char_size.into(),
                            font_data.characters.into_iter().map(|(k, v)| {
                                let c: Vec<_> = k.chars().collect();
                                if c.len() != 1 {
-                                   return Err(format!("key '{}' in font data las length {}, expected 1 char", k, c.len()))
+                                   return Err(Error::new(DataError(format!("key '{}' in font data las length {}, expected 1 char", k, c.len())), Fatality::DEFAULT, true))
                                }
                                let c = c[0];
                                Ok((c, v))
-                           }).collect::<Result<HashMap<char, u32>, _>>()?,
+                           }).collect::<ErrorResult<HashMap<char, u32>>>()?,
                            font_data.monospaced
         )
     }
 
-    pub fn from_texture(texture: Texture, char_size: Vector2<u32>, characters: HashMap<char, u32>, monospaced: bool) -> Result<Self, String> {
+    pub fn from_texture(texture: Texture, char_size: Vector2<u32>, characters: HashMap<char, u32>, monospaced: bool) -> ErrorResult<Self> {
         let mut widths = vec![];
         let pix = texture.size().area() as usize;
         let bytes_per_pixel = texture.bytes_per_pixel() as usize;

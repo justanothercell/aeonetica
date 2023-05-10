@@ -17,7 +17,7 @@ pub use quad::*;
 
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap};
+use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}};
 use buffer::*;
 use shader::*;
 use texture::*;
@@ -28,6 +28,23 @@ pub(self) use aeonetica_engine::util::camera::Camera;
 use self::{sprite_sheet::Sprite, font::BitmapFont};
 
 pub(self) type RenderID = gl::types::GLuint;
+
+#[derive(Debug)]
+pub struct RenderError(String);
+
+impl ErrorValue for RenderError {}
+
+impl std::fmt::Display for RenderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "renderer: {}", self.0)
+    }
+}
+
+impl IntoError for RenderError {
+    fn into_error(self) -> aeonetica_engine::error::Error {
+        Error::new(self, Fatality::WARN, false)
+    }
+}
 
 pub trait Renderable {
     fn vertex_data(&mut self) -> VertexData<'_>;
@@ -120,11 +137,11 @@ impl Renderer {
         }
     }
 
-    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> ErrorResult<()> {
         self.batches.get_mut(
             location.batch(), 
             |batch| batch.modify_vertices(location, data, texture)
-        ).ok_or(()).flatten()
+        ).unwrap_or_else(|| Err(RenderError(format!("invalid batch id {}", location.batch())).into_error()))
     }
 
     pub fn add(&mut self, item: &mut impl Renderable) {
@@ -132,13 +149,13 @@ impl Renderer {
         item.set_location(location);
     }
 
-    pub fn modify(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
+    pub fn modify(&mut self, item: &mut impl Renderable) -> ErrorResult<()> {
         let texture = item.texture_id();
         self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
     }
 
     // add or modify a given item, if needed
-    pub fn draw(&mut self, item: &mut impl Renderable) -> Result<(), ()> {
+    pub fn draw(&mut self, item: &mut impl Renderable) -> ErrorResult<()> {
         if !item.has_location() {
             let location = self.add_vertices(&mut item.vertex_data());
             item.set_location(location);

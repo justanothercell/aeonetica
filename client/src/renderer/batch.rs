@@ -1,9 +1,9 @@
 use std::{rc::Rc, cell::Cell};
 
-use crate::{uniform_str, renderer::shader::UniformStr};
+use crate::{uniform_str, renderer::{shader::UniformStr, RenderError}};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, error::ErrorResult};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, error::{ErrorResult, IntoError}};
 
 pub type BatchID = u32;
 
@@ -104,15 +104,16 @@ impl Batch {
         }
     }
 
-    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> Result<(), ()> {
+    pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> ErrorResult<()> {
         let num_bytes = (location.count() * self.layout.stride()) as usize;
         if num_bytes < data.len() {
-            log_err!("unexpected vertices lenght; got {}, expected {}", data.len(), num_bytes);
-            return Err(());
+            return Err(RenderError(format!("unexpected vertices length; got {}, expected {}", data.len(), num_bytes)).into_error());
         }
 
         if let Some(texture) = texture {
-            let slot = self.textures.iter().position(|t| *t == texture).ok_or(())?;            
+            let slot = self.textures.iter()
+                .position(|t| *t == texture)
+                .ok_or_else(|| RenderError(format!("could not find slot for texture {} (id)", texture)).into_error())?;            
             patch_texture_id(data, &self.layout, slot as u32);            
         }
 
