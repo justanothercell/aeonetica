@@ -3,9 +3,29 @@ use std::{rc::Rc, cell::Cell};
 use crate::{uniform_str, renderer::{shader::UniformStr, RenderError}};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, log_err, error::{ErrorResult, IntoError}};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}, log_warn, log};
 
 pub type BatchID = u32;
+
+#[derive(Debug)]
+struct Offset {
+    vertices: usize,
+    indices: usize,
+}
+
+impl Offset {
+    fn new(vertices: usize, indices: usize) -> Self {
+        Self {
+            vertices,
+            indices,
+        }
+    }
+
+    fn reduce(&mut self, dv: usize, di: usize) {
+        self.vertices -= dv;
+        self.indices -= di;
+    }
+}
 
 pub(super) struct Batch {
     id: BatchID,
@@ -17,6 +37,7 @@ pub(super) struct Batch {
     vertices_dirty: Cell<bool>,
     indices: Vec<u32>,
     indices_dirty: Cell<bool>,
+    offsets: Vec<Offset>,
 
     shader: Rc<shader::Program>,
     textures: Vec<RenderID>,
@@ -50,7 +71,10 @@ impl Batch {
         vertex_array.set_index_buffer(index_buffer);
 
         let vertices = Vec::with_capacity((Self::MAX_BATCH_VERTEX_COUNT * data.layout().stride()) as usize);
-        let indices = Vec::with_capacity(Self::MAX_BATCH_INDEX_COUNT as usize * std::mem::size_of::<u32>());
+        let indices = Vec::with_capacity(Self::MAX_BATCH_INDEX_COUNT as usize);
+        let offsets = Vec::with_capacity(Self::MAX_BATCH_VERTEX_COUNT as usize);
+
+        log!("creating batch {}", id);
 
         Ok(Self {
             id,
@@ -62,11 +86,17 @@ impl Batch {
             vertices_dirty: Cell::new(false),
             indices,
             indices_dirty: Cell::new(false),
+            offsets,
 
             shader: data.shader().clone(),
             textures: vec![],
             z_index: data.z_index
         })
+    }
+
+    pub fn delete(self) {
+        log!("deleting batch {}", self.id);
+        self.vertex_array.delete();
     }
 
     pub fn has_space_for(&self, data: &VertexData) -> bool {
@@ -89,23 +119,28 @@ impl Batch {
             data.patch_texture_id(index as u32);
         }
 
-        let num_vertices = self.vertices.len() as u32 / self.layout.stride();
+        let num_vert_bytes = self.vertices.len();
+        let num_vertices = num_vert_bytes as u32 / self.layout.stride();
         self.vertices.extend_from_slice(data.vertices);
         self.vertices_dirty.set(true);
         
         let indices = data.indices().iter().map(|i| i + num_vertices);
+        let num_indices = self.indices.len();
         self.indices.extend(indices);
         self.indices_dirty.set(true);
 
+        self.offsets.push(Offset::new(num_vert_bytes, num_indices));
+
         VertexLocation {
             batch: self.id, 
-            vertices_offset: num_vertices,
-            vertices_count: data.num_vertices()
+            offset_index: self.offsets.len() - 1,
+            num_vertices: data.num_vertices(),
+            num_indices: data.num_indices()
         }
     }
 
     pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> ErrorResult<()> {
-        let num_bytes = (location.count() * self.layout.stride()) as usize;
+        let num_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
         if num_bytes < data.len() {
             return Err(RenderError(format!("unexpected vertices length; got {}, expected {}", data.len(), num_bytes)).into_error());
         }
@@ -117,11 +152,27 @@ impl Batch {
             patch_texture_id(data, &self.layout, slot as u32);            
         }
 
-        let offset = (location.offset() * self.layout.stride()) as usize;
-        self.vertices[offset..offset + num_bytes].copy_from_slice(data);
+        let offset = &self.offsets[location.offset_index()];
+
+        self.vertices[offset.vertices..offset.vertices + num_bytes].copy_from_slice(data);
         self.vertices_dirty.set(true);
 
         Ok(())
+    }
+
+    pub fn remove_vertices(&mut self, location: &VertexLocation) {
+        let index = location.offset_index();
+        let offset = &self.offsets[index];
+        let num_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
+        self.vertices.drain(offset.vertices..offset.vertices + num_bytes);
+        self.indices.drain(offset.indices..offset.indices + location.num_indices() as usize);
+
+        if self.offsets.len() - index == 1 {
+            self.offsets.pop();
+        }
+        else {
+            self.offsets[index + 1..].iter_mut().for_each(|offset| offset.reduce(num_bytes, location.num_indices() as usize));
+        }
     }
 
     pub fn draw_vertices(&self, renderer: &mut Renderer) {
@@ -163,6 +214,10 @@ impl Batch {
 
     pub fn id(&self) -> &BatchID {
         &self.id
+    }
+
+    pub fn is_deletable(&self) -> bool {
+        self.indices.len() == 0 && self.vertices.len() == 0
     }
 
     pub fn update_indices(&self) {
@@ -292,8 +347,9 @@ fn patch_texture_id(vertices: &mut [u8], layout: &BufferLayout, slot: u32) {
 #[derive(Clone)]
 pub struct VertexLocation {
     batch: BatchID,
-    vertices_offset: u32,
-    vertices_count: u32,
+    offset_index: usize,
+    num_vertices: u32,
+    num_indices: u32
 }
 
 impl VertexLocation {
@@ -301,11 +357,15 @@ impl VertexLocation {
         &self.batch
     }
 
-    pub(super) fn offset(&self) -> u32 {
-        self.vertices_offset
+    pub fn offset_index(&self) -> usize {
+        self.offset_index
     }
 
-    pub(super) fn count(&self) -> u32 {
-        self.vertices_count
+    pub(super) fn num_vertices(&self) -> u32 {
+        self.num_vertices
+    }
+
+    pub(super) fn num_indices(&self) -> u32 {
+        self.num_indices
     }
 }

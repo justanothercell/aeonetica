@@ -51,7 +51,7 @@ pub trait Renderable {
     fn texture_id(&self) -> Option<RenderID>;
 
     fn location(&self) -> &Option<VertexLocation>;
-    fn set_location(&mut self, location: VertexLocation);
+    fn set_location(&mut self, location: Option<VertexLocation>);
     fn is_dirty(&self) -> bool;
     fn has_location(&self) -> bool;
 }
@@ -124,6 +124,10 @@ impl Renderer {
         self.batch_counter
     }
 
+    pub(self) fn delete_batch(&mut self, id: &BatchID) {
+        self.batches.remove(id).map(|batch| batch.delete());
+    }
+
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
         if let Some(idx) = self.batches.iter().position(|(_, batch)| batch.has_space_for(data)) {
             self.batches.nth_mut(idx, |batch| batch.add_vertices(data)).unwrap()
@@ -144,9 +148,23 @@ impl Renderer {
         ).unwrap_or_else(|| Err(RenderError(format!("invalid batch id {}", location.batch())).into_error()))
     }
 
+    pub fn remove_vertices(&mut self, location: &VertexLocation) {
+        let remove = self.batches.get_mut(
+            location.batch(),
+            |batch| {
+                batch.remove_vertices(location);
+                batch.is_deletable().then(|| batch.id().clone())
+            }
+        );
+
+        if let Some(Some(id)) = remove {
+            self.delete_batch(&id);
+        }
+    }
+
     pub fn add(&mut self, item: &mut impl Renderable) {
         let location = self.add_vertices(&mut item.vertex_data());
-        item.set_location(location);
+        item.set_location(Some(location));
     }
 
     pub fn modify(&mut self, item: &mut impl Renderable) -> ErrorResult<()> {
@@ -158,7 +176,7 @@ impl Renderer {
     pub fn draw(&mut self, item: &mut impl Renderable) -> ErrorResult<()> {
         if !item.has_location() {
             let location = self.add_vertices(&mut item.vertex_data());
-            item.set_location(location);
+            item.set_location(Some(location));
         }
         else if item.is_dirty() {
             let texture = item.texture_id();
@@ -166,6 +184,13 @@ impl Renderer {
         }
 
         Ok(())
+    }
+
+    pub fn remove(&mut self, item: &mut impl Renderable) {
+        if let Some(location) = item.location() {
+            self.remove_vertices(location);
+            item.set_location(None);
+        } 
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {

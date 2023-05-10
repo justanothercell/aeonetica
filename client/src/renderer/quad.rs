@@ -181,8 +181,8 @@ impl Renderable for ColoredQuad {
         &self.location
     }
 
-    fn set_location(&mut self, location: VertexLocation) {
-        self.location = Some(location);
+    fn set_location(&mut self, location: Option<VertexLocation>) {
+        self.location = location;
     }
 }
 
@@ -325,8 +325,8 @@ impl Renderable for TexturedQuad {
         &self.location
     }
 
-    fn set_location(&mut self, location: VertexLocation) {
-        self.location = Some(location);
+    fn set_location(&mut self, location: Option<VertexLocation>) {
+        self.location = location;
     }
 }
 
@@ -485,7 +485,7 @@ impl Renderable for SpriteQuad {
         &self.location
     }
 
-    fn set_location(&mut self, location: VertexLocation) {
-        self.location = Some(location);
+    fn set_location(&mut self, location: Option<VertexLocation>) {
+        self.location = location;
     }
 }

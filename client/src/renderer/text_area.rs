@@ -32,8 +32,8 @@ impl Renderable for TextArea {
         &self.location
     }
 
-    fn set_location(&mut self, location: VertexLocation) {
-        self.location = Some(location)
+    fn set_location(&mut self, location: Option<VertexLocation>) {
+        self.location = location;
     }
 
     fn texture_id(&self) -> Option<super::RenderID> {
