@@ -5,6 +5,9 @@
 #![feature(const_trait_impl)]
 #![feature(let_chains)]
 #![feature(try_trait_v2)]
+#![feature(const_replace)]
+#![feature(const_refs_to_cell)]
+#![feature(const_option_ext)]
 
 #![feature(test)]
 #![feature(try_trait_v2_residual)]
