@@ -12,6 +12,8 @@ use aeonetica_engine::{log, log_warn};
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
+use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::util::vector::Vector2;
 use crate::server::Player;
@@ -63,7 +65,7 @@ pub struct PlayerHandle {
     position: Vector2<f32>,
 
     // rendering stuff
-    quad: Option<TexturedQuad>,
+    quad: Nullable<TexturedQuad>,
 
     // movement stuff
     key_state: [bool; 4],
@@ -76,7 +78,7 @@ impl PlayerHandle {
             is_controlling: false,
             p_position: Default::default(),
             position: Default::default(),
-            quad: None,
+            quad: Null,
             key_state: [false; 4],
             speed: 2.0
         }
@@ -90,7 +92,7 @@ impl PlayerHandle {
     pub(crate) fn receive_position(&mut self, position: Vector2<f32>) {
         if !self.is_controlling {
             self.position = position;
-            let quad = self.quad.as_mut().unwrap();
+            let quad = &mut *self.quad;
             quad.set_position(self.position);
         }
     }
@@ -103,7 +105,7 @@ impl ClientHandle for PlayerHandle {
         messenger.register_receiver(Self::set_controlling);
         messenger.register_receiver(Self::receive_position);
 
-        self.quad = Some(
+        self.quad = Value(
             TexturedQuad::new(
             self.position,
             Vector2::new(1.0, 1.0),
@@ -114,7 +116,7 @@ impl ClientHandle for PlayerHandle {
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, delta_time: f64) {
-        let quad = self.quad.as_mut().unwrap();
+        let quad = &mut *self.quad;
         if self.is_controlling {
             match self.key_state {
                 [true, _, false, _] => self.position.y -= self.speed * delta_time as f32,

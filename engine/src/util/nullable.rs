@@ -35,14 +35,14 @@ impl<T> Nullable<T> {
     #[inline]
     pub const fn as_ref(&self) -> Nullable<&T> {
         match self {
-            Nullable::Value(v) => Nullable::Value(v),
+            Nullable::Value(ref v) => Nullable::Value(v),
             Nullable::Null => Nullable::Null
         }
     }
     #[inline]
     pub const fn as_mut(&mut self) -> Nullable<&mut T> {
         match self {
-            Nullable::Value(v) => Nullable::Value(v),
+            Nullable::Value(ref mut v) => Nullable::Value(v),
             Nullable::Null => Nullable::Null
         }
     }
@@ -71,7 +71,7 @@ impl<T> Nullable<T> {
         self.option().unwrap_or_else(f)
     }
     #[inline]
-    pub const fn unwrap_or_default(self) -> T where T: ~const Default + ~const Destruct {
+    pub fn unwrap_or_default(self) -> T where T: Default {
         self.option().unwrap_or_default()
     }
     #[inline]
@@ -110,14 +110,14 @@ impl<T> Nullable<T> {
         self.option().ok_or_else(err)
     }
     #[inline]
-    pub const fn as_deref(&self) -> Nullable<&T::Target> where T: ~const Deref {
+    pub fn as_deref(&self) -> Nullable<&T::Target> where T: Deref {
         match self.as_ref() {
             Nullable::Value(t) => Nullable::Value(t.deref()),
             Nullable::Null => Nullable::Null,
         }
     }
     #[inline]
-    pub const fn as_deref_mut(&mut self) -> Nullable<&mut T::Target> where T: ~const DerefMut {
+    pub fn as_deref_mut(&mut self) -> Nullable<&mut T::Target> where T: DerefMut {
         match self.as_mut() {
             Nullable::Value(t) => Nullable::Value(t.deref_mut()),
             Nullable::Null => Nullable::Null,
@@ -198,7 +198,7 @@ impl<T> Nullable<T> {
     }
     #[must_use]
     #[inline]
-    pub const fn contains<U>(&self, x: &U) -> bool where U: ~const PartialEq<T>, {
+    pub fn contains<U>(&self, x: &U) -> bool where U: PartialEq<T>{
         match self {
             Nullable::Value(y) => x.eq(y),
             Nullable::Null => false,
@@ -241,7 +241,7 @@ impl<T> Nullable<&T> {
     }
     #[inline]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub const fn cloned(self) -> Nullable<T> where T: ~const Clone {
+    pub fn cloned(self) -> Nullable<T> where T: Clone {
         match self {
             Nullable::Value(t) => Nullable::Value(t.clone()),
             Nullable::Null => Nullable::Null,
@@ -252,7 +252,7 @@ impl<T> Nullable<&T> {
 impl<T> Nullable<&mut T> {
     #[inline]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub const fn copied(self) -> Nullable<T> where T: Copy, {
+    pub const fn copied(self) -> Nullable<T> where T: Copy {
         match self {
             Nullable::Value(&mut v) => Nullable::Value(v),
             Nullable::Null => Nullable::Null,
@@ -260,7 +260,7 @@ impl<T> Nullable<&mut T> {
     }
     #[inline]
     #[must_use = "`self` will be dropped if the result is not used"]
-    pub const fn cloned(self) -> Nullable<T> where T: ~const Clone {
+    pub fn cloned(self) -> Nullable<T> where T: Clone{
         match self {
             Nullable::Value(t) => Nullable::Value(t.clone()),
             Nullable::Null => Nullable::Null,
@@ -282,9 +282,9 @@ impl<T> DerefMut for Nullable<T>{
     }
 }
 
-impl<T> const From<Option<T>> for Nullable<T> {
+impl<T> From<Option<T>> for Nullable<T> {
     #[inline]
-    fn from(value: Option<T>) -> Self where T: ~const Destruct {
+    fn from(value: Option<T>) -> Self {
         match value {
             None => Nullable::Null,
             Some(v) => Nullable::Value(v)
@@ -292,9 +292,9 @@ impl<T> const From<Option<T>> for Nullable<T> {
     }
 }
 
-impl<T> const From<Nullable<T>> for Option<T> {
+impl<T> From<Nullable<T>> for Option<T> {
     #[inline]
-    fn from(value: Nullable<T>) -> Self where T: ~const Destruct {
+    fn from(value: Nullable<T>) -> Self{
         match value {
             Nullable::Null => None,
             Nullable::Value(v) => Some(v)
@@ -336,21 +336,21 @@ impl<T> Nullable<Nullable<T>> {
     }
 }
 
-impl<T> const FromResidual for Nullable<T> {
+impl<T> FromResidual for Nullable<T> {
     #[inline]
     fn from_residual(_residual: Nullable<std::convert::Infallible>) -> Self {
         Nullable::Null
     }
 }
 
-impl<T> const FromResidual<Option<std::convert::Infallible>> for Nullable<T> {
+impl<T> FromResidual<Option<std::convert::Infallible>> for Nullable<T> {
     #[inline]
     fn from_residual(_residual: Option<std::convert::Infallible>) -> Self {
         Nullable::Null
     }
 }
 
-impl<T> const std::ops::Try for Nullable<T> {
+impl<T> std::ops::Try for Nullable<T> {
     type Output = T;
     type Residual = Nullable<std::convert::Infallible>;
 
@@ -360,7 +360,7 @@ impl<T> const std::ops::Try for Nullable<T> {
     }
 
     #[inline]
-    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> where T: ~const Destruct {
+    fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         match self {
             Nullable::Value(v) => ControlFlow::Continue(v),
             Nullable::Null => ControlFlow::Break(Nullable::Null),
