@@ -4,7 +4,7 @@
 
 <h1>The Aeonetica Muliplayer Game Engine</h1>
 
-<h3>[📑Documentation](docs/README.md) [⚖️License](../LICENSE) [🌿Release Branch](https://github.com/DragonFIghter603/aeonetica/tree/release) [🚀Releases](https://github.com/DragonFIghter603/aeonetica/releases)</h3>
+#### [📑Documentation](docs/README.md) [⚖️License](../LICENSE) [🌿Release Branch](https://github.com/DragonFIghter603/aeonetica/tree/release) [🚀Releases](https://github.com/DragonFIghter603/aeonetica/releases)
 
 </div>
 
