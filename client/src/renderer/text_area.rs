@@ -158,7 +158,7 @@ impl TextArea {
 
     pub fn recalculate_vertex_data(&mut self) {
         let size = self.font_size / self.font.char_size().y;
-        let half_size = self.font.char_size() * [size, size].into() / Vector2::new(2.0, 2.0);
+        let half_size = self.font.char_size() * size / 2.0;
 
         let position = self.position;
 

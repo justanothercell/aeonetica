@@ -61,6 +61,7 @@ impl PlayerShader {
 
 pub struct PlayerHandle {
     is_controlling: bool,
+    interpolation_delta: f32,
     p_position: Vector2<f32>,
     position: Vector2<f32>,
 
@@ -76,11 +77,12 @@ impl PlayerHandle {
     fn new() -> Self {
         Self {
             is_controlling: false,
+            interpolation_delta: 0.0,
             p_position: Default::default(),
             position: Default::default(),
             quad: Null,
             key_state: [false; 4],
-            speed: 2.0
+            speed: 6.0
         }
     }
 
@@ -91,6 +93,8 @@ impl PlayerHandle {
 
     pub(crate) fn receive_position(&mut self, position: Vector2<f32>) {
         if !self.is_controlling {
+            self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
+            self.interpolation_delta = 0.0;
             self.position = position;
             let quad = &mut *self.quad;
             quad.set_position(self.position);
@@ -130,13 +134,16 @@ impl ClientHandle for PlayerHandle {
                 _ => {}
             }
 
-            if (self.position - self.p_position).mag_sq() > 1.0 {
+            if (self.position - self.p_position).mag_sq() > 0.05 {
                 messenger.call_server_fn(Player::client_position_update, self.position, SendMode::Quick);
-                log!("told server i moved");
                 self.p_position = self.position;
             }
 
             quad.set_position(self.position);
+        } else if self.interpolation_delta * self.interpolation_delta < 1.0 {
+            let delta = self.position - self.p_position;
+            quad.set_position(self.p_position + delta * self.interpolation_delta);
+            self.interpolation_delta = (delta_time as f32 * self.speed + self.interpolation_delta).min(1.0);
         }
 
         let _ = renderer.draw(quad);

@@ -84,6 +84,10 @@ impl Vector2<f32> {
         f32::sqrt(self.mag_sq())
     }
 
+    pub fn normalized(&self) -> Self {
+        *self / self.mag()
+    }
+
     pub fn half(mut self) -> Self {
         self.x /= 2.0;
         self.y /= 2.0;
@@ -221,6 +225,17 @@ impl<T: Mul<Output = T>> Mul for Vector2<T> {
         Self {
             x: self.x * rhs.x,
             y: self.y * rhs.y
+        }
+    }
+}
+
+impl<T: Mul<Output = T> + Copy> Mul<T> for Vector2<T> {
+    type Output = Self;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs
         }
     }
 }
