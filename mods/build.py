@@ -46,7 +46,7 @@ def get_mod_file_ext():
 
 def build(feature: str):
     # run cargo build command
-    build_cmd = f'cargo build --features="{feature}"'
+    build_cmd = f'cargo rustc --features="{feature}" --crate-type=dylib'
     if build_mode == 'release':
         build_cmd += ' --release'
     system(build_cmd)
