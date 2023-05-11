@@ -1,7 +1,8 @@
+use std::cell::RefMut;
 use std::rc::Rc;
 
 use aeonetica_engine::error::{ErrorValue, IntoError, Error, Fatality};
-use aeonetica_engine::{log, error::ErrorResult};
+use aeonetica_engine::{log, error::ErrorResult, TypeId};
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 
@@ -9,6 +10,8 @@ use crate::{
     renderer::window::events::Event,
     renderer::layer::Layer, client_runtime::ClientRuntime, data_store::DataStore
 };
+use crate::client_runtime::ClientHandleBox;
+use crate::renderer::Renderer;
 
 use super::shader::PostProcessingLayer;
 
@@ -31,7 +34,7 @@ impl IntoError for LayerAlreadyExists {
 
 struct LayerStack {
     layer_checker: IdMap<()>,
-    layers: Vec<Rc<dyn Layer>>,
+    layers: Vec<(Rc<dyn Layer>, TypeId)>,
     insert_index: usize
 }
 
@@ -44,13 +47,24 @@ impl LayerStack {
         }
     }
 
-    fn push(&mut self, layer: Rc<impl Layer + 'static>) {
-        self.layers.insert(self.insert_index, layer);
+    fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) {
+        self.layers.insert(self.insert_index, (layer, type_to_id::<L>()));
         self.insert_index += 1;
     }
 
-    fn push_overlay(&mut self, layer: Rc<impl Layer + 'static>) {
-        self.layers.insert(self.insert_index, layer);
+    fn push_overlay<L: Layer + 'static>(&mut self, layer: Rc<L>) {
+        self.layers.insert(self.insert_index, (layer, type_to_id::<L>()));
+    }
+}
+
+pub struct LayerHandles<'a> {
+    handles: &'a mut IdMap<ClientHandleBox>,
+    layer_id: TypeId
+}
+
+impl<'a> LayerHandles<'a> {
+    pub fn update(self, renderer: &mut RefMut<Renderer>, delta_time: f64){
+        self.handles.values_mut().filter(|chb| chb.handle.owning_layer() == self.layer_id).for_each(|chb| chb.handle.update(&mut chb.messenger, renderer, delta_time))
     }
 }
 
@@ -85,7 +99,7 @@ impl Context {
 
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {
         let handles = client.handles();
-        for layer in self.layer_stack.layers.iter().filter(|layer| layer.active()).rev() {
+        for (layer, _id) in self.layer_stack.layers.iter().filter(|(layer, _)| layer.active()).rev() {
             let handled = layer.on_event(handles, &event);
             if handled {
                 return;
@@ -97,7 +111,10 @@ impl Context {
 
     pub(crate) fn on_update(&mut self, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         let handles = client.handles();
-        self.layer_stack.layers.iter().filter(|layer| layer.active()).for_each(|layer| layer.on_update(store, handles, delta_time));
+        self.layer_stack.layers.iter().filter(|(layer, _)| layer.active()).for_each(|(layer, id)| layer.on_update(store, LayerHandles {
+            handles,
+            layer_id: *id,
+        }, delta_time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
@@ -113,7 +130,7 @@ impl Context {
     }
 
     pub(crate) fn finish(self) {
-        for layer in self.layer_stack.layers.iter() {
+        for (layer, _) in self.layer_stack.layers.iter() {
             layer.on_detach();
         }
         if let Some(layer) = self.post_processing_layer { layer.on_detach() }

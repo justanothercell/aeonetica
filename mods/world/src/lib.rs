@@ -1,6 +1,6 @@
 use aeonetica_engine::register;
 
-mod client;
+pub mod client;
 mod server;
 mod common;
 

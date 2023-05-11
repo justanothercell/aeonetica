@@ -1,6 +1,6 @@
 use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
-use aeonetica_engine::{ClientId, EntityId, Id};
+use aeonetica_engine::{ClientId, EntityId, Id, TypeId};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
@@ -16,6 +16,7 @@ use crate::renderer::window::events::Event;
 #[allow(unused_variables)]
 pub trait ClientHandle: ClientEntity {
     fn init(&mut self) {}
+    fn owning_layer(&self) -> TypeId;
     fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
     

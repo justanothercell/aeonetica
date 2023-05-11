@@ -1,7 +1,8 @@
 use std::{collections::HashMap, rc::Rc, cell::{RefCell, RefMut}};
 
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::Context, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
-use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id, camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn};
+use aeonetica_client::renderer::context::LayerHandles;
+use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id, camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
 
 use crate::common::{Chunk, CHUNK_SIZE};
 
@@ -65,6 +66,10 @@ impl ClientHandle for WorldHandle {
         messenger.register_receiver(Self::receive_chunk_data);
     }
 
+    fn owning_layer(&self) -> TypeId {
+        type_to_id::<WorldLayer>()
+    }
+
     fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, _delta_time: f64) {
         self.chunk_queue.drain(..).for_each(|chunk| {
             log!("loading chunk {:?}", chunk.chunk_pos);
@@ -113,7 +118,7 @@ impl Layer for WorldLayer {
         log!("WorldLayer detached");
     }
 
-    fn on_update(&self, store: &mut DataStore, handles: &mut IdMap<ClientHandleBox>, delta_time: f64) {
+    fn on_update(&self, store: &mut DataStore, handles: LayerHandles, delta_time: f64) {
         let mut renderer = self.renderer.borrow_mut();
         let mut camera = self.camera.borrow_mut();
 
@@ -123,7 +128,7 @@ impl Layer for WorldLayer {
         }
 
         renderer.begin_scene(&camera);
-        handles.iter_mut().for_each(|(_, h)| h.update(&mut renderer, delta_time));
+        handles.update(&mut renderer, delta_time);
         renderer.draw_vertices();
         renderer.end_scene();
     }
