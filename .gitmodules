@@ -1,0 +1,3 @@
+[submodule "docs"]
+	path = docs
+	url = https://github.com/Dragonfighter603/aeonetica.wiki.git
