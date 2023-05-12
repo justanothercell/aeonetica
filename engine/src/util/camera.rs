@@ -5,6 +5,7 @@ pub struct Camera {
     view_matrix: Matrix4<f32>,
     view_projection_matrix: Matrix4<f32>,
     position: Vector2<f32>,
+    fov_size: Vector2<f32>,
     rotation: f32
 }
 
@@ -17,6 +18,7 @@ impl Camera {
             projection_matrix,
             view_matrix,
             position: Vector2::default(),
+            fov_size: Vector2::new(left.abs() + right.abs(), bottom.abs() + top.abs()),
             rotation: 0.0
         }
     }
@@ -35,6 +37,7 @@ impl Camera {
 
     pub fn set_projection(&mut self, left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) {
         self.projection_matrix = Matrix4::ortho(left, right, bottom, top, far, near);
+        self.fov_size = Vector2::new(left.abs() + right.abs(), bottom.abs() + top.abs());
         self.recalculate_view_matrix();
     }
 
@@ -43,7 +46,7 @@ impl Camera {
     }
 
     pub fn set_position(&mut self, position: Vector2<f32>) {
-        self.position = position;
+        self.position = position.double() / (self.fov_size * Vector2::new(1.0, -1.0));
         self.recalculate_view_matrix();
     } 
 

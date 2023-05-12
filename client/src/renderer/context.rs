@@ -63,8 +63,8 @@ pub struct LayerHandles<'a> {
 }
 
 impl<'a> LayerHandles<'a> {
-    pub fn update(self, renderer: &mut RefMut<Renderer>, delta_time: f64){
-        self.handles.values_mut().filter(|chb| chb.handle.owning_layer() == self.layer_id).for_each(|chb| chb.handle.update(&mut chb.messenger, renderer, delta_time))
+    pub fn update(self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64){
+        self.handles.values_mut().filter(|chb| chb.handle.owning_layer() == self.layer_id).for_each(|chb| chb.handle.update(&mut chb.messenger, renderer, store, delta_time))
     }
 }
 

@@ -4,7 +4,7 @@ use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}, error::{ErrorResult, IntoError}};
-use crate::{renderer::{context::Context, buffer::*, util, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use crate::{renderer::{context::Context, buffer::*, util::{self, enable_blend_mode, blend_mode, BlendMode}, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -160,10 +160,8 @@ impl Window {
                     .expect("Error creating Index Buffer");
                 framebuffer_vao.set_index_buffer(index_buffer);
 
-                unsafe {
-                    gl::Enable(gl::BLEND);
-                    gl::BlendFunc(gl::ONE, gl::ONE_MINUS_SRC_ALPHA);
-                }
+                enable_blend_mode(true);
+                blend_mode(BlendMode::One);
 
                 let mut window = Self {
                     glfw_handle: glfw,
@@ -224,7 +222,7 @@ impl Window {
             let [width, height]: [u32; 2] = (*self.framebuffer.size()).into();
             gl::Viewport(0, 0, width as i32, height as i32);
 
-            gl::Enable(gl::BLEND);
+            enable_blend_mode(true);
         }
 
         context.on_update(client, store, delta_time);
@@ -235,7 +233,7 @@ impl Window {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);                
             gl::Clear(gl::COLOR_BUFFER_BIT);
             self.framebuffer_viewport.apply();
-            gl::Disable(gl::BLEND);
+            enable_blend_mode(false);
         }
 
         // post-processing

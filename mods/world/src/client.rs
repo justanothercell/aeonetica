@@ -9,6 +9,12 @@ use crate::common::{Chunk, CHUNK_SIZE};
 #[derive(PartialEq)]
 pub struct CameraPosition(Vector2<f32>);
 
+impl CameraPosition {
+    pub fn set(&mut self, position: Vector2<f32>) {
+        self.0 = position;
+    }
+}
+
 pub struct WorldModClient {
 
 }
@@ -70,7 +76,7 @@ impl ClientHandle for WorldHandle {
         type_to_id::<WorldLayer>()
     }
 
-    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, _delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, _store: &mut DataStore, _delta_time: f64) {
         self.chunk_queue.drain(..).for_each(|chunk| {
             log!("loading chunk {:?}", chunk.chunk_pos);
 
@@ -128,7 +134,7 @@ impl Layer for WorldLayer {
         }
 
         renderer.begin_scene(&camera);
-        handles.update(&mut renderer, delta_time);
+        handles.update(&mut renderer, store, delta_time);
         renderer.draw_vertices();
         renderer.end_scene();
     }

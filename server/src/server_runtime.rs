@@ -9,7 +9,7 @@ use aeonetica_engine::{log, nanoserde, log_warn};
 use aeonetica_engine::error::*;
 use aeonetica_engine::nanoserde::{DeBin, DeRon, SerBin, SerRon};
 use aeonetica_engine::util::unzip_archive;
-use crate::{ServerMod, ServerModBox, server};
+use crate::{ServerMod, ServerModBox};
 use crate::networking::NetworkServer;
 
 

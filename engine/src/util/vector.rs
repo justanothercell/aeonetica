@@ -94,6 +94,12 @@ impl Vector2<f32> {
         self
     }
 
+    pub fn double(mut self) -> Self {
+        self.x *= 2.0;
+        self.y *= 2.0;
+        self
+    } 
+
     pub fn rotate(mut self, theta: f32) -> Self {
         let (x, y) = (self.x, self.y);
         self.x = x * theta.cos() - y * theta.sin();

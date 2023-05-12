@@ -6,13 +6,33 @@ pub enum PolygonMode {
     // Just show the lines.
     Line = gl::LINE as isize,
     // Fill in the polygons.
-    Fill = gl::FILL as isize,
+    Fill = gl::FILL as isize
 }
 
 #[allow(unused)]
 #[inline]
 pub fn polygon_mode(mode: PolygonMode) {
     unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, mode as gl::types::GLenum) };
+}
+
+#[allow(unused)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BlendMode {
+    One = gl::ONE as isize,
+    Alpha = gl::SRC_ALPHA as isize,
+    Multiply = gl::DST_COLOR as isize
+}
+
+#[allow(unused)]
+#[inline]
+pub fn blend_mode(mode: BlendMode) {
+    unsafe { gl::BlendFunc(mode as gl::types::GLenum, gl::ONE_MINUS_SRC_ALPHA) };
+}
+
+pub fn enable_blend_mode(enabled: bool) {
+    unsafe {
+        if enabled { gl::Enable(gl::BLEND) } else { gl::Disable(gl::BLEND) }
+    }
 }
 
 #[macro_export]

@@ -7,6 +7,8 @@ use crate::data_store::DataStore;
 use crate::renderer::context::Context;
 use crate::renderer::window::Window;
 
+const FULL_SEC: usize = 1_000_000_000;
+
 pub fn run(ip: &str, server_ip: &str, store: &mut DataStore) {
     let client_id = Id::new();
 
@@ -42,14 +44,14 @@ pub fn run(ip: &str, server_ip: &str, store: &mut DataStore) {
             log_err!("{e}")
         });
         
-        window.render(&mut context, &mut client, store, delta_time as f64 / 1_000_000_000.0);
+        window.render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;
         
         frames += 1;
 
-        if time - last_full_sec >= 1_000_000_000 {
+        if time - last_full_sec >= FULL_SEC {
             log!("fps: {}", frames);
             last_full_sec = time;
             frames = 0;

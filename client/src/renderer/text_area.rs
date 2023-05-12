@@ -58,12 +58,12 @@ impl Renderable for TextArea {
     }
 }
 
+type TextAreaVertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
 thread_local! {
-    static TEXT_AREA_LAYOUT: Rc<BufferLayout> = Rc::new(TextArea::Vertices::build());
+    static TEXT_AREA_LAYOUT: Rc<BufferLayout> = Rc::new(TextAreaVertices::build());
 }
 
 impl TextArea {
-    type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
 
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
@@ -182,7 +182,7 @@ impl TextArea {
             }
             let char_sprite = char_sprite.unwrap();
 
-            self.vertices.extend_from_slice(&Self::Vertices::array([
+            self.vertices.extend_from_slice(&TextAreaVertices::array([
                 vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.left(),  char_sprite.top()   ], Sampler2D(0)),
                 vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.right(), char_sprite.top()   ], Sampler2D(0)),
                 vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
