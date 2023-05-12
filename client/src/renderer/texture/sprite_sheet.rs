@@ -1,6 +1,6 @@
 use std::ops::Div;
 
-use aeonetica_engine::{util::vector::Vector2, error::{ErrorResult, IntoError}};
+use aeonetica_engine::{math::vector::Vector2, error::{ErrorResult, IntoError}};
 
 use super::{Texture, TexCoordFormat, RenderID, ImageError};
 

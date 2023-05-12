@@ -3,7 +3,7 @@ pub use sprite_sheet::*;
 
 pub mod font;
 
-use aeonetica_engine::{util::vector::Vector2, error::ErrorResult};
+use aeonetica_engine::{math::vector::Vector2, error::ErrorResult};
 use image::{io::Reader as ImageReader, DynamicImage};
 
 use aeonetica_engine::error::{IntoError, Error, ErrorValue, Fatality};

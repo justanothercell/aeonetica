@@ -31,6 +31,7 @@ pub mod networking;
 pub mod error;
 pub mod util;
 pub mod collections;
+pub mod math;
 
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
 pub struct Id([u8;8]);

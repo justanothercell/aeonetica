@@ -2,7 +2,7 @@ use std::{collections::HashMap, rc::Rc, cell::{RefCell, RefMut}};
 
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::Context, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
 use aeonetica_client::renderer::context::LayerHandles;
-use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id, camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
+use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
 
 use crate::common::{Chunk, CHUNK_SIZE};
 

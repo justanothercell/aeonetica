@@ -2,7 +2,7 @@ use aeonetica_client::networking::messaging::ClientHandle;
 use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::events::ConnectionListener;

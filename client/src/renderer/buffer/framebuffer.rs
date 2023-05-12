@@ -1,4 +1,4 @@
-use aeonetica_engine::{util::vector::Vector2, error::{IntoError, ErrorResult}};
+use aeonetica_engine::{math::vector::Vector2, error::{IntoError, ErrorResult}};
 
 use crate::renderer::glerror::GLError;
 

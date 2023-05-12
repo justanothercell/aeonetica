@@ -1,4 +1,4 @@
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 
 extern crate glfw;
 

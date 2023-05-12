@@ -3,8 +3,8 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err, util::vector::{Vector2, IntoVector}, error::{ErrorResult, IntoError}};
-use crate::{renderer::{context::Context, buffer::*, util::{self, enable_blend_mode, blend_mode, BlendMode}, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use aeonetica_engine::{log, log_err, math::vector::*, error::*};
+use crate::{renderer::{context::Context, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -151,12 +151,12 @@ impl Window {
                     vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
                 ]);
                 
-                let vertex_buffer = Buffer::new(BufferType::Array, util::to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)
+                let vertex_buffer = Buffer::new(BufferType::Array, to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)
                     .expect("Error creating Vertex Buffer");
                 framebuffer_vao.set_vertex_buffer(vertex_buffer);
                 
                 const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-                let index_buffer = Buffer::new(BufferType::ElementArray, util::to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)
+                let index_buffer = Buffer::new(BufferType::ElementArray, to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)
                     .expect("Error creating Index Buffer");
                 framebuffer_vao.set_index_buffer(index_buffer);
 

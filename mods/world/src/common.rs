@@ -1,6 +1,6 @@
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::nanoserde;
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 
 pub type Tile = u16;
 

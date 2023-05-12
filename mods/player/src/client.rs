@@ -15,7 +15,7 @@ use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 use world_mod::client::WorldLayer;
 use world_mod::client::CameraPosition;
 use crate::server::Player;

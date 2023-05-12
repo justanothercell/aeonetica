@@ -4,7 +4,7 @@ use aeonetica_engine::error::builtin::{IOError, DataError};
 use aeonetica_engine::nanoserde::{DeRon, SerRon};
 use aeonetica_engine::nanoserde;
 
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 
 use super::*;
 

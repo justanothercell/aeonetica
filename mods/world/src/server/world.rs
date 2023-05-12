@@ -2,7 +2,7 @@ use std::io::empty;
 use std::process::id;
 use aeonetica_engine::{EntityId, log};
 use aeonetica_engine::networking::SendMode;
-use aeonetica_engine::util::vector::Vector2;
+use aeonetica_engine::math::vector::Vector2;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;

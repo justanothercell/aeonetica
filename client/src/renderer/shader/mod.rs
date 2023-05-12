@@ -4,7 +4,7 @@ pub use postprocessing::*;
 use std::{collections::HashMap, fmt::Display};
 use super::*;
 
-use aeonetica_engine::{util::{matrix::Matrix4, vector::Vector2}, error::{ErrorValue, ErrorResult, Error, Fatality}};
+use aeonetica_engine::{math::{matrix::Matrix4, vector::Vector2}, error::{ErrorValue, ErrorResult, Error, Fatality}};
 use regex::Regex;
 
 #[macro_export]

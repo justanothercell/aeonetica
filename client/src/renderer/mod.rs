@@ -17,13 +17,13 @@ pub use quad::*;
 
 use std::rc::Rc;
 
-use aeonetica_engine::{util::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}};
 use buffer::*;
 use shader::*;
 use texture::*;
 use batch::*;
 
-pub(self) use aeonetica_engine::util::camera::Camera;
+use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}};
+pub(self) use aeonetica_engine::math::camera::Camera;
 
 use self::{sprite_sheet::Sprite, font::BitmapFont};
 
