@@ -1,20 +1,55 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
 
-use aeonetica_engine::log;
-use client::{client::run, data_store::DataStore};
+use std::net::IpAddr;
+
+use aeonetica_engine::{log, Id, log_err};
+use client::{client::run, data_store::DataStore, client_runtime::ClientRuntime};
+
+mod defaults {
+    pub(crate) const CLIENT_IP: &'static str = "127.0.0.1:9000";
+    pub(crate) const SERVER_IP: &'static str = "127.0.0.1:6090";
+}
+
 fn main() {
     // nc -u 127.0.01 6090
     // cargo run -- 127.0.0.1:9000 127.0.0.1:6090
-    let mut args: Vec<_> = std::env::args().skip(1).collect();
+    let args: Vec<_> = std::env::args().skip(1).collect();
     log!("started client with args {args:?}");
-    if args.len() < 2 {
-        args.push("127.0.0.1:9000".to_string());
-        args.push("127.0.0.1:6090".to_string());
-        //let e = AError::new(AET::ValueError(format!("expected command line arg <local_ip:port> <server_ip:port>, got {}", args.len())));
-        //e.log_exit();
-    }
 
+    let mut client_ip = defaults::CLIENT_IP;
+    let mut server_ip = defaults::SERVER_IP;
+
+    match args.as_slice() {
+        [a, ..] if a == "--help" => {
+            log!("Usage: {} [<client ip>] [<server ip>] | --help", std::env::args().next().unwrap());
+            return;
+        }
+        [c_ip, _] if c_ip.parse::<IpAddr>().is_err() => {
+            log!("`{c_ip}` is not a valid IP address");
+        }
+        [_, s_ip] if s_ip.parse::<IpAddr>().is_err() => {
+            log!("`{s_ip}` is not a valid IP address");
+        }
+        [c_ip, s_ip] => {
+            client_ip = c_ip;
+            server_ip = s_ip;
+        }
+        [] => {
+            log!("using default arguments:\n\tclient ip: {client_ip}\tserver ip: {server_ip}");
+        }
+        _ => {
+            log_err!("unexpected arguments: {args:?}; use `--help` for help");
+            std::process::exit(2);
+        }
+    }
+    
+    let client_id = Id::new();
+    
     let mut store = DataStore::new();
-    run(&args[0], &args[1], &mut store)
+    let client = ClientRuntime::create(client_id, client_ip, server_ip, &mut store).map_err(|e| {
+        e.log_exit();
+    }).unwrap();
+
+    run(client, client_id, &mut store)
 }

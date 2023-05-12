@@ -100,7 +100,7 @@ impl ClientHandleBox {
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
 
 impl ClientRuntime {
-    pub(crate) fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, Error>{
+    pub fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, Error>{
         let nc = NetworkClient::start(addr, server_addr).map_err(|e| {
             e.log_exit();
         }).unwrap();

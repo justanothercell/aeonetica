@@ -9,13 +9,7 @@ use crate::renderer::window::Window;
 
 const FULL_SEC: usize = 1_000_000_000;
 
-pub fn run(ip: &str, server_ip: &str, store: &mut DataStore) {
-    let client_id = Id::new();
-
-    let mut client = ClientRuntime::create(client_id, ip, server_ip, store).map_err(|e| {
-        e.log_exit();
-    }).unwrap();
-
+pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore) {
     let _ = client.nc.borrow().send(&ClientPacket {
         client_id,
         conv_id: Id::new(),
