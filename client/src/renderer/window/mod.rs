@@ -4,7 +4,7 @@ use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
 use aeonetica_engine::{log, log_err, math::vector::*, error::*};
-use crate::{renderer::{context::Context, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use crate::{renderer::{context::RenderContext, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -182,7 +182,7 @@ impl Window {
         }
     }
 
-    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut Context) {
+    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext) {
         self.glfw_handle.poll_events();
         for (_, event) in flush_messages(&self.event_receiver) {
             let mut event = Event::from_glfw(event);
@@ -210,7 +210,7 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut Context, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         

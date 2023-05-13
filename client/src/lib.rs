@@ -4,7 +4,7 @@
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;
 use aeonetica_engine::util::id_map::IdMap;
-use renderer::context::Context;
+use renderer::context::RenderContext;
 use renderer::window::OpenGlContextProvider;
 use crate::data_store::DataStore;
 use crate::networking::messaging::ClientHandle;
@@ -21,7 +21,7 @@ pub trait ClientMod {
     #[allow(unused_variables)]
     fn register_handlers(&self, handlers: &mut IdMap<fn() -> Box<dyn ClientHandle>>, store: &mut DataStore) {}
     #[allow(unused_variables)]
-    fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {}
+    fn start(&self, context: &mut RenderContext, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {}
 }
 
 pub struct ClientModBox {

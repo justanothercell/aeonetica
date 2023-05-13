@@ -68,12 +68,12 @@ impl<'a> LayerHandles<'a> {
     }
 }
 
-pub struct Context {
+pub struct RenderContext {
     layer_stack: LayerStack,
     post_processing_layer: Option<Rc<dyn PostProcessingLayer>>
 }
 
-impl Context {
+impl RenderContext {
     pub(crate) fn new() -> Self {
         Self {
             layer_stack: LayerStack::new(),
@@ -131,7 +131,7 @@ impl Context {
 
     pub(crate) fn finish(self) {
         for (layer, _) in self.layer_stack.layers.iter() {
-            layer.on_detach();
+            layer.on_quit();
         }
         if let Some(layer) = self.post_processing_layer { layer.on_detach() }
     }

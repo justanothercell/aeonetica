@@ -3,7 +3,7 @@ use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
-use aeonetica_client::renderer::context::Context;
+use aeonetica_client::renderer::context::RenderContext;
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, TexturedQuad, Renderable, Quad, shader};
 use aeonetica_client::renderer::texture::Texture;
@@ -29,7 +29,7 @@ impl ClientMod for PlayerModClient {
         handlers.insert(type_to_id::<PlayerHandle>(), || Box::new(PlayerHandle::new()));
         log!("registered  client player mod stuffs");
     }
-    fn start(&self, _context: &mut Context, _store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
+    fn start(&self, _context: &mut RenderContext, _store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         log!("started client player mod");
         gl_context_provider.make_context();
     }

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc, cell::{RefCell, RefMut}};
 
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::Context, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
 use aeonetica_client::renderer::context::LayerHandles;
 use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
 
@@ -29,7 +29,7 @@ impl ClientMod for WorldModClient {
         handlers.insert(type_to_id::<WorldHandle>(), || Box::new(WorldHandle::new()));
     }
 
-    fn start(&self, context: &mut Context, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
+    fn start(&self, context: &mut RenderContext, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
 
         context.push(Rc::new(WorldLayer::instantiate())).expect("duplicate layer");
@@ -120,7 +120,7 @@ impl Layer for WorldLayer {
         log!("WorldLayer attached");
     }
 
-    fn on_detach(&self) {
+    fn on_quit(&self) {
         log!("WorldLayer detached");
     }
 

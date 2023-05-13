@@ -4,7 +4,7 @@ use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use crate::client_runtime::ClientRuntime;
 use crate::data_store::DataStore;
-use crate::renderer::context::Context;
+use crate::renderer::context::RenderContext;
 use crate::renderer::window::Window;
 
 const FULL_SEC: usize = 1_000_000_000;
@@ -24,7 +24,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     let mut last_full_sec = 0;
     let mut delta_time = 0;
 
-    let mut context = Context::new();
+    let mut context = RenderContext::new();
 
     client.loaded_mods.iter()
         .for_each(|loaded_mod| loaded_mod.client_mod.start(&mut context, store, window.context_provider()));
