@@ -58,13 +58,15 @@ impl<T> Nullable<T> {
         !self.is_null()
     }
     #[inline]
+    #[track_caller]
     pub const fn unwrap(self) -> T where T: ~const Destruct {
         match self {
             Nullable::Value(val) => val,
-            Nullable::Null => panic!("called `Option::unwrap()` on a `None` value"),
+            Nullable::Null => panic!("called `Nullable::unwrap()` on a `Null` value"),
         }
     }
     #[inline]
+    #[track_caller]
     pub const fn except(self, msg: &str) -> T where T: ~const Destruct {
         match self {
             Nullable::Value(val) => val,
@@ -279,13 +281,14 @@ impl<T> Nullable<&mut T> {
 
 impl<T> Deref for Nullable<T>{
     type Target = T;
-    
+    #[track_caller]
     fn deref(&self) -> &<Self as Deref>::Target {
         self.ref_option().unwrap()
     }
 }
 
 impl<T> DerefMut for Nullable<T>{
+    #[track_caller]
     fn deref_mut(&mut self) -> &mut T {
         self.mut_option().unwrap()
     }

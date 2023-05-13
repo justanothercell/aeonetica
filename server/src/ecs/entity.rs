@@ -1,6 +1,7 @@
 
 use aeonetica_engine::{EntityId, Id, TypeId};
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 use crate::ecs::module::{Module, ModuleDyn};
@@ -42,25 +43,25 @@ impl Entity {
         self.modules.remove(&type_to_id::<T>()).is_some()
     }
 
-    pub fn get_module<T: Module + Sized + 'static>(&self) -> Option<&T> {
-        self.modules.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } )
+    pub fn get_module<T: Module + Sized + 'static>(&self) -> Nullable<&T> {
+        self.modules.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).into()
     }
 
-    pub fn mut_module<T: Module + Sized + 'static>(&mut self) -> Option<&mut T> {
-        self.modules.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 })
+    pub fn mut_module<T: Module + Sized + 'static>(&mut self) -> Nullable<&mut T> {
+        self.modules.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 }).into()
     }
 
     pub fn get_or_create<T: Module + Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
         self.modules.get(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*const T, usize)>(m).0 } ).unwrap_or_else(||{
             self.add_module(creator());
-            self.mut_module().unwrap()
+            self.mut_module::<T>().unwrap()
         })
     }
 
     pub fn mut_or_create<T: Module + Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {
         self.modules.get_mut(&type_to_id::<T>()).map(|m| unsafe { &*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 } ).unwrap_or_else(||{
             self.add_module(creator());
-            self.mut_module().unwrap()
+            self.mut_module::<T>().unwrap()
         })
     }
 

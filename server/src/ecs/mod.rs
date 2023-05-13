@@ -10,6 +10,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
+use aeonetica_engine::util::nullable::Nullable::Value;
 use crate::ecs::events::ConnectionListener;
 
 use crate::ecs::module::{Module, ModuleDyn};
@@ -102,7 +103,7 @@ impl Engine {
         let mut_self_ref_ptr = self as *mut Self;
         for id in self.entites.keys().cloned().collect::<Vec<_>>() {
             if let Some(e) = self.entites.get_mut(&id) {
-                if let Some(m) = e.mut_module::<T>() {
+                if let Value(m) = e.mut_module::<T>() {
                     runner(unsafe{ &mut *mut_self_ref_ptr }, &id, m)
                 }
             }
@@ -185,22 +186,22 @@ impl Engine {
 
     #[inline]
     pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Nullable<&T> {
-        self.entites.get(id)?.get_module().into()
+        Nullable::from(self.entites.get(id)?.get_module())
     }
 
     #[inline]
     pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Nullable<&mut T> {
-        self.entites.get_mut(id)?.mut_module().into()
+        Nullable::from( self.entites.get_mut(id)?.mut_module())
     }
 
     #[inline]
     pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Nullable<&T> {
-        self.get_entity_by_tag(tag)?.get_module().into()
+        Nullable::from(self.get_entity_by_tag(tag)?.get_module())
     }
 
     #[inline]
     pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Nullable<&mut T> {
-        self.mut_entity_by_tag(tag)?.mut_module().into()
+        Nullable::from( self.mut_entity_by_tag(tag)?.mut_module())
     }
 
     #[inline]
@@ -227,6 +228,6 @@ impl Engine {
     #[inline]
     #[allow(clippy::type_complexity)]
     pub fn find_with<T: Module + Sized + 'static>(&self) -> impl Iterator<Item = (&EntityId, &T)>{
-        self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>()?))} else { None })
+        self.entites.iter().filter_map(|(id, e)| if e.has_module::<T>() { Some((id, e.get_module::<T>().option()?))} else { None })
     }
 }

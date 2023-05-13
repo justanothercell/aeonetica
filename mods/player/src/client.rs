@@ -93,13 +93,17 @@ impl PlayerHandle {
         self.is_controlling = is_controlling
     }
 
-    pub(crate) fn receive_position(&mut self, position: Vector2<f32>) {
+    pub(crate) fn receive_position(&mut self, (position, teleporting): (Vector2<f32>, bool)) {
         if !self.is_controlling {
-            self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
-            self.interpolation_delta = 0.0;
-            self.position = position;
-            let quad = &mut *self.quad;
-            quad.set_position(self.position);
+            if teleporting {
+                self.p_position = position;
+                self.interpolation_delta = 0.0;
+                self.position = position;
+            } else {
+                self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
+                self.interpolation_delta = 0.0;
+                self.position = position;
+            }
         }
     }
 }
@@ -145,7 +149,7 @@ impl ClientHandle for PlayerHandle {
             }
 
             if (self.position - self.p_position).mag_sq() > 0.05 {
-                messenger.call_server_fn(Player::client_position_update, self.position, SendMode::Quick);
+                messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
                 self.p_position = self.position;
             }
 
