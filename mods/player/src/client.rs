@@ -107,6 +107,10 @@ impl PlayerHandle {
 impl ClientEntity for PlayerHandle {}
 
 impl ClientHandle for PlayerHandle {
+    fn owning_layer(&self) -> TypeId {
+        type_to_id::<WorldLayer>()
+    }
+
     fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {
         messenger.register_receiver(Self::set_controlling);
         messenger.register_receiver(Self::receive_position);
@@ -119,10 +123,6 @@ impl ClientHandle for PlayerHandle {
             store.get_or_create(PlayerTexture::load).get().id(),
             store.get_or_create(PlayerShader::load).get().clone()
         ))
-    }
-
-    fn owning_layer(&self) -> TypeId {
-        type_to_id::<WorldLayer>()
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64) {
