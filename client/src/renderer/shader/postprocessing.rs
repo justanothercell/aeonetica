@@ -1,8 +1,8 @@
 use super::{shader, UniformStr};
 
 pub trait PostProcessingLayer {
-    fn on_attach(&self);
-    fn on_detach(&self);
+    fn attach(&self);
+    fn detach(&self);
     
     fn enabled(&self) -> bool;
 

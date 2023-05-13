@@ -1,8 +1,7 @@
-use std::{collections::HashMap, rc::Rc, cell::{RefCell, RefMut}};
-
+use std::{rc::Rc};
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
-use aeonetica_client::renderer::context::LayerHandles;
-use aeonetica_engine::{log, Id, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
+use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
+use aeonetica_engine::util::nullable::Nullable;
 
 use crate::common::{Chunk, CHUNK_SIZE};
 
@@ -31,8 +30,8 @@ impl ClientMod for WorldModClient {
 
     fn start(&self, context: &mut RenderContext, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
         gl_context_provider.make_context();
-
-        context.push(Rc::new(WorldLayer::instantiate())).expect("duplicate layer");
+        println!("started worldmodclient");
+        context.push(WorldLayer::new()).expect("duplicate layer");
         store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
     }
 }
@@ -68,7 +67,7 @@ impl ClientEntity for WorldHandle {
 }
 
 impl ClientHandle for WorldHandle {
-    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {
+    fn start(&mut self, messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
         messenger.register_receiver(Self::receive_chunk_data);
     }
 
@@ -76,7 +75,7 @@ impl ClientHandle for WorldHandle {
         type_to_id::<WorldLayer>()
     }
 
-    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, _store: &mut DataStore, _delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, _store: &mut DataStore, _delta_time: f64) {
         self.chunk_queue.drain(..).for_each(|chunk| {
             log!("loading chunk {:?}", chunk.chunk_pos);
 
@@ -104,42 +103,35 @@ impl ClientHandle for WorldHandle {
 }
 
 pub struct WorldLayer {
-    renderer: RefCell<Renderer>,
-    camera: RefCell<Camera>,
+
+}
+
+impl WorldLayer {
+    fn new() -> Self {
+        Self {}
+    }
 }
 
 impl Layer for WorldLayer {
-    fn instantiate() -> Self where Self: Sized {
-        Self {
-            renderer: RefCell::new(Renderer::new()),
-            camera: RefCell::new(Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0))
-        }
-    }
-
-    fn on_attach(&self) {
+    fn attach(&self) {
         log!("WorldLayer attached");
     }
-
-    fn on_quit(&self) {
-        log!("WorldLayer detached");
+    fn instantiate_camera(&self) -> Camera {
+        Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn on_update(&self, store: &mut DataStore, handles: LayerHandles, delta_time: f64) {
-        let mut renderer = self.renderer.borrow_mut();
-        let mut camera = self.camera.borrow_mut();
-
+    fn update_camera(&self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
         let new_pos = store.get_store::<CameraPosition>().0;
         if new_pos != *camera.position() {
             camera.set_position(new_pos);
         }
-
-        renderer.begin_scene(&camera);
-        handles.update(&mut renderer, store, delta_time);
-        renderer.draw_vertices();
-        renderer.end_scene();
     }
 
-    fn on_event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
+    fn quit(&self) {
+        log!("WorldLayer detached");
+    }
+
+    fn event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
         handles.iter_mut().any(|(_, h)| h.on_event(event))
     }
 }

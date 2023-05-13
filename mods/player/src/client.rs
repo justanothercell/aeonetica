@@ -111,7 +111,7 @@ impl ClientHandle for PlayerHandle {
         type_to_id::<WorldLayer>()
     }
 
-    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {
+    fn start(&mut self, messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, store: &mut DataStore) {
         messenger.register_receiver(Self::set_controlling);
         messenger.register_receiver(Self::receive_position);
 
@@ -125,7 +125,11 @@ impl ClientHandle for PlayerHandle {
         ))
     }
 
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64) {
+    fn remove(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
+        renderer.remove(&mut *self.quad);
+    }
+
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
         let quad = &mut *self.quad;
         if self.is_controlling {
             match self.key_state {

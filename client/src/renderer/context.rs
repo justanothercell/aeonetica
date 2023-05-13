@@ -1,8 +1,9 @@
-use std::cell::RefMut;
+use std::cell::{RefCell, RefMut};
 use std::rc::Rc;
 
 use aeonetica_engine::error::{ErrorValue, IntoError, Error, Fatality};
 use aeonetica_engine::{log, error::ErrorResult, TypeId};
+use aeonetica_engine::math::camera::Camera;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 
@@ -32,44 +33,52 @@ impl IntoError for LayerAlreadyExists {
     }
 }
 
-struct LayerStack {
-    layer_checker: IdMap<()>,
-    layers: Vec<(Rc<dyn Layer>, TypeId)>,
+pub(crate) struct LayerBox {
+    pub(crate) layer: Box<dyn Layer>,
+    pub(crate) camera: Camera,
+    pub(crate) renderer: Renderer
+}
+
+pub(crate) struct LayerStack {
+    pub(crate) layer_map: IdMap<Rc<RefCell<LayerBox>>>,
+    pub(crate) layer_stack: Vec<(Rc<RefCell<LayerBox>>, TypeId)>,
     insert_index: usize
 }
 
 impl LayerStack {
     fn new() -> Self {
         Self {
-            layer_checker: Default::default(),
-            layers: Vec::new(),
+            layer_map: Default::default(),
+            layer_stack: Vec::new(),
             insert_index: 0
         }
     }
 
-    fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) {
-        self.layers.insert(self.insert_index, (layer, type_to_id::<L>()));
+    fn push<L: Layer + 'static>(&mut self, layer: L) {
+        let l = Rc::new(RefCell::new(LayerBox {
+            camera: layer.instantiate_camera(),
+            layer: Box::new(layer),
+            renderer: Renderer::new(),
+        }));
+        self.layer_map.insert(type_to_id::<L>(), l.clone());
+        self.layer_stack.insert(self.insert_index, (l, type_to_id::<L>()));
         self.insert_index += 1;
+        println!("push'led")
     }
 
-    fn push_overlay<L: Layer + 'static>(&mut self, layer: Rc<L>) {
-        self.layers.insert(self.insert_index, (layer, type_to_id::<L>()));
-    }
-}
-
-pub struct LayerHandles<'a> {
-    handles: &'a mut IdMap<ClientHandleBox>,
-    layer_id: TypeId
-}
-
-impl<'a> LayerHandles<'a> {
-    pub fn update(self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64){
-        self.handles.values_mut().filter(|chb| chb.handle.owning_layer() == self.layer_id).for_each(|chb| chb.handle.update(&mut chb.messenger, renderer, store, delta_time))
+    fn push_overlay<L: Layer + 'static>(&mut self, layer: L) {
+        let l = Rc::new(RefCell::new(LayerBox {
+            camera: layer.instantiate_camera(),
+            layer: Box::new(layer),
+            renderer: Renderer::new(),
+        }));
+        self.layer_map.insert(type_to_id::<L>(), l.clone());
+        self.layer_stack.insert(self.insert_index, (l, type_to_id::<L>()));
     }
 }
 
 pub struct RenderContext {
-    layer_stack: LayerStack,
+    pub(crate) layer_stack: LayerStack,
     post_processing_layer: Option<Rc<dyn PostProcessingLayer>>
 }
 
@@ -82,12 +91,11 @@ impl RenderContext {
     }
 
     /// Fails if the layer already exists.
-    pub fn push<L: Layer + 'static>(&mut self, layer: Rc<L>) -> ErrorResult<()> {
-        if self.layer_stack.layer_checker.contains_key(&type_to_id::<L>()) {
+    pub fn push<L: Layer + 'static>(&mut self, layer: L) -> ErrorResult<()> {
+        if self.layer_stack.layer_map.contains_key(&type_to_id::<L>()) {
             return Err(LayerAlreadyExists(layer.name()).into_error());
         }
-        self.layer_stack.layer_checker.insert(type_to_id::<L>(), ());
-        layer.on_attach();
+        layer.attach();
         if layer.is_overlay() {
             self.layer_stack.push_overlay(layer);
         }
@@ -99,8 +107,9 @@ impl RenderContext {
 
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {
         let handles = client.handles();
-        for (layer, _id) in self.layer_stack.layers.iter().filter(|(layer, _)| layer.active()).rev() {
-            let handled = layer.on_event(handles, &event);
+        for (layer_box, _id) in self.layer_stack.layer_stack.iter()
+            .filter(|(layer_box, _)| layer_box.borrow().layer.active()).rev() {
+            let handled = layer_box.borrow_mut().layer.event(handles, &event);
             if handled {
                 return;
             }
@@ -111,17 +120,29 @@ impl RenderContext {
 
     pub(crate) fn on_update(&mut self, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         let handles = client.handles();
-        self.layer_stack.layers.iter().filter(|(layer, _)| layer.active()).for_each(|(layer, id)| layer.on_update(store, LayerHandles {
-            handles,
-            layer_id: *id,
-        }, delta_time));
+        self.layer_stack.layer_stack.iter_mut()
+            .filter(|(layer_box, _)| layer_box.borrow().layer.active())
+            .for_each(|(layer_box, id)| {
+                let layer_box = &mut *layer_box.borrow_mut();
+                layer_box.layer.update_camera(store, &mut layer_box.camera, delta_time);
+                layer_box.renderer.begin_scene(&layer_box.camera);
+                layer_box.layer.pre_handles_update(store, &mut layer_box.renderer, delta_time);
+                handles.iter_mut()
+                    .filter(|(_id, handle_box)| handle_box.handle.owning_layer() == *id)
+                    .for_each(|(_id, handle_box)| handle_box.handle.update(&mut handle_box.messenger, &mut layer_box.renderer, store, delta_time));
+                layer_box.layer.post_handles_update(store, &mut layer_box.renderer, delta_time);
+                layer_box.renderer.draw_vertices();
+                layer_box.renderer.end_scene();
+            });
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
+        post_processing_layer.attach();
         self.post_processing_layer = Some(post_processing_layer);
     }
 
     pub fn unset_post_processing_layer(&mut self) {
+        self.post_processing_layer.as_ref().map(|layer|layer.detach());
         self.post_processing_layer = None;
     }
 
@@ -130,9 +151,9 @@ impl RenderContext {
     }
 
     pub(crate) fn finish(self) {
-        for (layer, _) in self.layer_stack.layers.iter() {
-            layer.on_quit();
+        for (layer_box, _) in self.layer_stack.layer_stack.iter() {
+            layer_box.borrow().layer.quit();
         }
-        if let Some(layer) = self.post_processing_layer { layer.on_detach() }
+        self.post_processing_layer.map(|layer|layer.detach());
     }
 }

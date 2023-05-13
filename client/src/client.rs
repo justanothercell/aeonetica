@@ -34,7 +34,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
 
         window.poll_events(&mut client, &mut context);
         
-        let _ = client.handle_queued(store).map_err(|e| {
+        let _ = client.handle_queued(store, &mut context).map_err(|e| {
             log_err!("{e}")
         });
         

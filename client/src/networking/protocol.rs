@@ -4,14 +4,16 @@ use aeonetica_engine::log;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
+use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use crate::client_runtime::{ClientHandleBox, ClientRuntime};
 use crate::data_store::DataStore;
 use crate::networking::messaging::ClientMessenger;
+use crate::renderer::context::RenderContext;
 
 impl ClientRuntime {
-    pub(crate) fn handle_queued(&mut self, store: &mut DataStore) -> Result<(), Error> {
+    pub(crate) fn handle_queued(&mut self, store: &mut DataStore, context: &mut RenderContext) -> Result<(), Error> {
         let packets = self.nc.borrow_mut().queued_packets();
-        packets.into_iter().map(|packet| self.handle_packet(&packet, store))
+        packets.into_iter().map(|packet| self.handle_packet(&packet, store, context))
         .reduce(|acc, r| {
             acc?;
             r?;
@@ -19,7 +21,7 @@ impl ClientRuntime {
         }).unwrap_or(Ok(()))
     }
 
-    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket, store: &mut DataStore) -> Result<(), Error>{
+    pub(crate) fn handle_packet(&mut self, packet: &ServerPacket, store: &mut DataStore, context: &mut RenderContext) -> Result<(), Error>{
         if let Some(handler) = self.awaiting_replies.remove(&packet.conv_id) {
             handler(self, packet);
             return Ok(())
@@ -39,8 +41,18 @@ impl ClientRuntime {
                 self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
+                    println!("43FB-1930-3175-8C30 <-> {}", handle.owning_layer());
+                    for (id, _) in &context.layer_stack.layer_map {
+                        println!("> {id}");
+                    }
                     let mut messenger = ClientMessenger::new(self.nc.clone(), self.client_id, *eid);
-                    handle.start(&mut messenger, store);
+                    if let Some(layer) = context.layer_stack.layer_map.get(&handle.owning_layer()) {
+                        println!("called with Value");
+                        handle.start(&mut messenger, Value(&mut layer.borrow_mut().renderer), store);
+                    } else {
+                        println!("called with Null");
+                        handle.start(&mut messenger, Null, store);
+                    }
                     self.handles.insert(*eid, ClientHandleBox {
                         handle,
                         messenger,
@@ -50,7 +62,11 @@ impl ClientRuntime {
             ServerMessage::RemoveClientHandle(id) => {
                 log!("remove client handle");
                 if let Some(mut h) = self.handles.remove(id) {
-                    h.handle.remove(&mut h.messenger, store)
+                    if let Some(layer) = context.layer_stack.layer_map.get(&h.handle.owning_layer()) {
+                        h.handle.remove(&mut h.messenger, Value(&mut layer.borrow_mut().renderer), store);
+                    } else {
+                        h.handle.remove(&mut h.messenger, Null, store);
+                    }
                 }
             }
             ServerMessage::ModMessage(eid, rid, data) => {

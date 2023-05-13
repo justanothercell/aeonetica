@@ -6,6 +6,7 @@ use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_server::ecs::Engine;
 use crate::data_store::DataStore;
@@ -17,10 +18,10 @@ use crate::renderer::window::events::Event;
 pub trait ClientHandle: ClientEntity {
     fn init(&mut self) {}
     fn owning_layer(&self) -> TypeId;
-    fn start(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
-    fn remove(&mut self, messenger: &mut ClientMessenger, store: &mut DataStore) {}
+    fn start(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore) {}
+    fn remove(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore) {}
     
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64) {}
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {}
     fn on_event(&mut self, event: &Event) -> bool { false }
 }
 
