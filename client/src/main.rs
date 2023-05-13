@@ -1,14 +1,15 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
+#![feature(addr_parse_ascii)]
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 
 use aeonetica_engine::{log, Id, log_err};
 use client::{client::run, data_store::DataStore, client_runtime::ClientRuntime};
 
 mod defaults {
-    pub(crate) const CLIENT_IP: &'static str = "127.0.0.1:9000";
-    pub(crate) const SERVER_IP: &'static str = "127.0.0.1:6090";
+    pub(crate) const CLIENT_IP: &str = "127.0.0.1:9000";
+    pub(crate) const SERVER_IP: &str = "127.0.0.1:6090";
 }
 
 fn main() {
@@ -25,10 +26,10 @@ fn main() {
             log!("Usage: {} [<client ip>] [<server ip>] | --help", std::env::args().next().unwrap());
             return;
         }
-        [c_ip, _] if c_ip.parse::<IpAddr>().is_err() => {
+        [c_ip, _] if SocketAddr::parse_ascii(c_ip.as_bytes()).is_err() => {
             log!("`{c_ip}` is not a valid IP address");
         }
-        [_, s_ip] if s_ip.parse::<IpAddr>().is_err() => {
+        [_, s_ip] if SocketAddr::parse_ascii(s_ip.as_bytes()).is_err() => {
             log!("`{s_ip}` is not a valid IP address");
         }
         [c_ip, s_ip] => {
