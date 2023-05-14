@@ -6,7 +6,7 @@ use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
-use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::NetworkError;
 use aeonetica_engine::{Id, log, log_err};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
@@ -34,7 +34,7 @@ pub(crate) struct ClientHandle {
 }
 
 impl NetworkServer {
-    pub(crate) fn start(addr: &str) -> Result<Self, Error>{
+    pub(crate) fn start(addr: &str) -> ErrorResult<Self>{
         let socket = UdpSocket::bind(addr)?;
         let sock = socket.try_clone()?;
         let received = Arc::new(Mutex::new(vec![]));
@@ -98,7 +98,7 @@ impl NetworkServer {
         packets
     }
 
-    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
+    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> ErrorResult<()>{
         self.clients.get(client_id).map(|client| {
             self.send_raw(client.client_addr, packet, mode)
         }).unwrap_or(Err(Error::new(NetworkError(format!("client {client_id} does not exist")), Fatality::DEFAULT, true)))?;
@@ -106,7 +106,7 @@ impl NetworkServer {
         Ok(())
     }
 
-    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
+    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> ErrorResult<()>{
         let data = SerBin::serialize_bin(packet);
         match mode {
             SendMode::Quick => {

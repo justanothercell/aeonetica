@@ -57,7 +57,7 @@ pub struct ModProfile {
 }
 
 impl ServerRuntime {
-    pub(crate) fn create(addr: &str) -> Result<ServerRuntime, Error> {
+    pub(crate) fn create(addr: &str) -> ErrorResult<ServerRuntime> {
         let mut data = String::new();
         File::open("mods/mods.ron")?.read_to_string(&mut data)?;
         let profile: ModProfile = DeRon::deserialize_ron(&data)?;
@@ -82,7 +82,7 @@ impl ServerRuntime {
     }
 }
 
-pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, Error> {
+pub(crate) fn load_mod(name_path: &str) -> ErrorResult<ServerModBox> {
     let (path, name) = name_path.split_once(':').unwrap();
 
     unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;

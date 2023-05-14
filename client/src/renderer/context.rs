@@ -1,4 +1,4 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use aeonetica_engine::error::{ErrorValue, IntoError, Error, Fatality};
@@ -11,7 +11,6 @@ use crate::{
     renderer::window::events::Event,
     renderer::layer::Layer, client_runtime::ClientRuntime, data_store::DataStore
 };
-use crate::client_runtime::ClientHandleBox;
 use crate::renderer::Renderer;
 
 use super::shader::PostProcessingLayer;
@@ -28,7 +27,7 @@ impl std::fmt::Display for LayerAlreadyExists {
 }
 
 impl IntoError for LayerAlreadyExists {
-    fn into_error(self) -> Error {
+    fn into_error(self) -> Box<Error> {
         Error::new(self, Fatality::WARN, false)
     }
 }

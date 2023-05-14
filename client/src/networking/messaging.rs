@@ -1,4 +1,4 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, Id, TypeId};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};

@@ -41,7 +41,7 @@ impl std::fmt::Display for RenderError {
 }
 
 impl IntoError for RenderError {
-    fn into_error(self) -> aeonetica_engine::error::Error {
+    fn into_error(self) -> Box<aeonetica_engine::error::Error> {
         Error::new(self, Fatality::WARN, false)
     }
 }

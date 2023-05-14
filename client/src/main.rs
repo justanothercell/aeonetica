@@ -2,7 +2,7 @@
 #![feature(result_flattening)]
 #![feature(addr_parse_ascii)]
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 
 use aeonetica_engine::{log, Id, log_err};
 use client::{client::run, data_store::DataStore, client_runtime::ClientRuntime};

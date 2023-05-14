@@ -13,7 +13,7 @@ use crate::error::*;
 use crate::error::builtin::IOError;
 use crate::{Id, TypeId};
 
-pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> Result<(), Error>{
+pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> ErrorResult<()> {
     let mut archive = zip::read::ZipArchive::new(zip)
         .map_err(|e| Error::new(IOError(format!("could not read zip file: {e}")), Fatality::FATAL, true))?;
     std::fs::create_dir_all(&dest_dir).expect("unable to create directory");

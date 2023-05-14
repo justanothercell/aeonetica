@@ -27,7 +27,7 @@ impl GLError {
 impl ErrorValue for GLError {}
 
 impl IntoError for GLError {
-    fn into_error(self) -> Error {
+    fn into_error(self) -> Box<Error> {
         Error::new(self, Fatality::DEFAULT, true)
     }
 }
