@@ -8,6 +8,8 @@ pub mod texture;
 pub mod text_area;
 pub mod material;
 pub mod glerror;
+pub mod target;
+pub mod pipeline;
 
 mod buffer;
 mod batch;

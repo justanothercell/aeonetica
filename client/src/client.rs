@@ -38,7 +38,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
             log_err!("{e}")
         });
         
-        window.render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
+        window.on_render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;

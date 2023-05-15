@@ -1,6 +1,6 @@
 use std::{rc::Rc};
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
-use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, log_warn, TypeId};
+use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::util::nullable::Nullable;
 
 use crate::common::{Chunk, CHUNK_SIZE};
@@ -32,6 +32,7 @@ impl ClientMod for WorldModClient {
         gl_context_provider.make_context();
         println!("started worldmodclient");
         context.push(WorldLayer::new()).expect("duplicate layer");
+        context.push(UILayer::new()).expect("duplicate layer");
         store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
     }
 }
@@ -102,9 +103,7 @@ impl ClientHandle for WorldHandle {
     }
 }
 
-pub struct WorldLayer {
-
-}
+pub struct WorldLayer;
 
 impl WorldLayer {
     fn new() -> Self {
@@ -113,25 +112,40 @@ impl WorldLayer {
 }
 
 impl Layer for WorldLayer {
-    fn attach(&self) {
-        log!("WorldLayer attached");
-    }
     fn instantiate_camera(&self) -> Camera {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn update_camera(&self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
+    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
         let new_pos = store.get_store::<CameraPosition>().0;
         if new_pos != *camera.position() {
             camera.set_position(new_pos);
         }
     }
 
-    fn quit(&self) {
-        log!("WorldLayer detached");
-    }
-
-    fn event(&self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
+    fn event(&mut self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
         handles.iter_mut().any(|(_, h)| h.on_event(event))
     }
+}
+
+pub struct UILayer {
+    
+};
+
+impl UILayer {
+    fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Layer for UILayer {
+    fn instantiate_camera(&self) -> Camera {
+        Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
+    }
+
+    fn attach(&mut self, renderer: &mut Renderer) {
+        log_err!("UI layer attached")
+    }
+
+    fn is_overlay(&self) -> bool { true }
 }

@@ -210,12 +210,11 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         
         unsafe {
-            //gl::ClearColor(0.1, 0.1, 0.2, 1.0);                
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
@@ -225,7 +224,7 @@ impl Window {
             enable_blend_mode(true);
         }
 
-        context.on_update(client, store, delta_time);
+        context.on_render(client, store, delta_time);
 
         self.framebuffer.unbind();
         
@@ -262,10 +261,6 @@ impl Window {
         self.framebuffer_vao.unbind();
 
         post_processing_shader.unbind();
-
-        unsafe {
-            gl::Finish();
-        }
 
         self.glfw_window.swap_buffers();
     }
