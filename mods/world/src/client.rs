@@ -129,12 +129,14 @@ impl Layer for WorldLayer {
 }
 
 pub struct UILayer {
-    
-};
+
+}
 
 impl UILayer {
     fn new() -> Self {
-        Self {}
+        Self {
+             
+        }
     }
 }
 
