@@ -97,7 +97,7 @@ impl Player {
     pub(crate) fn client_position_update(id: &EntityId, engine: &mut Engine, _client_id: &ClientId, (position, teleporting): (Vector2<f32>, bool)) {
         let player = &mut *engine.mut_entity(id);
         player.mut_module::<Player>().unwrap().position = position;
-        player.mut_module::<Messenger>().unwrap().call_client_fn(PlayerHandle::receive_position, (position, teleporting), SendMode::Safe);
+        player.mut_module::<Messenger>().unwrap().call_client_fn(PlayerHandle::receive_position, (position, teleporting), SendMode::Safe );
     }
 }
 
