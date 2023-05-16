@@ -122,10 +122,6 @@ impl Layer for WorldLayer {
             camera.set_position(new_pos);
         }
     }
-
-    fn event(&mut self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool {
-        handles.iter_mut().any(|(_, h)| h.on_event(event))
-    }
 }
 
 pub struct UILayer {

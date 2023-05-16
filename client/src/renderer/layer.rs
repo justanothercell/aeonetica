@@ -16,7 +16,7 @@ pub trait Layer {
     fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, delta_time: f64) {}
     fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, delta_time: f64) {}
 
-    fn event(&mut self, handles: &mut IdMap<ClientHandleBox>, event: &Event) -> bool { false } // run on window event
+    fn event(&mut self, event: &Event) -> bool { false } // run on window event
 
     fn active(&self) -> bool { true }
     fn name(&self) -> &'static str { "Layer" }

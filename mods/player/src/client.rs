@@ -164,7 +164,7 @@ impl ClientHandle for PlayerHandle {
         let _ = renderer.draw(quad);
     }
 
-    fn on_event(&mut self, event: &Event) -> bool {
+    fn event(&mut self, event: &Event) -> bool {
         if !self.is_controlling { return false }
         match event {
             Event::KeyPressed(KeyCode::W) => {

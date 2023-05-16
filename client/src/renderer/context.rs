@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -138,13 +139,12 @@ impl RenderContext {
     }
 
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {
-        let handles = client.handles();
-        for (layer_box, _id) in self.layer_stack.layer_stack.iter()
+        for (layer_box, id) in self.layer_stack.layer_stack.iter()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active()).rev() {
-            let handled = layer_box.borrow_mut().layer.event(handles, &event);
-            if handled {
-                return;
-            }
+            if layer_box.borrow_mut().layer.event(&event) { return; }
+            if client.handles.iter_mut()
+                .filter(|(_, h_box)| h_box.handle.owning_layer() == *id)
+                .any(|(_, h_box)| h_box.handle.event(&event)) { return; }
         }
 
         log!("Unhandled Event: {event:?}");
@@ -163,7 +163,7 @@ impl RenderContext {
     }
 
     pub fn unset_post_processing_layer(&mut self) {
-        self.post_processing_layer.as_ref().map(|layer|layer.detach());
+        if let Some(layer) = self.post_processing_layer.as_ref() { layer.detach() }
         self.post_processing_layer = None;
     }
 
