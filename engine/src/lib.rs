@@ -119,8 +119,8 @@ pub fn pack_log(origin: String, message: String) {
     origin.hash(&mut hasher);
     let hash_value = hasher.finish();
     let p_hash = *PACK_LOG_HASH.lock().unwrap();
-    let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
     if p_hash == hash_value {
+        let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
         *log_count += 1;
         print!("\r[and {} more]", log_count);
         let _ = io::stdout().flush();
@@ -132,9 +132,12 @@ pub fn pack_log(origin: String, message: String) {
 }
 
 pub fn stop_pack_log() {
-    if *PACK_LOG_HASH.lock().unwrap() != 0 {
-        *PACK_LOG_HASH.lock().unwrap() = 0;
-        if *PACK_LOG_COUNTER.lock().unwrap() > 0 { println!() }
+    let mut p_hash = PACK_LOG_HASH.lock().unwrap();
+    let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
+    if *p_hash != 0 {
+        *p_hash = 0;
+        if *log_count > 0 { println!() }
+        *log_count = 0;
     }
 }
 
