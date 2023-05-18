@@ -1,7 +1,6 @@
 use aeonetica_engine::math::camera::Camera;
-use aeonetica_engine::util::id_map::IdMap;
 
-use crate::{client_runtime::ClientHandleBox, data_store::DataStore};
+use crate::data_store::DataStore;
 use crate::renderer::Renderer;
 use crate::renderer::window::events::Event;
 

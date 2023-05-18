@@ -3,7 +3,7 @@ use std::{rc::Rc, cell::Cell};
 use crate::{uniform_str, renderer::{shader::UniformStr, RenderError}};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}, log};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}};
 
 pub type BatchID = u32;
 
@@ -74,8 +74,6 @@ impl Batch {
         let indices = Vec::with_capacity(Self::MAX_BATCH_INDEX_COUNT as usize);
         let offsets = Vec::with_capacity(Self::MAX_BATCH_VERTEX_COUNT as usize);
 
-        log!("creating batch {}", id);
-
         Ok(Self {
             id,
 
@@ -95,7 +93,6 @@ impl Batch {
     }
 
     pub fn delete(self) {
-        log!("deleting batch {}", self.id);
         self.vertex_array.delete();
     }
 

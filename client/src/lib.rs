@@ -1,5 +1,6 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
+#![feature(local_key_cell_methods)]
 
 use std::ops::{Deref, DerefMut};
 use aeonetica_engine::libloading::Library;

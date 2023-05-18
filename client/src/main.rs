@@ -1,6 +1,7 @@
 #![feature(let_chains)]
 #![feature(result_flattening)]
 #![feature(addr_parse_ascii)]
+#![feature(local_key_cell_methods)]
 
 use std::net::SocketAddr;
 
