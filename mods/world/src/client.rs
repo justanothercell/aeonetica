@@ -1,4 +1,5 @@
 use std::{rc::Rc};
+use std::collections::HashMap;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
@@ -6,6 +7,12 @@ use aeonetica_engine::util::nullable::Nullable;
 
 use crate::common::{Chunk, CHUNK_SIZE};
 use crate::server::world::World;
+
+#[allow(clippy::large_enum_variant)]
+pub enum ClientChunk {
+    Requested,
+    Chunk(Chunk, Vec<SpriteQuad>)
+}
 
 #[derive(PartialEq)]
 pub struct CameraPosition(Vector2<f32>);
@@ -40,7 +47,7 @@ impl ClientMod for WorldModClient {
 }
 
 pub(crate) struct WorldHandle {
-    chunks: Vec<Chunk>,
+    chunks: HashMap<Vector2<i32>, ClientChunk>,
     chunk_queue: Vec<Chunk>,
     tile_sprites: SpriteSheet,
     shader: Rc<shader::Program>,
@@ -49,7 +56,7 @@ pub(crate) struct WorldHandle {
 impl WorldHandle {
     fn new() -> Self {
         Self {
-            chunks: vec![],
+            chunks: Default::default(),
             chunk_queue: vec![],
             tile_sprites: SpriteSheet::from_texture(
                 Texture::from_bytes(include_bytes!("../assets/include/stone.png")).unwrap(),
@@ -59,9 +66,9 @@ impl WorldHandle {
         }
     }
 
-    pub(crate) fn receive_chunk_data(&mut self, data: Chunk) {
-        log!(DEBUG, "receive_chunk_data() called");
-        self.chunk_queue.push(data);
+    pub(crate) fn receive_chunk_data(&mut self, chunk: Chunk) {
+        log!(DEBUG, "receive_chunk_data {:?}", chunk.chunk_pos);
+        self.chunk_queue.push(chunk);
     }
 }
 
@@ -72,15 +79,38 @@ impl ClientEntity for WorldHandle {
 impl ClientHandle for WorldHandle {
     fn start(&mut self, messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
         messenger.register_receiver(Self::receive_chunk_data);
-        messenger.call_server_fn(World::request_world_chunk, (0, 0).into(), SendMode::Safe);
     }
 
     fn owning_layer(&self) -> TypeId {
         type_to_id::<WorldLayer>()
     }
 
-    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, _store: &mut DataStore, _delta_time: f64) {
-        self.chunk_queue.drain(..).for_each(|chunk| {
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
+        let center_chunk: Vector2<_> = store.get_store::<CameraPosition>().0.round_i32() / Vector2::from((CHUNK_SIZE as i32, CHUNK_SIZE as i32));
+        for x in (center_chunk.x-1)..(center_chunk.x+1) {
+            for y in (center_chunk.y-1)..(center_chunk.y+1) {
+                let k = Vector2::from((x, y));
+                self.chunks.entry(k).or_insert_with(|| {
+                    messenger.call_server_fn(World::request_world_chunk, k, SendMode::Safe);
+                    ClientChunk::Requested
+                });
+            }
+        }
+
+        self.chunks.retain(|k, v|{
+            if (*k - center_chunk).mag_sq() > 2 {
+                log!("unloading chunk {:?}", k);
+                if let ClientChunk::Chunk(_, quads) = v {
+                    for quad in quads {
+                        renderer.remove(quad);
+                    }
+                }
+                false
+            } else { true }
+        });
+
+        for chunk in self.chunk_queue.drain(..) {
+            let mut quads = vec![];
             log!("loading chunk {:?}", chunk.chunk_pos);
 
             for (i, tile) in chunk.tiles().iter().enumerate() {
@@ -98,11 +128,11 @@ impl ClientHandle for WorldHandle {
                     self.shader.clone()
                 );
                 renderer.add(&mut quad);
+                quads.push(quad);
             }
-
-            
-            self.chunks.push(chunk);
-        });
+            self.chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
+            log!(DEBUG, "loaded chunks: {}", self.chunks.len());
+        }
     }
 }
 

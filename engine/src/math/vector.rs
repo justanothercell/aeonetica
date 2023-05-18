@@ -10,7 +10,7 @@ pub trait IntoVector<T> {
     fn into_vector(self) -> Self::Vector;
 }
 
-#[derive(SerBin, DeBin, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(SerBin, DeBin, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T
@@ -68,6 +68,10 @@ impl Vector2<u32> {
 }
 
 impl Vector2<f32> {
+    pub fn round_i32(&self) -> Vector2<i32> {
+        Vector2::new(self.x.round() as i32, self.y.round() as i32)
+    }
+
     pub fn round(&self) -> Vector2<f32> {
         Vector2::new(self.x.round(), self.y.round())
     }
