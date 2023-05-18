@@ -1,9 +1,11 @@
 use std::{rc::Rc};
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
+use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::nullable::Nullable;
 
 use crate::common::{Chunk, CHUNK_SIZE};
+use crate::server::world::World;
 
 #[derive(PartialEq)]
 pub struct CameraPosition(Vector2<f32>);
@@ -70,6 +72,7 @@ impl ClientEntity for WorldHandle {
 impl ClientHandle for WorldHandle {
     fn start(&mut self, messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
         messenger.register_receiver(Self::receive_chunk_data);
+        messenger.call_server_fn(World::request_world_chunk, (0, 0).into(), SendMode::Safe);
     }
 
     fn owning_layer(&self) -> TypeId {
@@ -141,7 +144,7 @@ impl Layer for UILayer {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn attach(&mut self, renderer: &mut Renderer) {
+    fn attach(&mut self, _renderer: &mut Renderer) {
         log!(ERROR, "UI layer attached")
     }
 

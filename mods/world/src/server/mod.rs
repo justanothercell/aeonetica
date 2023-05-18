@@ -1,4 +1,4 @@
-mod world;
+pub(crate) mod world;
 mod gen;
 
 use aeonetica_server::ServerMod;

@@ -94,15 +94,12 @@ pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s
 #[macro_export]
 macro_rules! log_format {
     ($color:ident, $level:literal, $($arg:tt)*) => {
-        $crate::colored::Colorize::$color(
-            format!(
-                "{}[{}-{}][{}:{}]: {}",
-                $crate::chrono::Local::now().format("[%H:%M:%S]"),
-                env!("CARGO_PKG_NAME"),
-                $level,
-                file!(), line!(),
-                format!($($arg)*)
-            ).as_str()
+        format!(
+            "\x1b[38;5;245m{}[{}@{}:{}]: {}",
+            $crate::chrono::Local::now().format("[%H:%M:%S]"),
+            env!("CARGO_PKG_NAME"),
+            file!(), line!(),
+            $crate::colored::Colorize::$color(format!($($arg)*).as_str())
         )
     }
 }
