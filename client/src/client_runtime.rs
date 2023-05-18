@@ -11,7 +11,7 @@ use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::nanoserde::SerBin;
-use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
+use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
@@ -128,7 +128,7 @@ impl ClientRuntime {
                 });
                 let _ = timeout_socket.send(data.as_slice()).map_err(|e|{
                     let e: Box<Error> = e.into();
-                    log_err!("{e}");
+                    log!(ERROR, "{e}");
                     exit(1);
                 });
                 std::thread::sleep(Duration::from_millis((MAX_CLIENT_TIMEOUT - 1000) as u64))
@@ -209,13 +209,13 @@ impl ClientRuntime {
                             mod_list_filler.replace(local_mod_list);
                         }
                         NetResult::Err(msg) => {
-                            log_err!("server did not accept connection: {msg}");
+                            log!(ERROR, "server did not accept connection: {msg}");
                             exit(1);
                         }
                     }
                 },
                 e => {
-                    log_err!("invalid response: {e:?}");
+                    log!(ERROR, "invalid response: {e:?}");
                     exit(1);
                 }
             }
@@ -253,7 +253,7 @@ impl ClientRuntime {
                             lmb.data.splice(i as usize..(i as usize+data.len()), data.to_owned());
                         },
                         e => {
-                            log_err!("invalid response: {e:?}");
+                            log!(ERROR, "invalid response: {e:?}");
                             exit(1);
                         }
                     }
@@ -319,7 +319,7 @@ impl ClientRuntime {
     fn gracefully_abort<E: Into<Box<Error>>>(&self, e: E) -> !{
         let err = e.into();
         err.log();
-        log_err!("gracefully aborted client");
+        log!(ERROR, "gracefully aborted client");
         exit(1);
     }
 }

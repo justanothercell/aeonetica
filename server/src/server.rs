@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use aeonetica_engine::{log, log_err};
+use aeonetica_engine::{log};
 use crate::ecs::Engine;
 use crate::server_runtime::ServerRuntime;
 
@@ -22,7 +22,7 @@ pub fn run(ip: &str) {
         let t = Instant::now();
 
         let _ = engine.handle_queued().map_err(|e| {
-            log_err!("{e}")
+            log!(ERROR, "{e}")
         });
 
         engine.timeout_inactive();

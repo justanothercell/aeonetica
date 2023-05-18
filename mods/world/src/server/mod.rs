@@ -3,7 +3,7 @@ mod gen;
 
 use aeonetica_server::ServerMod;
 
-use aeonetica_engine::{log, log_warn};
+use aeonetica_engine::{log};
 use aeonetica_server::ecs::Engine;
 use crate::server::world::World;
 
@@ -26,7 +26,7 @@ impl ServerMod for WorldModServer {
             log!("found seed {}", self.seed);
         } else {
             self.seed = rand::random();
-            log_warn!("No seed found. Generated {}", self.seed);
+            log!(DEBUG, "No seed found. Generated {}", self.seed);
         }
     }
 

@@ -4,7 +4,7 @@
 
 use std::net::SocketAddr;
 
-use aeonetica_engine::{log, Id, log_err};
+use aeonetica_engine::{log, Id};
 use client::{client::run, data_store::DataStore, client_runtime::ClientRuntime};
 
 mod defaults {
@@ -40,7 +40,7 @@ fn main() {
             log!("using default arguments:\n\tclient ip: {client_ip}\tserver ip: {server_ip}");
         }
         _ => {
-            log_err!("unexpected arguments: {args:?}; use `--help` for help");
+            log!(ERROR, "unexpected arguments: {args:?}; use `--help` for help");
             std::process::exit(2);
         }
     }

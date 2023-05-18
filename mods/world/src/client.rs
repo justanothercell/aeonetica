@@ -58,7 +58,7 @@ impl WorldHandle {
     }
 
     pub(crate) fn receive_chunk_data(&mut self, data: Chunk) {
-        log_warn!("receive_chunk_data() called");
+        log!(DEBUG, "receive_chunk_data() called");
         self.chunk_queue.push(data);
     }
 }
@@ -142,7 +142,7 @@ impl Layer for UILayer {
     }
 
     fn attach(&mut self, renderer: &mut Renderer) {
-        log_err!("UI layer attached")
+        log!(ERROR, "UI layer attached")
     }
 
     fn is_overlay(&self) -> bool { true }

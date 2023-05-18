@@ -8,7 +8,7 @@ use std::thread;
 use std::time::Instant;
 use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::NetworkError;
-use aeonetica_engine::{Id, log, log_err};
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::ClientPacket;
@@ -49,7 +49,7 @@ impl NetworkServer {
                     Ok((len, src)) => {
                         match DeBin::deserialize_bin(&buf[..len]) {
                             Ok(packet) => recv.lock().unwrap().push((src, packet)),
-                            Err(e) => log_err!("invalid client packet from {src}: {e}")
+                            Err(e) => log!(ERROR, "invalid client packet from {src}: {e}")
                         }
                     },
                     Err(_e) => {}
@@ -74,7 +74,7 @@ impl NetworkServer {
                             stream.read_exact(&mut buffer[..])?;
                             match DeBin::deserialize_bin(&buffer[..]) {
                                 Ok(packet) => recv_udp_inner.lock().unwrap().push((addr, packet)),
-                                Err(e) => log_err!("invalid client packet from {addr}: {e}")
+                                Err(e) => log!(ERROR, "invalid client packet from {addr}: {e}")
                             }
                             Ok::<_, std::io::Error>(())
                         })();

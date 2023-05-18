@@ -96,11 +96,11 @@ macro_rules! log_format {
     ($color:ident, $level:literal, $($arg:tt)*) => {
         $crate::colored::Colorize::$color(
             format!(
-                "[@{}]\n{} [{} - {}]: {}",
-                format!("{}:{}:{}",file!(), line!(), column!()),
-                $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                "{}[{}-{}][{}:{}]: {}",
+                $crate::chrono::Local::now().format("[%H:%M:%S]"),
                 env!("CARGO_PKG_NAME"),
                 $level,
+                file!(), line!(),
                 format!($($arg)*)
             ).as_str()
         )
@@ -112,39 +112,18 @@ macro_rules! log {
     () => {
         println!()
     };
-    ($($arg:tt)*) => {
-        println!("{} [{} - LOG]: {}", $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
+    (DEBUG, $($args:tt)*) => {
+        println!("{}", $crate::log_format!(cyan, "DEBUG", $($args)*))
     };
-}
-
-#[macro_export]
-macro_rules! log_raw {
-    () => {
-        println!()
+    (WARN, $($args:tt)*) => {
+        println!("{}", $crate::log_format!(bright_yellow, "LOG", $($args)*))
     };
-    ($($arg:tt)*) => {
-        println!("{}", format!($($arg)*))
+    (ERROR, $($args:tt)*) => {
+        println!("{}", $crate::log_format!(red, "ERROR", $($args)*))
     };
-}
-
-#[macro_export]
-macro_rules! log_err {
-    () => {
-        eprintln!()
+    ($($args:tt)*) => {
+        println!("{}", $crate::log_format!(white, "LOG", $($args)*))
     };
-    ($($arg:tt)*) => {
-        eprintln!("{}", $crate::log_format!(red, "ERR", $($arg)*))
-    };
-}
-
-#[macro_export]
-macro_rules! log_warn {
-    () => {
-        println!()
-    };
-    ($($arg:tt)*) => {
-        eprintln!("{}", $crate::log_format!(bright_yellow, "WARN", $($arg)*))
-    }
 }
 
 #[macro_export]

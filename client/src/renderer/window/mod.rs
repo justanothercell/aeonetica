@@ -3,7 +3,7 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err, math::vector::*, error::*};
+use aeonetica_engine::{log, math::vector::*, error::*};
 use crate::{renderer::{context::RenderContext, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
@@ -115,7 +115,7 @@ impl Window {
 
                 match load_window_icons() {
                     Ok(icons) => window.set_icon_from_pixels(icons),
-                    Err(err) => log_err!("error loading window icon: {}", err.to_string())
+                    Err(err) => log!(ERROR, "error loading window icon: {}", err.to_string())
                 }
                 
                 let mut context_provider = OpenGlContextProvider::new();
