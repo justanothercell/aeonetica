@@ -147,7 +147,7 @@ impl RenderContext {
                 .any(|(_, h_box)| h_box.handle.event(&event)) { return; }
         }
 
-        log!("Unhandled Event: {event:?}");
+        log!(PACK, "Unhandled Event: {event:?}");
     }
 
     pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {

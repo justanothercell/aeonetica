@@ -19,6 +19,7 @@ mod tests;
 use std::fmt::{Debug, Display, Formatter};
 #[allow(deprecated)]
 use std::hash::{Hasher, SipHasher};
+use std::sync::Mutex;
 pub use nanoserde;
 pub use libloading;
 pub use chrono;
@@ -26,6 +27,7 @@ use nanoserde::{DeBin, DeRon, SerBin, SerRon};
 pub use sha2;
 use uuid::Uuid;
 pub extern crate colored;
+use lazy_static::lazy_static;
 
 pub mod networking;
 pub mod error;
@@ -104,23 +106,62 @@ macro_rules! log_format {
     }
 }
 
+lazy_static! {
+    static ref PACK_LOG_COUNTER: Mutex<u32> = Mutex::new(0);
+    static ref PACK_LOG_HASH: Mutex<u64> = Mutex::new(0);
+}
+
+pub fn pack_log(origin: String, message: String) {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::Hash;
+    use std::io::{self, Write};
+    let mut hasher = DefaultHasher::new();
+    origin.hash(&mut hasher);
+    let hash_value = hasher.finish();
+    let p_hash = *PACK_LOG_HASH.lock().unwrap();
+    let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
+    if p_hash == hash_value {
+        *log_count += 1;
+        print!("\r[and {} more]", log_count);
+        let _ = io::stdout().flush();
+    } else {
+        stop_pack_log();
+        *PACK_LOG_HASH.lock().unwrap() = hash_value;
+        println!("{message}")
+    }
+}
+
+pub fn stop_pack_log() {
+    if *PACK_LOG_HASH.lock().unwrap() != 0 {
+        *PACK_LOG_HASH.lock().unwrap() = 0;
+        if *PACK_LOG_COUNTER.lock().unwrap() > 0 { println!() }
+    }
+}
+
 #[macro_export]
 macro_rules! log {
     () => {
         println!()
     };
-    (DEBUG, $($args:tt)*) => {
+    (PACK, $($args:tt)*) => {{
+        $crate::pack_log(format!("{}:{}", file!(), line!()), $crate::log_format!(cyan, "DEBUG", $($args)*))
+    }};
+    (DEBUG, $($args:tt)*) => {{
+        $crate::stop_pack_log();
         println!("{}", $crate::log_format!(cyan, "DEBUG", $($args)*))
-    };
-    (WARN, $($args:tt)*) => {
+    }};
+    (WARN, $($args:tt)*) => {{
+        $crate::stop_pack_log();
         println!("{}", $crate::log_format!(bright_yellow, "LOG", $($args)*))
-    };
-    (ERROR, $($args:tt)*) => {
+    }};
+    (ERROR, $($args:tt)*) => {{
+        $crate::stop_pack_log();
         println!("{}", $crate::log_format!(red, "ERROR", $($args)*))
-    };
-    ($($args:tt)*) => {
+    }};
+    ($($args:tt)*) => {{
+        $crate::stop_pack_log();
         println!("{}", $crate::log_format!(white, "LOG", $($args)*))
-    };
+    }};
 }
 
 #[macro_export]
