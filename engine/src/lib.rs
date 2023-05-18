@@ -144,7 +144,7 @@ macro_rules! log {
         println!()
     };
     (PACK, $($args:tt)*) => {{
-        $crate::pack_log(format!("{}:{}", file!(), line!()), $crate::log_format!(cyan, "DEBUG", $($args)*))
+        $crate::pack_log(format!("{}:{}", file!(), line!()), $crate::log_format!(white, "PACK", $($args)*))
     }};
     (DEBUG, $($args:tt)*) => {{
         $crate::stop_pack_log();
