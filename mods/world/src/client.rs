@@ -87,8 +87,8 @@ impl ClientHandle for WorldHandle {
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
         let center_chunk: Vector2<_> = store.get_store::<CameraPosition>().0.round_i32() / Vector2::from((CHUNK_SIZE as i32, CHUNK_SIZE as i32));
-        for x in (center_chunk.x-1)..(center_chunk.x+1) {
-            for y in (center_chunk.y-1)..(center_chunk.y+1) {
+        for x in (center_chunk.x-1)..=(center_chunk.x+1) {
+            for y in (center_chunk.y-1)..=(center_chunk.y+1) {
                 let k = Vector2::from((x, y));
                 self.chunks.entry(k).or_insert_with(|| {
                     messenger.call_server_fn(World::request_world_chunk, k, SendMode::Safe);
