@@ -1,4 +1,0 @@
-enum Tile {
-    Air,
-    StoneBrick
-}

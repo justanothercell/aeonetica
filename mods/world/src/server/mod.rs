@@ -1,10 +1,9 @@
 pub(crate) mod world;
 pub(crate) mod gen;
-mod tiles;
 
 use aeonetica_server::ServerMod;
 
-use aeonetica_engine::{log};
+use aeonetica_engine::log;
 use aeonetica_server::ecs::Engine;
 use crate::server::world::World;
 

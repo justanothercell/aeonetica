@@ -1,8 +1,7 @@
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::nanoserde;
 use aeonetica_engine::math::vector::Vector2;
-
-pub type Tile = u16;
+use crate::tiles::Tile;
 
 pub const CHUNK_SIZE: usize = 16;
 
@@ -24,7 +23,7 @@ impl Chunk {
         Self {
             population: Population::Uninit,
             chunk_pos,
-            tiles: [0; CHUNK_SIZE*CHUNK_SIZE]
+            tiles: [Tile::Air; CHUNK_SIZE*CHUNK_SIZE]
         }
     }
 

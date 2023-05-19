@@ -2,6 +2,7 @@ use aeonetica_engine::register;
 
 pub mod client;
 mod server;
-mod common;
+pub mod common;
+pub mod tiles;
 
 register!(client::WorldModClient{}, server::WorldModServer::new());

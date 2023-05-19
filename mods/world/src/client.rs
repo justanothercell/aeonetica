@@ -114,7 +114,8 @@ impl ClientHandle for WorldHandle {
             log!("loading chunk {:?}", chunk.chunk_pos);
 
             for (i, tile) in chunk.tiles().iter().enumerate() {
-                if *tile == 0 {
+                let index = tile.sprite_sheet_index();
+                if index == 0 {
                     continue;
                 }
 
@@ -124,7 +125,7 @@ impl ClientHandle for WorldHandle {
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
                     0, 
-                    self.tile_sprites.get(*tile as u32 - 1).unwrap(), 
+                    self.tile_sprites.get(index as u32 - 1).unwrap(),
                     self.shader.clone()
                 );
                 renderer.add(&mut quad);
