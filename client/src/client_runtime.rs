@@ -7,11 +7,11 @@ use std::process::exit;
 use std::thread;
 use std::rc::Rc;
 use std::time::Duration;
-use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::nanoserde::SerBin;
-use aeonetica_engine::{ENGINE_VERSION, Id, log, log_err, MAX_CLIENT_TIMEOUT};
+use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
@@ -94,14 +94,14 @@ impl ClientHandleBox {
 
     #[inline(always)]
     pub fn on_event(&mut self, event: &Event) -> bool {
-        self.handle.on_event(event)
+        self.handle.event(event)
     }
 }
 
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;
 
 impl ClientRuntime {
-    pub fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> Result<Self, Error>{
+    pub fn create(client_id: Id, addr: &str, server_addr: &str, store: &mut DataStore) -> ErrorResult<Self>{
         let nc = NetworkClient::start(addr, server_addr).map_err(|e| {
             e.log_exit();
         }).unwrap();
@@ -127,8 +127,8 @@ impl ClientRuntime {
                     message: ClientMessage::KeepAlive,
                 });
                 let _ = timeout_socket.send(data.as_slice()).map_err(|e|{
-                    let e: Error = e.into();
-                    log_err!("{e}");
+                    let e: Box<Error> = e.into();
+                    log!(ERROR, "{e}");
                     exit(1);
                 });
                 std::thread::sleep(Duration::from_millis((MAX_CLIENT_TIMEOUT - 1000) as u64))
@@ -147,13 +147,13 @@ impl ClientRuntime {
         &mut self.handles
     }
 
-    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> Result<(), Error> {
+    pub(crate) fn request_response<F: Fn(&mut ClientRuntime, &ServerPacket) + 'static>(&mut self, packet: &ClientPacket, handler: F, mode: SendMode) -> ErrorResult<()> {
         self.awaiting_replies.insert(packet.conv_id, Box::new(handler));
         self.nc.borrow().send(packet, mode)?;
         Ok(())
     }
 
-    fn register(&mut self) -> Result<LoadingModList, Error>{
+    fn register(&mut self) -> ErrorResult<LoadingModList>{
         let mod_list = Rc::new(RefCell::new(HashMap::new()));
         let mod_list_filler = mod_list.clone();
         self.request_response(&ClientPacket {
@@ -209,13 +209,13 @@ impl ClientRuntime {
                             mod_list_filler.replace(local_mod_list);
                         }
                         NetResult::Err(msg) => {
-                            log_err!("server did not accept connection: {msg}");
+                            log!(ERROR, "server did not accept connection: {msg}");
                             exit(1);
                         }
                     }
                 },
                 e => {
-                    log_err!("invalid response: {e:?}");
+                    log!(ERROR, "invalid response: {e:?}");
                     exit(1);
                 }
             }
@@ -229,7 +229,7 @@ impl ClientRuntime {
         Ok(mod_list)
     }
 
-    fn download_mods(&mut self, mod_list: &LoadingModList) -> Result<(), Error>{
+    fn download_mods(&mut self, mod_list: &LoadingModList) -> ErrorResult<()>{
         log!("downloading {} mod(s)", mod_list.borrow().values().filter(|m| !m.borrow().available).count());
         let mut borrowed_ml = mod_list.borrow_mut();
         for (name_path, lm) in borrowed_ml.iter_mut() {
@@ -253,7 +253,7 @@ impl ClientRuntime {
                             lmb.data.splice(i as usize..(i as usize+data.len()), data.to_owned());
                         },
                         e => {
-                            log_err!("invalid response: {e:?}");
+                            log!(ERROR, "invalid response: {e:?}");
                             exit(1);
                         }
                     }
@@ -301,7 +301,7 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn enable_mods(&mut self, mod_list: &LoadingModList, store: &mut DataStore) -> Result<(), Error>{
+    fn enable_mods(&mut self, mod_list: &LoadingModList, store: &mut DataStore) -> ErrorResult<()>{
         for (name_path, lm) in mod_list.borrow_mut().iter_mut() {
             log!("loading mod {} ...", name_path);
             let mut loaded_mod = load_mod(name_path)?;
@@ -316,15 +316,15 @@ impl ClientRuntime {
         Ok(())
     }
 
-    fn gracefully_abort<E: Into<Error>>(&self, e: E) -> !{
+    fn gracefully_abort<E: Into<Box<Error>>>(&self, e: E) -> !{
         let err = e.into();
         err.log();
-        log_err!("gracefully aborted client");
+        log!(ERROR, "gracefully aborted client");
         exit(1);
     }
 }
 
-pub(crate) fn load_mod(name_path: &str) -> Result<ClientModBox, Error> {
+pub(crate) fn load_mod(name_path: &str) -> ErrorResult<ClientModBox> {
     let (path, name) = name_path.split_once(':').unwrap();
     let client_lib = unsafe { Library::new(client_lib(path, name))
         .map_err(|e| Error::new(ModError(format!("could not load mod: {e}")), Fatality::FATAL, false))? };

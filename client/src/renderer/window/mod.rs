@@ -3,7 +3,7 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, log_err, math::vector::*, error::*};
+use aeonetica_engine::{log, math::vector::*, error::*};
 use crate::{renderer::{context::RenderContext, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
@@ -115,7 +115,7 @@ impl Window {
 
                 match load_window_icons() {
                     Ok(icons) => window.set_icon_from_pixels(icons),
-                    Err(err) => log_err!("error loading window icon: {}", err.to_string())
+                    Err(err) => log!(ERROR, "error loading window icon: {}", err.to_string())
                 }
                 
                 let mut context_provider = OpenGlContextProvider::new();
@@ -210,12 +210,11 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
         
         unsafe {
-            //gl::ClearColor(0.1, 0.1, 0.2, 1.0);                
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
@@ -225,7 +224,7 @@ impl Window {
             enable_blend_mode(true);
         }
 
-        context.on_update(client, store, delta_time);
+        context.on_render(client, store, delta_time);
 
         self.framebuffer.unbind();
         
@@ -262,10 +261,6 @@ impl Window {
         self.framebuffer_vao.unbind();
 
         post_processing_shader.unbind();
-
-        unsafe {
-            gl::Finish();
-        }
 
         self.glfw_window.swap_buffers();
     }

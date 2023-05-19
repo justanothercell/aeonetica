@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::net::SocketAddr;
 
-use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::NetworkError;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerInfo, ServerMessage, ServerPacket};
@@ -18,7 +18,7 @@ use crate::networking::ClientHandle;
 use crate::server_runtime::ServerRuntime;
 
 impl Engine {
-    pub(crate) fn handle_queued(&mut self) -> Result<(), Error> {
+    pub(crate) fn handle_queued(&mut self) -> ErrorResult<()> {
         let packets = self.runtime.ns.borrow_mut().queued_packets();
         packets.into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
         .reduce(|acc, r| {
@@ -51,7 +51,7 @@ impl Engine {
         }
     }
 
-    pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> Result<(), Error>{
+    pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> ErrorResult<()> {
         let mut_ref_ptr = &mut self.runtime as *mut ServerRuntime;
         if let Some(client) = self.runtime.ns.borrow_mut().clients.get_mut(&packet.client_id) {
             client.last_seen = std::time::Instant::now();
@@ -144,7 +144,7 @@ impl Engine {
     }
 
     #[allow(unused)]
-    pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F, mode: SendMode) -> Result<(), Error> {
+    pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F, mode: SendMode) -> ErrorResult<()> {
         match self.runtime.ns.borrow_mut().clients.get_mut(client_id) {
             Some(client) => {
                 client.awaiting_replies.insert(packet.conv_id, Box::new(handler));

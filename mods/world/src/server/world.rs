@@ -1,14 +1,14 @@
-use std::io::empty;
-use std::process::id;
-use aeonetica_engine::{EntityId, log};
+use aeonetica_engine::{ClientId, EntityId, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::math::vector::Vector2;
 use aeonetica_server::ecs::Engine;
+use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
 use crate::client::WorldHandle;
-use crate::common::{Chunk, CHUNK_SIZE, Tile};
+use crate::common::{Chunk, CHUNK_SIZE, Population};
+use crate::tiles::Tile;
 
 pub const WORLD: &str = "WORLD";
 
@@ -29,6 +29,7 @@ impl ChunkHolder {
 }
 
 pub struct World {
+    seed: u64,
     origin_ne: ChunkHolder,
     origin_se: ChunkHolder,
     origin_nw: ChunkHolder,
@@ -36,29 +37,29 @@ pub struct World {
 }
 
 impl World {
-    pub(crate) fn new_wold_entity(engine: &mut Engine) -> EntityId {
+    pub(crate) fn new_wold_entity(engine: &mut Engine, seed: u64) -> EntityId {
         let eid = engine.new_entity();
         engine.tag_entity(eid, WORLD);
-        let entity = engine.mut_entity(&eid).unwrap();
+        let entity: &mut Entity = &mut engine.mut_entity(&eid);
         entity.add_module(Messenger::new::<WorldHandle>());
+        entity.mut_module::<Messenger>().register_receiver(World::request_world_chunk);
 
         entity.add_module(ConnectionListener::new(
             |id, engine, client| {
                 log!("sent chunk whether they wanted or not: {client}");
                 let messenger: &mut Messenger = &mut engine.mut_module_of(id);
                 messenger.add_client(*client);
-                messenger.call_client_fn_for(WorldHandle::receive_chunk_data, &client, Chunk::new((0, 0).into()), SendMode::Safe);
             },
             |_id, _engine, client| {
                 log!("user said bye bye to world: {client}");
 
             }));
-
         entity.add_module(World {
+            seed,
             origin_ne: ChunkHolder::new((0, 0).into()),
             origin_se: ChunkHolder::new((0, -1).into()),
             origin_nw: ChunkHolder::new((-1, 0).into()),
-            origin_sw: ChunkHolder::new((-1, -1).into())
+            origin_sw: ChunkHolder::new((-1, -1).into()),
         });
         eid
     }
@@ -72,6 +73,15 @@ impl World {
     }
 
     pub fn mut_chunk_at(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
+        if let Population::Finished = self.mut_chunk_at_raw(chunk_pos).population {
+            self.mut_chunk_at_raw(chunk_pos)
+        } else {
+            self.populate(chunk_pos);
+            self.mut_chunk_at_raw(chunk_pos)
+        }
+    }
+
+    pub fn mut_chunk_at_raw(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
         let mut cp = chunk_pos;
         let mut chunk_ref = match (chunk_pos.x >= 0, chunk_pos.y >= 0) {
             (true, true) => {
@@ -95,8 +105,8 @@ impl World {
             cp.x -= 1;
             if chunk_ref.further_x.is_none() {
                 let mut pos = chunk_ref.chunk.chunk_pos;
-                if chunk_pos.x < 0 { pos.x = -(pos.x + 1) };
-                if chunk_pos.y < 0 { pos.y = -(pos.y + 1) };
+                if chunk_pos.x < 0 { pos.x -= 1 }
+                else { pos.x += 1 }
                 chunk_ref.further_x = Some(Box::new(ChunkHolder::new(pos)))
             }
             chunk_ref = chunk_ref.further_x.as_mut().unwrap();
@@ -105,8 +115,8 @@ impl World {
             cp.y -= 1;
             if chunk_ref.further_y.is_none() {
                 let mut pos = chunk_ref.chunk.chunk_pos;
-                if chunk_pos.x < 0 { pos.x = -(pos.x + 1) };
-                if chunk_pos.y < 0 { pos.y = -(pos.y + 1) };
+                if chunk_pos.y < 0 { pos.y -= 1 }
+                else { pos.y += 1 }
                 chunk_ref.further_y = Some(Box::new(ChunkHolder::new(pos)))
             }
             chunk_ref = chunk_ref.further_y.as_mut().unwrap();
@@ -117,10 +127,14 @@ impl World {
     pub fn get_chunk_at(&mut self, chunk_pos: Vector2<i32>) -> &Chunk {
         self.mut_chunk_at(chunk_pos)
     }
+
+    pub(crate) fn request_world_chunk(id: &EntityId, engine: &mut Engine, client: &ClientId, chunk_pos: Vector2<i32>) {
+        log!(DEBUG, "client requested chunk {:?}", chunk_pos);
+        let chunk = engine.mut_module_of::<Self>(id).get_chunk_at(chunk_pos).clone();
+        engine.mut_module_of::<Messenger>(id).call_client_fn_for(WorldHandle::receive_chunk_data, client, chunk, SendMode::Safe);
+    }
 }
 
 impl Module for World {
-    fn start(id: &EntityId, engine: &mut Engine) where Self: Sized {
 
-    }
 }

@@ -8,7 +8,7 @@ use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, TexturedQuad, Renderable, Quad, shader};
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::OpenGlContextProvider;
-use aeonetica_engine::{log, log_warn, TypeId};
+use aeonetica_engine::{log, TypeId};
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
@@ -164,7 +164,7 @@ impl ClientHandle for PlayerHandle {
         let _ = renderer.draw(quad);
     }
 
-    fn on_event(&mut self, event: &Event) -> bool {
+    fn event(&mut self, event: &Event) -> bool {
         if !self.is_controlling { return false }
         match event {
             Event::KeyPressed(KeyCode::W) => {

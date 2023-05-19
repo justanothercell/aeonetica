@@ -34,7 +34,7 @@ impl Fatality {
 pub trait ErrorValue: std::fmt::Debug + Display {}
 
 pub trait IntoError {
-    fn into_error(self) -> Error;
+    fn into_error(self) -> Box<Error>;
 }
 
 #[derive(Debug)]
@@ -48,14 +48,14 @@ pub struct Error {
 
 impl Error {
     #[track_caller]
-    pub fn new(value: impl ErrorValue + 'static, fatality: Fatality, trace: bool) -> Self {
-        Self {
+    pub fn new(value: impl ErrorValue + 'static, fatality: Fatality, trace: bool) -> Box<Self> {
+        Box::new(Self {
             value: Box::new(value),
             fatality,
             location: *std::panic::Location::caller(),
             trace: trace.then(|| Backtrace::force_capture()),
             additional: vec![]
-        }
+        })
     }
 
     #[track_caller]
@@ -103,13 +103,13 @@ impl Display for Error {
     }
 }
 
-impl<T: IntoError> From<T> for Error {
+impl<T: IntoError> From<T> for Box<Error> {
     fn from(value: T) -> Self {
         value.into_error()
     }
 }
 
-pub type ErrorResult<T> = Result<T, Error>;
+pub type ErrorResult<T> = Result<T, Box<Error>>;
 
 pub mod builtin {
     use super::*;
@@ -150,13 +150,13 @@ pub mod builtin {
     impl_error_value!{ModConflict}
 
     impl IntoError for nanoserde::DeRonErr {
-        fn into_error(self) -> Error {
+        fn into_error(self) -> Box<Error> {
             Error::new(DataError(self.to_string()), Fatality::DEFAULT, true)
         }
     }
 
     impl IntoError for std::io::Error {
-        fn into_error(self) -> Error {
+        fn into_error(self) -> Box<Error> {
             Error::new(IOError(self.to_string()), Fatality::DEFAULT, true)
         }
     }

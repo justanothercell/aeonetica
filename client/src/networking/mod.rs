@@ -2,9 +2,9 @@ use std::cell::RefCell;
 use std::io::{Read, Write};
 use std::net::{TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
-use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::NetworkError;
-use aeonetica_engine::{log_err};
+use aeonetica_engine::{log};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::{ClientPacket};
@@ -20,7 +20,7 @@ pub(crate) struct NetworkClient {
 }
 
 impl NetworkClient {
-    pub(crate) fn start(addr: &str, server: &str) -> Result<Self, Error>{
+    pub(crate) fn start(addr: &str, server: &str) -> ErrorResult<Self>{
         let tcp = TcpStream::connect(server)?;
         tcp.set_nonblocking(false).unwrap();
         let udp = UdpSocket::bind(addr)?;
@@ -36,10 +36,10 @@ impl NetworkClient {
                 match udp_sock.recv_from(&mut buf) {
                     Ok((len, src)) => match DeBin::deserialize_bin(&buf[..len]) {
                        Ok(packet) => recv_udp.lock().unwrap().push(packet),
-                       Err(e) => log_err!("invalid server packet from {src}: {e}")
+                       Err(e) => log!(ERROR, "invalid server packet from {src}: {e}")
                     },
                     Err(e) => {
-                        log_err!("couldn't recieve a datagram: {}", e);
+                        log!(ERROR, "couldn't recieve a datagram: {}", e);
                     }
                 }
             }
@@ -53,7 +53,7 @@ impl NetworkClient {
                 tcp_sock.read_exact(&mut buffer[..]).unwrap();
                 match DeBin::deserialize_bin(&buffer[..]) {
                     Ok(packet) => recv_tcp.lock().unwrap().push(packet),
-                    Err(e) => log_err!("invalid server packet: {e}")
+                    Err(e) => log!(ERROR, "invalid server packet: {e}")
                 }
             }
         });
@@ -70,7 +70,7 @@ impl NetworkClient {
         packets
     }
 
-    pub(crate) fn send(&self, packet: &ClientPacket, mode: SendMode) -> Result<(), Error>{
+    pub(crate) fn send(&self, packet: &ClientPacket, mode: SendMode) -> ErrorResult<()> {
         let data = SerBin::serialize_bin(packet);
         match mode {
             SendMode::Quick => {
@@ -79,18 +79,18 @@ impl NetworkClient {
                 }
                 let sock = self.udp.try_clone()?;
                 std::thread::spawn(move || sock.send(&data[..]).map_err(|e| {
-                    let e: Error = e.into();
+                    let e: Box<Error> = e.into();
                     e.log();
                 }));
             }
             SendMode::Safe => {
                 let mut tcp = self.tcp.borrow_mut();
                 let _ = tcp.write_all(&(data.len() as u32).to_le_bytes()).map_err(|e| {
-                    let e: Error = e.into();
+                    let e: Box<Error> = e.into();
                     e.log();
                 });
                 let _ = tcp.write_all(&data[..]).map_err(|e| {
-                    let e: Error = e.into();
+                    let e: Box<Error> = e.into();
                     e.log();
                 });
             }

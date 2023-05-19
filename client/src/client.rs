@@ -35,10 +35,10 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
         window.poll_events(&mut client, &mut context);
         
         let _ = client.handle_queued(store, &mut context).map_err(|e| {
-            log_err!("{e}")
+            log!(ERROR, "{e}")
         });
         
-        window.render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
+        window.on_render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
         
         delta_time = t.elapsed().as_nanos() as usize;
         time += delta_time;
@@ -46,7 +46,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
         frames += 1;
 
         if time - last_full_sec >= FULL_SEC {
-            log!("fps: {}", frames);
+            log!(PACK, "fps: {}", frames);
             last_full_sec = time;
             frames = 0;
         }

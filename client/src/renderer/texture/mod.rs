@@ -29,7 +29,7 @@ pub enum ImageError {
 }
 
 impl IntoError for ImageError {
-    fn into_error(self) -> Error {
+    fn into_error(self) -> Box<Error> {
         Error::new(self, Fatality::DEFAULT, true)
     }
 }

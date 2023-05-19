@@ -5,7 +5,7 @@ use std::io::Read;
 use std::rc::Rc;
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
-use aeonetica_engine::{log, nanoserde, log_warn};
+use aeonetica_engine::{log, nanoserde};
 use aeonetica_engine::error::*;
 use aeonetica_engine::nanoserde::{DeBin, DeRon, SerBin, SerRon};
 use aeonetica_engine::util::unzip_archive;
@@ -57,7 +57,7 @@ pub struct ModProfile {
 }
 
 impl ServerRuntime {
-    pub(crate) fn create(addr: &str) -> Result<ServerRuntime, Error> {
+    pub(crate) fn create(addr: &str) -> ErrorResult<ServerRuntime> {
         let mut data = String::new();
         File::open("mods/mods.ron")?.read_to_string(&mut data)?;
         let profile: ModProfile = DeRon::deserialize_ron(&data)?;
@@ -82,14 +82,14 @@ impl ServerRuntime {
     }
 }
 
-pub(crate) fn load_mod(name_path: &str) -> Result<ServerModBox, Error> {
+pub(crate) fn load_mod(name_path: &str) -> ErrorResult<ServerModBox> {
     let (path, name) = name_path.split_once(':').unwrap();
 
     unzip_archive(File::open(mod_zip(path))?, format!("runtime/{path}"))?;
     unzip_archive(File::open(mod_server_zip(path, name))?, format!("runtime/{path}/server"))?;
 
     let server_lib_file = server_lib(path, name);
-    log_warn!("loading lib: {}", server_lib_file);
+    log!(DEBUG, "loading lib: {}", server_lib_file);
     let server_lib = unsafe { Library::new(server_lib_file)
         .map_err(|e| Error::new(ModError(format!("could not load mod: {e}")), Fatality::FATAL, false))? };
     let _create_mod_server: Symbol<fn() -> Box<dyn ServerMod>> = unsafe { server_lib.get("_create_mod_server".as_ref())

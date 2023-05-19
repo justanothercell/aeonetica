@@ -1,24 +1,30 @@
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::nanoserde;
 use aeonetica_engine::math::vector::Vector2;
-
-pub type Tile = u16;
+use crate::tiles::Tile;
 
 pub const CHUNK_SIZE: usize = 16;
 
 #[derive(SerBin, DeBin, Debug, Clone)]
+pub enum Population {
+    Uninit,
+    Finished
+}
+
+#[derive(SerBin, DeBin, Debug, Clone)]
 pub struct Chunk {
+    pub population: Population,
     pub chunk_pos: Vector2<i32>,
     pub tiles: [Tile; CHUNK_SIZE*CHUNK_SIZE]
 }
 
 impl Chunk {
     pub(crate) fn new(chunk_pos: Vector2<i32>) -> Self {
-        let mut s = Self {
+        Self {
+            population: Population::Uninit,
             chunk_pos,
-            tiles: [1; CHUNK_SIZE*CHUNK_SIZE]
-        };
-        s
+            tiles: [Tile::Air; CHUNK_SIZE*CHUNK_SIZE]
+        }
     }
 
     pub(crate) fn tiles(&self) -> &[Tile; CHUNK_SIZE * CHUNK_SIZE] {

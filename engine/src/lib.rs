@@ -19,6 +19,7 @@ mod tests;
 use std::fmt::{Debug, Display, Formatter};
 #[allow(deprecated)]
 use std::hash::{Hasher, SipHasher};
+use std::sync::Mutex;
 pub use nanoserde;
 pub use libloading;
 pub use chrono;
@@ -26,6 +27,7 @@ use nanoserde::{DeBin, DeRon, SerBin, SerRon};
 pub use sha2;
 use uuid::Uuid;
 pub extern crate colored;
+use lazy_static::lazy_static;
 
 pub mod networking;
 pub mod error;
@@ -94,16 +96,48 @@ pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s
 #[macro_export]
 macro_rules! log_format {
     ($color:ident, $level:literal, $($arg:tt)*) => {
-        $crate::colored::Colorize::$color(
-            format!(
-                "[@{}]\n{} [{} - {}]: {}",
-                format!("{}:{}:{}",file!(), line!(), column!()),
-                $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
-                env!("CARGO_PKG_NAME"),
-                $level,
-                format!($($arg)*)
-            ).as_str()
+        format!(
+            "\x1b[38;5;245m{}[{}@{}:{}]: {}",
+            $crate::chrono::Local::now().format("[%H:%M:%S]"),
+            env!("CARGO_PKG_NAME"),
+            file!(), line!(),
+            $crate::colored::Colorize::$color(format!($($arg)*).as_str())
         )
+    }
+}
+
+lazy_static! {
+    static ref PACK_LOG_COUNTER: Mutex<u32> = Mutex::new(0);
+    static ref PACK_LOG_HASH: Mutex<u64> = Mutex::new(0);
+}
+
+pub fn pack_log(origin: String, message: String) {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::Hash;
+    use std::io::{self, Write};
+    let mut hasher = DefaultHasher::new();
+    origin.hash(&mut hasher);
+    let hash_value = hasher.finish();
+    let p_hash = *PACK_LOG_HASH.lock().unwrap();
+    if p_hash == hash_value {
+        let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
+        *log_count += 1;
+        print!("\r[and {} more]", log_count);
+        let _ = io::stdout().flush();
+    } else {
+        stop_pack_log();
+        *PACK_LOG_HASH.lock().unwrap() = hash_value;
+        println!("{message}")
+    }
+}
+
+pub fn stop_pack_log() {
+    let mut p_hash = PACK_LOG_HASH.lock().unwrap();
+    let mut log_count = PACK_LOG_COUNTER.lock().unwrap();
+    if *p_hash != 0 {
+        *p_hash = 0;
+        if *log_count > 0 { println!() }
+        *log_count = 0;
     }
 }
 
@@ -112,39 +146,25 @@ macro_rules! log {
     () => {
         println!()
     };
-    ($($arg:tt)*) => {
-        println!("{} [{} - LOG]: {}", $crate::chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"), env!("CARGO_PKG_NAME"), format!($($arg)*))
-    };
-}
-
-#[macro_export]
-macro_rules! log_raw {
-    () => {
-        println!()
-    };
-    ($($arg:tt)*) => {
-        println!("{}", format!($($arg)*))
-    };
-}
-
-#[macro_export]
-macro_rules! log_err {
-    () => {
-        eprintln!()
-    };
-    ($($arg:tt)*) => {
-        eprintln!("{}", $crate::log_format!(red, "ERR", $($arg)*))
-    };
-}
-
-#[macro_export]
-macro_rules! log_warn {
-    () => {
-        println!()
-    };
-    ($($arg:tt)*) => {
-        eprintln!("{}", $crate::log_format!(bright_yellow, "WARN", $($arg)*))
-    }
+    (PACK, $($args:tt)*) => {{
+        $crate::pack_log(format!("{}:{}", file!(), line!()), $crate::log_format!(white, "PACK", $($args)*))
+    }};
+    (DEBUG, $($args:tt)*) => {{
+        $crate::stop_pack_log();
+        println!("{}", $crate::log_format!(cyan, "DEBUG", $($args)*))
+    }};
+    (WARN, $($args:tt)*) => {{
+        $crate::stop_pack_log();
+        println!("{}", $crate::log_format!(bright_yellow, "LOG", $($args)*))
+    }};
+    (ERROR, $($args:tt)*) => {{
+        $crate::stop_pack_log();
+        println!("{}", $crate::log_format!(red, "ERROR", $($args)*))
+    }};
+    ($($args:tt)*) => {{
+        $crate::stop_pack_log();
+        println!("{}", $crate::log_format!(white, "LOG", $($args)*))
+    }};
 }
 
 #[macro_export]

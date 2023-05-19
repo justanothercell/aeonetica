@@ -8,6 +8,8 @@ pub mod texture;
 pub mod text_area;
 pub mod material;
 pub mod glerror;
+pub mod target;
+pub mod pipeline;
 
 mod buffer;
 mod batch;
@@ -22,7 +24,7 @@ use shader::*;
 use texture::*;
 use batch::*;
 
-use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}};
+use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, log};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
 use self::{sprite_sheet::Sprite, font::BitmapFont};
@@ -41,7 +43,7 @@ impl std::fmt::Display for RenderError {
 }
 
 impl IntoError for RenderError {
-    fn into_error(self) -> aeonetica_engine::error::Error {
+    fn into_error(self) -> Box<aeonetica_engine::error::Error> {
         Error::new(self, Fatality::WARN, false)
     }
 }
@@ -125,7 +127,11 @@ impl Renderer {
     }
 
     pub(self) fn delete_batch(&mut self, id: &BatchID) {
-        self.batches.remove(id).map(|batch| batch.delete());
+        let num_batches = self.batches.len() - 1;
+        self.batches.remove(id).map(|batch| {
+            log!("delete batch {} ({} exist)", id, num_batches);
+            batch.delete()
+        });
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
@@ -134,6 +140,7 @@ impl Renderer {
         }
         else {
             let mut batch = Batch::new(self.next_id(), data).expect("Error creating new render batch");
+            log!("create batch {} ({} exist)", batch.id(), self.batches.len() + 1);
             let location = batch.add_vertices(data);
             self.batches.insert(*batch.id(), batch);
 

@@ -6,9 +6,9 @@ use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
-use aeonetica_engine::error::{Error, Fatality};
+use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::NetworkError;
-use aeonetica_engine::{Id, log, log_err};
+use aeonetica_engine::{Id, log};
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::ClientPacket;
@@ -34,7 +34,7 @@ pub(crate) struct ClientHandle {
 }
 
 impl NetworkServer {
-    pub(crate) fn start(addr: &str) -> Result<Self, Error>{
+    pub(crate) fn start(addr: &str) -> ErrorResult<Self>{
         let socket = UdpSocket::bind(addr)?;
         let sock = socket.try_clone()?;
         let received = Arc::new(Mutex::new(vec![]));
@@ -49,7 +49,7 @@ impl NetworkServer {
                     Ok((len, src)) => {
                         match DeBin::deserialize_bin(&buf[..len]) {
                             Ok(packet) => recv.lock().unwrap().push((src, packet)),
-                            Err(e) => log_err!("invalid client packet from {src}: {e}")
+                            Err(e) => log!(ERROR, "invalid client packet from {src}: {e}")
                         }
                     },
                     Err(_e) => {}
@@ -74,7 +74,7 @@ impl NetworkServer {
                             stream.read_exact(&mut buffer[..])?;
                             match DeBin::deserialize_bin(&buffer[..]) {
                                 Ok(packet) => recv_udp_inner.lock().unwrap().push((addr, packet)),
-                                Err(e) => log_err!("invalid client packet from {addr}: {e}")
+                                Err(e) => log!(ERROR, "invalid client packet from {addr}: {e}")
                             }
                             Ok::<_, std::io::Error>(())
                         })();
@@ -98,7 +98,7 @@ impl NetworkServer {
         packets
     }
 
-    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
+    pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> ErrorResult<()>{
         self.clients.get(client_id).map(|client| {
             self.send_raw(client.client_addr, packet, mode)
         }).unwrap_or(Err(Error::new(NetworkError(format!("client {client_id} does not exist")), Fatality::DEFAULT, true)))?;
@@ -106,7 +106,7 @@ impl NetworkServer {
         Ok(())
     }
 
-    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> Result<(), Error>{
+    pub(crate) fn send_raw(&self, ip_addr: SocketAddr, packet: &ServerPacket, mode: SendMode) -> ErrorResult<()>{
         let data = SerBin::serialize_bin(packet);
         match mode {
             SendMode::Quick => {
