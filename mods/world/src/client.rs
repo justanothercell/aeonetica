@@ -59,7 +59,7 @@ impl WorldHandle {
             chunks: Default::default(),
             chunk_queue: vec![],
             tile_sprites: SpriteSheet::from_texture(
-                Texture::from_bytes(include_bytes!("../assets/include/stone.png")).unwrap(),
+                Texture::from_bytes(include_bytes!("../assets/include/tilemap.png")).unwrap(),
                 Vector2::new(16, 16)
             ).expect("error loading world spritesheet"),
             shader: Rc::new(shader::Program::from_source(include_str!("../assets/shaders/world.glsl")).unwrap())

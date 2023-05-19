@@ -8,6 +8,7 @@ use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
 use crate::client::WorldHandle;
 use crate::common::{Chunk, CHUNK_SIZE, Tile};
+use crate::server::gen::WorldGenerator;
 
 pub const WORLD: &str = "WORLD";
 
@@ -18,7 +19,7 @@ struct ChunkHolder {
 }
 
 impl ChunkHolder {
-    pub(crate) fn new(chunk_pos: Vector2<i32>) -> ChunkHolder {
+    pub(crate) fn new(chunk_pos: Vector2<i32>, gen: &WorldGenerator) -> ChunkHolder {
         ChunkHolder {
             further_x: None,
             further_y: None,
@@ -28,6 +29,7 @@ impl ChunkHolder {
 }
 
 pub struct World {
+    gen: WorldGenerator,
     origin_ne: ChunkHolder,
     origin_se: ChunkHolder,
     origin_nw: ChunkHolder,
@@ -35,7 +37,7 @@ pub struct World {
 }
 
 impl World {
-    pub(crate) fn new_wold_entity(engine: &mut Engine) -> EntityId {
+    pub(crate) fn new_wold_entity(engine: &mut Engine, seed: u64) -> EntityId {
         let eid = engine.new_entity();
         engine.tag_entity(eid, WORLD);
         let entity: &mut Entity = &mut engine.mut_entity(&eid);
@@ -52,12 +54,13 @@ impl World {
                 log!("user said bye bye to world: {client}");
 
             }));
-
+        let gen = WorldGenerator::new(seed);
         entity.add_module(World {
-            origin_ne: ChunkHolder::new((0, 0).into()),
-            origin_se: ChunkHolder::new((0, -1).into()),
-            origin_nw: ChunkHolder::new((-1, 0).into()),
-            origin_sw: ChunkHolder::new((-1, -1).into())
+            origin_ne: ChunkHolder::new((0, 0).into(), &gen),
+            origin_se: ChunkHolder::new((0, -1).into(), &gen),
+            origin_nw: ChunkHolder::new((-1, 0).into(), &gen),
+            origin_sw: ChunkHolder::new((-1, -1).into(), &gen),
+            gen
         });
         eid
     }
@@ -96,7 +99,7 @@ impl World {
                 let mut pos = chunk_ref.chunk.chunk_pos;
                 if chunk_pos.x < 0 { pos.x = -(pos.x + 1) };
                 if chunk_pos.y < 0 { pos.y = -(pos.y + 1) };
-                chunk_ref.further_x = Some(Box::new(ChunkHolder::new(pos)))
+                chunk_ref.further_x = Some(Box::new(ChunkHolder::new(pos, &self.gen)))
             }
             chunk_ref = chunk_ref.further_x.as_mut().unwrap();
         }
@@ -106,7 +109,7 @@ impl World {
                 let mut pos = chunk_ref.chunk.chunk_pos;
                 if chunk_pos.x < 0 { pos.x = -(pos.x + 1) };
                 if chunk_pos.y < 0 { pos.y = -(pos.y + 1) };
-                chunk_ref.further_y = Some(Box::new(ChunkHolder::new(pos)))
+                chunk_ref.further_y = Some(Box::new(ChunkHolder::new(pos, &self.gen )))
             }
             chunk_ref = chunk_ref.further_y.as_mut().unwrap();
         }
@@ -124,7 +127,5 @@ impl World {
 }
 
 impl Module for World {
-    fn start(id: &EntityId, engine: &mut Engine) where Self: Sized {
 
-    }
 }

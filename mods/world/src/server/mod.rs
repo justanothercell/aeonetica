@@ -1,5 +1,6 @@
 pub(crate) mod world;
-mod gen;
+pub(crate) mod gen;
+mod tiles;
 
 use aeonetica_server::ServerMod;
 
@@ -31,6 +32,6 @@ impl ServerMod for WorldModServer {
     }
 
     fn start(&mut self, engine: &mut Engine) {
-        World::new_wold_entity(engine);
+        World::new_wold_entity(engine, self.seed);
     }
 }

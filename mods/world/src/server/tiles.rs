@@ -1,0 +1,4 @@
+enum Tile {
+    Air,
+    StoneBrick
+}
