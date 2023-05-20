@@ -7,9 +7,13 @@ edition = "2021"
 client = []
 server = []
 
+[profile.dev.package.noise]
+opt-level = 3
+
 [dependencies]
 aeonetica_engine = { package="engine", path="../../engine" }
 aeonetica_client = { package="client", path="../../client" }
 aeonetica_server = { package="server", path="../../server" }
 
 rand = "0.8.5"
+noise = "0.8.2"

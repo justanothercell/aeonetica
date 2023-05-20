@@ -43,6 +43,10 @@ impl<T> Vector2<T> {
     pub fn area(&self) -> T where T: Mul<Output=T> + Copy  {
         self.x * self.y
     }
+
+    pub fn into_array(self) -> [T;2] {
+        [self.x, self.y]
+    }
 }
 
 impl Vector2<i32> {
@@ -54,6 +58,9 @@ impl Vector2<i32> {
 
     pub fn to_f32(&self) -> Vector2<f32> {
         Vector2::new(self.x as f32, self.y as f32)
+    }
+    pub fn to_f64(&self) -> Vector2<f64> {
+        Vector2::new(self.x as f64, self.y as f64)
     }
 }
 

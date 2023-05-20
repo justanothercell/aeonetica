@@ -1,3 +1,5 @@
+use std::cell::{RefCell, RefMut};
+use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::math::vector::Vector2;
@@ -8,6 +10,7 @@ use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
 use crate::client::WorldHandle;
 use crate::common::{Chunk, CHUNK_SIZE, Population};
+use crate::server::gen::GenProvider;
 use crate::tiles::Tile;
 
 pub const WORLD: &str = "WORLD";
@@ -29,7 +32,7 @@ impl ChunkHolder {
 }
 
 pub struct World {
-    seed: u64,
+    pub(crate) generator: Rc<GenProvider>,
     origin_ne: ChunkHolder,
     origin_se: ChunkHolder,
     origin_nw: ChunkHolder,
@@ -55,7 +58,7 @@ impl World {
 
             }));
         entity.add_module(World {
-            seed,
+            generator: Rc::new(GenProvider::new(seed)),
             origin_ne: ChunkHolder::new((0, 0).into()),
             origin_se: ChunkHolder::new((0, -1).into()),
             origin_nw: ChunkHolder::new((-1, 0).into()),
