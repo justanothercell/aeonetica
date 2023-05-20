@@ -8,8 +8,12 @@ server/mods/**.zip
 *.zip
 perf.data*
 
+
 local_testing/
 win_ter_setup.py
+**.bat
+**.sh
+
 
 assets/font_and_glyphs/generated.png
 assets/font_and_glyphs/generated_x16.png
