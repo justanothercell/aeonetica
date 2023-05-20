@@ -1,6 +1,6 @@
-use std::{rc::Rc};
 use std::collections::HashMap;
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider, events::Event}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad, TexturedQuad, SpriteQuad, shader}, client_runtime::ClientHandleBox};
+use aeonetica_client::renderer::material::FlatTexture;
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad}};
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::nullable::Nullable;
@@ -11,7 +11,7 @@ use crate::server::world::World;
 #[allow(clippy::large_enum_variant)]
 pub enum ClientChunk {
     Requested,
-    Chunk(Chunk, Vec<SpriteQuad>)
+    Chunk(Chunk, Vec<Quad<FlatTexture>>)
 }
 
 #[derive(PartialEq)]
@@ -50,7 +50,6 @@ pub(crate) struct WorldHandle {
     chunks: HashMap<Vector2<i32>, ClientChunk>,
     chunk_queue: Vec<Chunk>,
     tile_sprites: SpriteSheet,
-    shader: Rc<shader::Program>,
 }
 
 impl WorldHandle {
@@ -62,7 +61,6 @@ impl WorldHandle {
                 Texture::from_bytes(include_bytes!("../assets/include/tilemap.png")).unwrap(),
                 Vector2::new(16, 16)
             ).expect("error loading world spritesheet"),
-            shader: Rc::new(shader::Program::from_source(include_str!("../assets/shaders/world.glsl")).unwrap())
         }
     }
 
@@ -121,12 +119,11 @@ impl ClientHandle for WorldHandle {
 
                 let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
                 let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
-                let mut quad = SpriteQuad::new(
+                let mut quad = Quad::with_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
                     0, 
                     self.tile_sprites.get(index as u32 - 1).unwrap(),
-                    self.shader.clone()
                 );
                 renderer.add(&mut quad);
                 quads.push(quad);
@@ -150,7 +147,7 @@ impl Layer for WorldLayer {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
+    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, _delta_time: f64) {
         let new_pos = store.get_store::<CameraPosition>().0;
         if new_pos != *camera.position() {
             camera.set_position(new_pos);
