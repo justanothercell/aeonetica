@@ -1,11 +1,11 @@
-use std::cell::RefMut;
 use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_client::renderer::context::RenderContext;
+use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
-use aeonetica_client::renderer::{Renderer, TexturedQuad, Renderable, Quad, shader};
+use aeonetica_client::renderer::{Renderer, Quad};
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::OpenGlContextProvider;
 use aeonetica_engine::{log, TypeId};
@@ -48,19 +48,6 @@ impl PlayerTexture {
     }
 }
 
-#[derive(Clone)]
-struct PlayerShader(Rc<shader::Program>);
-
-impl PlayerShader {
-    fn load() -> Self {
-        Self(Rc::new(shader::Program::from_source(include_str!("../assets/shaders/player.glsl")).expect("error loading player shader")))
-    }
-
-    fn get(&self) -> &Rc<shader::Program> {
-        &self.0
-    }
-}
-
 pub struct PlayerHandle {
     is_controlling: bool,
     interpolation_delta: f32,
@@ -68,7 +55,7 @@ pub struct PlayerHandle {
     position: Vector2<f32>,
 
     // rendering stuff
-    quad: Nullable<TexturedQuad>,
+    quad: Nullable<Quad<FlatTexture>>,
 
     // movement stuff
     key_state: [bool; 4],
@@ -120,12 +107,11 @@ impl ClientHandle for PlayerHandle {
         messenger.register_receiver(Self::receive_position);
 
         self.quad = Value(
-            TexturedQuad::new(
+            Quad::with_texture(
             self.position,
             Vector2::new(1.0, 1.0),
             1,
             store.get_or_create(PlayerTexture::load).get().id(),
-            store.get_or_create(PlayerShader::load).get().clone()
         ))
     }
 

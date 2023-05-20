@@ -49,11 +49,11 @@ pub trait Layout {
 pub struct BufferLayoutBuilder<T>(PhantomData<T>);
 
 impl<T: Layout> BufferLayoutBuilder<T> {
-    pub(super) fn build() -> BufferLayout {
+    pub fn build() -> BufferLayout {
         BufferLayout::new(T::layout().iter().map(|d| (*d).into()).collect())
     }
 
-    pub(super) const fn array<const N: usize>(arr: [T::Type; N]) -> [T::Type; N] {
+    pub const fn array<const N: usize>(arr: [T::Type; N]) -> [T::Type; N] {
         arr
     }
 }

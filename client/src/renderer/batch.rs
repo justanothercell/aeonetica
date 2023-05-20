@@ -2,7 +2,7 @@ use std::{rc::Rc, cell::Cell};
 
 use crate::{uniform_str, renderer::{shader::UniformStr, RenderError}};
 
-use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer};
+use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer, material::Material};
 use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}};
 
 pub type BatchID = u32;
@@ -291,6 +291,17 @@ impl<'a> VertexData<'a> {
             shader,
             z_index,
             texture: Some(texture),
+        }
+    }
+
+    pub fn from_material<M: Material, const N: usize>(vertices: &'a mut [u8], indices: &'a[u32], material: &'a Rc<M>, data: &M::Data<N>, z_index: u8) -> Self {
+        Self {
+            vertices,
+            indices,
+            layout: M::layout(),
+            shader: material.shader(),
+            z_index,
+            texture: M::texture_id(data)
         }
     }
 
