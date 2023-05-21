@@ -26,7 +26,7 @@ impl GenProvider {
 
 impl World {
     pub(crate) fn populate(&mut self, chunk_pos: Vector2<i32>) {
-        log!(WARN, "populated {chunk_pos:?}");
+        log!(WARN, "populated {chunk_pos}");
         let gen = self.generator.clone();
         let chunk = self.mut_chunk_at_raw(chunk_pos);
         for x in 0..CHUNK_SIZE as i32 {
