@@ -49,7 +49,10 @@ def build(feature: str):
     build_cmd = f'cargo rustc --features="{feature}" --crate-type=dylib'
     if build_mode == 'release':
         build_cmd += ' --release'
-    system(build_cmd)
+    res = system(build_cmd)
+    if res != 0:
+        print(f'build failed with error code {res}')
+        exit(1)
 
 def zippify(prefix: str, feature: str):
     # cd into the build directory
