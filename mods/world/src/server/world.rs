@@ -37,6 +37,8 @@ pub struct World {
     origin_se: ChunkHolder,
     origin_nw: ChunkHolder,
     origin_sw: ChunkHolder,
+    cached_chunk_pos: Vector2<i32>,
+    cached_chunk_raw_ptr: usize
 }
 
 impl World {
@@ -57,9 +59,12 @@ impl World {
                 log!("user said bye bye to world: {client}");
 
             }));
+        let chunk_zero = ChunkHolder::new((0, 0).into());
         entity.add_module(World {
             generator: Rc::new(GenProvider::new(seed)),
-            origin_ne: ChunkHolder::new((0, 0).into()),
+            cached_chunk_pos: (0, 0).into(),
+            cached_chunk_raw_ptr: &chunk_zero.chunk as *const Chunk as usize,
+            origin_ne: chunk_zero,
             origin_se: ChunkHolder::new((0, -1).into()),
             origin_nw: ChunkHolder::new((-1, 0).into()),
             origin_sw: ChunkHolder::new((-1, -1).into()),
@@ -85,6 +90,10 @@ impl World {
     }
 
     pub fn mut_chunk_at_raw(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
+        if self.cached_chunk_pos == chunk_pos {
+            return unsafe {  &mut *(self.cached_chunk_raw_ptr as *mut Chunk) }
+        }
+
         let mut cp = chunk_pos;
         let mut chunk_ref = match (chunk_pos.x >= 0, chunk_pos.y >= 0) {
             (true, true) => {
@@ -124,6 +133,8 @@ impl World {
             }
             chunk_ref = chunk_ref.further_y.as_mut().unwrap();
         }
+        self.cached_chunk_pos = chunk_pos;
+        self.cached_chunk_raw_ptr = &chunk_ref.chunk as *const Chunk as usize;
         &mut chunk_ref.chunk
     }
 
