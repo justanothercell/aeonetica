@@ -1,6 +1,7 @@
 use std::cell::RefCell;
+use std::any::type_name;
 use std::rc::Rc;
-use aeonetica_engine::{ClientId, EntityId, Id, TypeId};
+use aeonetica_engine::{ClientId, EntityId, Id, log, TypeId};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
@@ -22,14 +23,18 @@ pub trait ClientHandle: ClientEntity {
     fn remove(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore) {}
     
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {}
-    fn event(&mut self, event: &Event) -> bool { false }
+    fn event(&mut self, event: &Event, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore) -> bool { false }
 }
+
+unsafe impl aeonetica_server::ecs::messaging::ClientMessenger for ClientMessenger {}
+unsafe impl aeonetica_server::ecs::messaging::Renderer for Renderer {}
+unsafe impl aeonetica_server::ecs::messaging::DataStore for DataStore {}
 
 pub struct ClientMessenger {
     nc: Rc<RefCell<NetworkClient>>,
     client_id: ClientId,
     entity_id: EntityId,
-    pub(crate) client_receivers: IdMap<Box<dyn Fn(&mut dyn ClientHandle, &Vec<u8>)>>
+    pub(crate) client_receivers: IdMap<Box<dyn Fn(&mut dyn ClientHandle, &mut ClientMessenger, Nullable<&mut Renderer>,  &mut DataStore, &Vec<u8>)>>
 }
 
 impl ClientMessenger {
@@ -44,13 +49,13 @@ impl ClientMessenger {
 }
 
 impl ClientMessenger {
-    pub fn register_receiver<F: Fn(&mut T, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F) {
-        let m = move |handle: &mut dyn ClientHandle, data: &Vec<u8>|
-            f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, M::deserialize_bin(data).unwrap());
+    pub fn register_receiver<F: Fn(&mut T, &mut ClientMessenger, Nullable<&mut Renderer>, &mut DataStore, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, f: F) {
+        let m = move |handle: &mut dyn ClientHandle, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, data: &Vec<u8>|
+            f(unsafe { &mut *std::mem::transmute::<_, &(*mut T, usize)>(Box::new(handle)).0 }, messenger, renderer, store, M::deserialize_bin(data).unwrap());
         self.client_receivers.insert(type_to_id::<F>(), Box::new(m));
     }
 
-    pub fn unregister_receiver<F: Fn(&mut T, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, _: F) {
+    pub fn unregister_receiver<F: Fn(&mut T, &mut ClientMessenger, Nullable<&mut Renderer>,  &mut DataStore, M) + 'static, T: ClientHandle, M: SerBin + DeBin>(&mut self, _: F) {
         self.client_receivers.remove(&type_to_id::<F>());
     }
 

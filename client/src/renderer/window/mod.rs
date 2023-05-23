@@ -28,8 +28,17 @@ impl OpenGlContextProvider {
         *self.0.get(name).unwrap_or(&std::ptr::null())
     }
 
-    pub fn make_context(&self) {
-        gl::load_with(|s| self.get(s));
+    pub fn with_render<'a>(&'a self, context: &'a mut RenderContext) -> OpenGlRenderContextProvider<'a> {
+        OpenGlRenderContextProvider(self, context)
+    }
+}
+
+pub struct OpenGlRenderContextProvider<'a>(&'a OpenGlContextProvider, &'a mut RenderContext);
+
+impl<'a> OpenGlRenderContextProvider<'a> {
+    pub fn make_context(mut self) -> &'a mut RenderContext {
+        gl::load_with(|s| self.0.get(s));
+        self.1
     }
 }
 
@@ -182,7 +191,7 @@ impl Window {
         }
     }
 
-    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext) {
+    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext, store: &mut DataStore) {
         self.glfw_handle.poll_events();
         for (_, event) in flush_messages(&self.event_receiver) {
             let mut event = Event::from_glfw(event);
@@ -200,7 +209,7 @@ impl Window {
             }
 
             if !handled {
-                context.on_event(client, event);
+                context.on_event(client, event, store);
             }
         }
     }

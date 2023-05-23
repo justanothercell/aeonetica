@@ -71,8 +71,13 @@ impl ClientRuntime {
             }
             ServerMessage::ModMessage(eid, rid, data) => {
                 if let Some(h) = self.handles.get_mut(eid) {
-                    if let Some(f) = h.messenger.client_receivers.get(rid) {
-                        f(&mut *h.handle, data)
+                    if let Some(f) = h.messenger.client_receivers.remove(rid) {
+                        if let Some(layer) = context.layer_stack.layer_map.get(&h.handle.owning_layer()) {
+                            f(&mut *h.handle, &mut h.messenger, Value(&mut layer.borrow_mut().renderer), store, data)
+                        } else {
+                            f(&mut *h.handle, &mut h.messenger, Null, store, data)
+                        }
+                        h.messenger.client_receivers.insert(*rid, f);
                     }
                 }
             }
