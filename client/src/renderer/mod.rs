@@ -8,7 +8,6 @@ pub mod texture;
 pub mod text_area;
 pub mod material;
 pub mod glerror;
-pub mod target;
 pub mod pipeline;
 
 mod buffer;
@@ -27,7 +26,7 @@ use batch::*;
 use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, log};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
-use self::{sprite_sheet::Sprite, font::BitmapFont};
+use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer};
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -54,8 +53,8 @@ pub trait Renderable {
 
     fn location(&self) -> &Option<VertexLocation>;
     fn set_location(&mut self, location: Option<VertexLocation>);
-    fn is_dirty(&self) -> bool;
     fn has_location(&self) -> bool;
+    fn is_dirty(&self) -> bool;
 }
 
 pub struct Renderer {
@@ -89,7 +88,7 @@ impl Renderer {
         self.view_projection = None;
     }
 
-    pub fn load_shader(&mut self, shader: Rc<Program>) {
+    pub(crate) fn load_shader(&mut self, shader: Rc<Program>) {
         if self.shader.as_ref() == Some(&shader) {
             return;
         }
@@ -101,18 +100,14 @@ impl Renderer {
         self.shader = Some(shader);
     }
 
-    pub fn unload_shader(&mut self) {
+    pub(crate) fn unload_shader(&mut self) {
         if let Some(shader) = &self.shader {
             shader.unbind();
         }
         self.shader = None;
     }
 
-    pub fn shader(&self) -> &Option<Rc<Program>> {
-        &self.shader
-    }
-
-    pub fn draw_vertices(&mut self) {
+    pub fn draw_vertices(&mut self, target: &FrameBuffer) {
         let mut_ref_ptr = self as *mut _;
         self.batches.iter().rev().for_each(|(_, batch)|
             batch.draw_vertices(unsafe { &mut *mut_ref_ptr })

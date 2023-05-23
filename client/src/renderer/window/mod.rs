@@ -224,7 +224,7 @@ impl Window {
             enable_blend_mode(true);
         }
 
-        context.on_render(client, store, delta_time);
+        context.on_render(client, &self.framebuffer, store, delta_time);
 
         self.framebuffer.unbind();
         

@@ -15,6 +15,9 @@ use crate::{
 };
 use crate::renderer::Renderer;
 
+use super::buffer::framebuffer::FrameBuffer;
+use super::layer::LayerUpdater;
+use super::pipeline::default_pipeline;
 use super::shader::PostProcessingLayer;
 
 #[derive(Debug)]
@@ -49,16 +52,9 @@ impl LayerBox {
         self.layer.quit(&mut self.renderer)
     }
 
-    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, store: &mut DataStore, delta_time: f64) {
+    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &FrameBuffer, store: &mut DataStore, delta_time: f64) {
         self.layer.update_camera(store, &mut self.camera, delta_time);
-        self.renderer.begin_scene(&self.camera);
-        self.layer.pre_handles_update(store, &mut self.renderer, delta_time);
-        handles.iter_mut()
-            .filter(|(_id, handle_box)| handle_box.handle.owning_layer() == *id)
-            .for_each(|(_id, handle_box)| handle_box.handle.update(&mut handle_box.messenger, &mut self.renderer, store, delta_time));
-        self.layer.post_handles_update(store, &mut self.renderer, delta_time);
-        self.renderer.draw_vertices();
-        self.renderer.end_scene();
+        default_pipeline(&mut self.renderer, &self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), delta_time);
     }
 }
 
@@ -149,11 +145,11 @@ impl RenderContext {
         log!(PACK, "Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, target: &FrameBuffer, store: &mut DataStore, delta_time: f64) {
         let handles = client.handles();
         self.layer_stack.layer_stack.iter_mut()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active())
-            .for_each(|(layer_box, id)| layer_box.borrow_mut().on_render(id, handles, store, delta_time));
+            .for_each(|(layer_box, id)| layer_box.borrow_mut().on_render(id, handles, target, store, delta_time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {
