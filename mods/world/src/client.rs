@@ -66,7 +66,7 @@ impl WorldHandle {
         }
     }
 
-    pub(crate) fn receive_chunk_data(&mut self, chunk: Chunk) {
+    pub(crate) fn receive_chunk_data(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
         log!(DEBUG, "receive_chunk_data {:?}", chunk.chunk_pos);
         self.chunk_queue.push(chunk);
     }

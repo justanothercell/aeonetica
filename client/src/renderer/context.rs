@@ -137,13 +137,13 @@ impl RenderContext {
         Ok(())
     }
 
-    pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event) {
+    pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event, store: &mut DataStore) {
         for (layer_box, id) in self.layer_stack.layer_stack.iter()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active()).rev() {
             if layer_box.borrow_mut().layer.event(&event) { return; }
             if client.handles.iter_mut()
                 .filter(|(_, h_box)| h_box.handle.owning_layer() == *id)
-                .any(|(_, h_box)| h_box.handle.event(&event)) { return; }
+                .any(|(_, h_box)| h_box.handle.event(&event, &mut h_box.messenger, &mut layer_box.borrow_mut().renderer, store)) { return; }
         }
 
         log!(PACK, "Unhandled Event: {event:?}");

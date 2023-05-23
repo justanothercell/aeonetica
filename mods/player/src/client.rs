@@ -5,6 +5,7 @@ use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, Quad};
+use aeonetica_client::renderer::context::RenderContext;
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::{OpenGlRenderContextProvider};
 use aeonetica_engine::{log, TypeId};
@@ -15,6 +16,7 @@ use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::math::vector::Vector2;
+use aeonetica_server::ecs::messaging::Messenger;
 use world_mod::client::WorldLayer;
 use world_mod::client::CameraPosition;
 use crate::server::Player;
@@ -70,17 +72,19 @@ impl PlayerHandle {
         }
     }
 
-    pub(crate) fn set_controlling(&mut self, is_controlling: bool) {
+    pub(crate) fn set_controlling(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, is_controlling: bool) {
         log!("got elevated to controller");
         self.is_controlling = is_controlling
     }
 
-    pub(crate) fn receive_position(&mut self, (position, teleporting): (Vector2<f32>, bool)) {
+    pub(crate) fn receive_position(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) {
         if !self.is_controlling {
             if teleporting {
                 self.p_position = position;
-                self.interpolation_delta = 0.0;
+                self.interpolation_delta = 1.0;
                 self.position = position;
+                let quad = &mut *self.quad;
+                quad.set_position(self.position);
             } else {
                 self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
                 self.interpolation_delta = 0.0;
@@ -145,7 +149,7 @@ impl ClientHandle for PlayerHandle {
         let _ = renderer.draw(quad);
     }
 
-    fn event(&mut self, event: &Event) -> bool {
+    fn event(&mut self, event: &Event, _messenger: &mut ClientMessenger, _renderer: &mut Renderer, _store: &mut DataStore) -> bool {
         if !self.is_controlling { return false }
         match event {
             Event::KeyPressed(KeyCode::W) => {

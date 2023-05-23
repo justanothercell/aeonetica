@@ -32,7 +32,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     while !window.should_close() {
         let t = Instant::now();
 
-        window.poll_events(&mut client, &mut context);
+        window.poll_events(&mut client, &mut context, store);
         
         let _ = client.handle_queued(store, &mut context).map_err(|e| {
             log!(ERROR, "{e}")

@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 aeonetica_engine = { package="engine", path="../engine" }
 aeonetica_server = { package="server", path="../server" }
+
 glfw = "0.51.0"
 gl = "0.14.0"
 regex = "1.7.1"

@@ -93,8 +93,8 @@ impl ClientHandleBox {
     }
 
     #[inline(always)]
-    pub fn on_event(&mut self, event: &Event) -> bool {
-        self.handle.event(event)
+    pub fn on_event(&mut self, event: &Event, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore) -> bool {
+        self.handle.event(event, messenger, renderer, store)
     }
 }
 

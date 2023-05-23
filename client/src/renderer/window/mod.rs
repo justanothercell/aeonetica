@@ -191,7 +191,7 @@ impl Window {
         }
     }
 
-    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext) {
+    pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext, store: &mut DataStore) {
         self.glfw_handle.poll_events();
         for (_, event) in flush_messages(&self.event_receiver) {
             let mut event = Event::from_glfw(event);
@@ -209,7 +209,7 @@ impl Window {
             }
 
             if !handled {
-                context.on_event(client, event);
+                context.on_event(client, event, store);
             }
         }
     }

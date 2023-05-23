@@ -13,8 +13,22 @@ use crate::networking::NetworkServer;
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
+use aeonetica_engine::util::nullable::Nullable;
 
 pub trait Message: SerBin + DeBin + Debug {}
+
+/// # Safety
+///
+/// This trait is for internal use only.
+pub unsafe trait ClientMessenger {}
+/// # Safety
+///
+/// This trait is for internal use only.
+pub unsafe trait Renderer {}
+/// # Safety
+///
+/// This trait is for internal use only.
+pub unsafe trait DataStore {}
 
 pub struct Messenger {
     ns: Option<Rc<RefCell<NetworkServer>>>,
@@ -54,7 +68,7 @@ impl Messenger {
         self.receiver_functions.remove(&type_to_id::<F>());
     }
 
-    pub fn call_client_fn<F: Fn(&mut T, M), T: ClientEntity, M: SerBin + DeBin>(&mut self, _: F, message: M, mode: SendMode) {
+    pub fn call_client_fn<F: Fn(&mut T, &mut TClientMessenger, Nullable<&mut TRenderer>, &mut TDataStore, M), T: ClientEntity, TClientMessenger: ClientMessenger, TRenderer: Renderer, TDataStore: DataStore, M: SerBin + DeBin>(&mut self, _: F, message: M, mode: SendMode) {
         let id = type_to_id::<F>();
         for client in &self.receivers {
             let _ = self.ns.as_ref().unwrap().borrow().send(client, &ServerPacket {
@@ -64,7 +78,7 @@ impl Messenger {
         }
     }
 
-    pub fn call_client_fn_for<F: Fn(&mut T, M), T: ClientEntity, M: SerBin + DeBin>(&mut self, _: F, client: &ClientId, message: M, mode: SendMode) {
+    pub fn call_client_fn_for<F: Fn(&mut T, &mut TClientMessenger, Nullable<&mut TRenderer>, &mut TDataStore, M), T: ClientEntity, TClientMessenger: ClientMessenger, TRenderer: Renderer, TDataStore: DataStore, M: SerBin + DeBin>(&mut self, _: F, client: &ClientId, message: M, mode: SendMode) {
         let id = type_to_id::<F>();
         let _ = self.ns.as_ref().unwrap().borrow().send(client, &ServerPacket {
             conv_id: Id::new(),
