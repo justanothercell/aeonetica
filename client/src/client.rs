@@ -27,7 +27,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     let mut context = RenderContext::new();
 
     client.loaded_mods.iter()
-        .for_each(|loaded_mod| loaded_mod.client_mod.start(&mut context, store, window.context_provider()));
+        .for_each(|loaded_mod| { loaded_mod.client_mod.start(store, window.context_provider().with_render(&mut context)); });
 
     while !window.should_close() {
         let t = Instant::now();

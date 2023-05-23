@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad}};
+use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::nullable::Nullable;
@@ -37,12 +38,13 @@ impl ClientMod for WorldModClient {
         handlers.insert(type_to_id::<WorldHandle>(), || Box::new(WorldHandle::new()));
     }
 
-    fn start(&self, context: &mut RenderContext, store: &mut DataStore, gl_context_provider: &OpenGlContextProvider) {
-        gl_context_provider.make_context();
+    fn start<'a>(&self, store: &mut DataStore, provider: OpenGlRenderContextProvider<'a>) -> &'a mut RenderContext {
+        let context = provider.make_context();
         println!("started worldmodclient");
         context.push(WorldLayer::new()).expect("duplicate layer");
         context.push(UILayer::new()).expect("duplicate layer");
         store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
+        context
     }
 }
 
