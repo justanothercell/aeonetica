@@ -36,7 +36,7 @@ impl OpenGlContextProvider {
 pub struct OpenGlRenderContextProvider<'a>(&'a OpenGlContextProvider, &'a mut RenderContext);
 
 impl<'a> OpenGlRenderContextProvider<'a> {
-    pub fn make_context(mut self) -> &'a mut RenderContext {
+    pub fn make_context(self) -> &'a mut RenderContext {
         gl::load_with(|s| self.0.get(s));
         self.1
     }

@@ -1,7 +1,6 @@
 use std::cell::RefCell;
-use std::any::type_name;
 use std::rc::Rc;
-use aeonetica_engine::{ClientId, EntityId, Id, log, TypeId};
+use aeonetica_engine::{ClientId, EntityId, Id, TypeId};
 use aeonetica_engine::nanoserde::{DeBin, SerBin};
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::messaging::ClientEntity;
