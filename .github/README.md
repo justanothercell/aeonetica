@@ -37,7 +37,7 @@
     $ cargo run -- <server_ip:server_port>
     # example: cargo run -- 127.0.0.1:6090
     # or simply:
-    $ python3 ./build.py -r
+    $ python3 build.py -r
 
     # and
    
@@ -45,7 +45,7 @@
     $ cargo run -- <client_ip:client_port> <server_ip:server_port> 
     # example: cargo run -- 127.0.0.1:9000 127.0.0.1:6090
     # or simply:
-    $ python3 ./build.py -r
+    $ python3 build.py -r
     ```
     Alternatively, run the binaries of client/server from `<crate>/target/release/<executable>.exe`. <br>
     Build with `--release` flag `py build.py --release` and `cargo run --rlease` for better performance. <br>
