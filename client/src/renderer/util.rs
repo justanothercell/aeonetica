@@ -25,12 +25,12 @@ pub enum BlendMode {
     Multiply = gl::DST_COLOR as isize
 }
 
-#[allow(unused)]
 #[inline]
 pub fn blend_mode(mode: BlendMode) {
     unsafe { gl::BlendFunc(mode as gl::types::GLenum, gl::ONE_MINUS_SRC_ALPHA) };
 }
 
+#[inline]
 pub fn enable_blend_mode(enabled: bool) {
     unsafe {
         if enabled { gl::Enable(gl::BLEND) } else { gl::Disable(gl::BLEND) }
@@ -45,7 +45,7 @@ pub enum Target<'a> {
 #[macro_export]
 macro_rules! to_raw_byte_slice {
     ($value: expr) => {
-        unsafe { std::mem::transmute::<_, &mut [u8]>(($value, std::mem::size_of_val($value))) }
+        unsafe { ::std::mem::transmute::<_, &mut [u8]>(($value, ::std::mem::size_of_val($value))) }
     };
 }
 pub use to_raw_byte_slice;
@@ -61,7 +61,10 @@ pub use to_raw_byte_vec;
 #[macro_export]
 macro_rules! get_gl_str {
     ($name: expr) => {
-        unsafe { std::ffi::CStr::from_ptr(gl::GetString($name) as *const i8).to_str().unwrap_or("no such value") }
+        unsafe { ::std::ffi::CStr::from_ptr(::gl::GetString($name) as *const i8).to_str().unwrap() }
     };
+    ($name: expr, $err: literal) => {
+        unsafe { ::std::ffi::CStr::from_ptr(::gl::GetString($name) as *const i8).to_str().unwrap_or($err) }
+    }
 }
 pub(crate) use get_gl_str;

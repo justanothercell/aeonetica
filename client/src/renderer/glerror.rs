@@ -9,7 +9,7 @@ impl GLError {
     #[cfg(debug_assertions)]
     pub fn from_gl_errno() -> Self {
         let errno = unsafe { gl::GetError() };
-        Self(get_gl_str!(errno).to_string(), errno)
+        Self(get_gl_str!(errno, "error fetching OpenGL errno value").to_string(), errno)
     }
 
     // checking for errors is slloowwww
