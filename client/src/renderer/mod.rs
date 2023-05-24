@@ -26,7 +26,7 @@ use batch::*;
 use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, log};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
-use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer};
+use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}};
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -61,6 +61,7 @@ pub struct Renderer {
     shader: Option<Rc<Program>>,
     view_projection: Option<Matrix4<f32>>,
     batches: OrderedMap<BatchID, Batch, u8>,
+    pipeline: Box<dyn Pipeline>,
 
     batch_counter: BatchID
 }
@@ -72,9 +73,14 @@ impl Renderer {
         Self {
             shader: None,
             view_projection: None,
+            pipeline: Box::new(DefaultPipeline::new()),
             batches: OrderedMap::new(),
             batch_counter: 0,
         }
+    }
+
+    pub fn set_pipeline<P: Pipeline + 'static>(&mut self, pipeline: P) {
+        self.pipeline = Box::new(pipeline);
     }
 
     pub fn begin_scene(&mut self, camera: &Camera) {
@@ -193,6 +199,11 @@ impl Renderer {
             self.remove_vertices(location);
             item.set_location(None);
         } 
+    }
+
+    pub(super) fn on_layer_update(&mut self, camera: &Camera, target: &FrameBuffer, updater: LayerUpdater, delta_time: f64) {
+        let ref_mut_ptr = self as *mut _;
+        self.pipeline.pipeline(unsafe { &mut *ref_mut_ptr }, camera, target, updater, delta_time);
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {

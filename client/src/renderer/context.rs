@@ -17,7 +17,6 @@ use crate::renderer::Renderer;
 
 use super::buffer::framebuffer::FrameBuffer;
 use super::layer::LayerUpdater;
-use super::pipeline::default_pipeline;
 use super::shader::PostProcessingLayer;
 
 #[derive(Debug)]
@@ -54,7 +53,7 @@ impl LayerBox {
 
     fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &FrameBuffer, store: &mut DataStore, delta_time: f64) {
         self.layer.update_camera(store, &mut self.camera, delta_time);
-        default_pipeline(&mut self.renderer, &self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), delta_time);
+        self.renderer.on_layer_update(&self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), delta_time);
     }
 }
 
