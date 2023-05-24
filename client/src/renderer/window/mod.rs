@@ -3,8 +3,8 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
 
-use aeonetica_engine::{log, math::vector::*, error::*};
-use crate::{renderer::{context::RenderContext, buffer::*, util::*, shader::UniformStr}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use aeonetica_engine::{log, math::vector::*, error::{*, builtin::IOError}};
+use crate::{renderer::{context::RenderContext, buffer::{*, framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::Texture}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -100,7 +100,7 @@ impl Window {
     const DEFAULT_WINDOW_TITLE: &'static str = "Aeonetica Game Engine";
     const FRAMEBUFFER_SIZE: Vector2<u32> = Vector2 { x: 1920, y: 1080 };
 
-    pub(crate) fn new(full_screen: bool) -> Self {
+    pub(crate) fn new(full_screen: bool) -> ErrorResult<Self> {
         match glfw::init(glfw::FAIL_ON_ERRORS) {
             Ok(mut glfw) => {
                 glfw.window_hint(WindowHint::ContextVersion(4, 5));
@@ -117,15 +117,12 @@ impl Window {
                     } else {
                         WindowMode::Windowed
                     }
-                )}).expect("Error creating GLFW window!");
+                )}).ok_or_else(|| aeonetica_engine::error::Error::new(IOError("error creating glfw window".to_string()), Fatality::FATAL, true))?;
                 
                 window.make_current();
                 window.set_key_polling(true);
 
-                match load_window_icons() {
-                    Ok(icons) => window.set_icon_from_pixels(icons),
-                    Err(err) => log!(ERROR, "error loading window icon: {}", err.to_string())
-                }
+                window.set_icon_from_pixels(load_window_icons()?);
                 
                 let mut context_provider = OpenGlContextProvider::new();
 
@@ -143,12 +140,13 @@ impl Window {
                     unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8).to_str().unwrap() }
                 );
 
-                let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))
-                    .expect("error loading default post processing shader");
-                let framebuffer = FrameBuffer::new(Self::FRAMEBUFFER_SIZE)
-                    .expect("error creating framebuffer");
+                let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))?;
+                let framebuffer = FrameBuffer::new([
+                    Attachment::Color(Texture::create(Self::FRAMEBUFFER_SIZE)),
+                    Attachment::DepthStencil(RenderBuffer::new(Self::FRAMEBUFFER_SIZE)?)
+                ], true)?;
 
-                let mut framebuffer_vao = VertexArray::new().expect("Error creating vertex array");
+                let mut framebuffer_vao = VertexArray::new()?;
                 framebuffer_vao.bind();
     
                 type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
@@ -160,13 +158,11 @@ impl Window {
                     vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
                 ]);
                 
-                let vertex_buffer = Buffer::new(BufferType::Array, to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)
-                    .expect("Error creating Vertex Buffer");
+                let vertex_buffer = Buffer::new(BufferType::Array, to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)?;
                 framebuffer_vao.set_vertex_buffer(vertex_buffer);
                 
                 const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-                let index_buffer = Buffer::new(BufferType::ElementArray, to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)
-                    .expect("Error creating Index Buffer");
+                let index_buffer = Buffer::new(BufferType::ElementArray, to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)?;
                 framebuffer_vao.set_index_buffer(index_buffer);
 
                 enable_blend_mode(true);
@@ -185,7 +181,7 @@ impl Window {
 
                 window.framebuffer_viewport = Viewport::calculate(&window);
 
-                window
+                Ok(window)
             },
             Err(err) => panic!("Error creating window: {err}!") 
         }
@@ -215,7 +211,7 @@ impl Window {
     }
 
     fn target_aspect_ratio(&self) -> f32 {
-        let size = self.framebuffer.size();
+        let size = self.framebuffer.size().unwrap();
         size.x() as f32 / size.y() as f32
     }
 
@@ -227,7 +223,7 @@ impl Window {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-            let [width, height]: [u32; 2] = (*self.framebuffer.size()).into();
+            let [width, height]: [u32; 2] = self.framebuffer.size().unwrap().into();
             gl::Viewport(0, 0, width as i32, height as i32);
 
             enable_blend_mode(true);
@@ -251,25 +247,16 @@ impl Window {
             .map(|layer| layer.post_processing_shader())
             .unwrap_or(&self.default_post_processing_shader);
 
-        post_processing_shader.bind();
-
-        self.framebuffer.texture().bind(0);
-
-        const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
-        post_processing_shader.upload_uniform(&FRAME_UNIFORM_NAME, &0);
-
         context.post_processing_layer()
             .as_ref()
             .map(|layer| layer.uniforms())
             .unwrap_or(&[])
             .iter()
             .for_each(|(name, data)| post_processing_shader.upload_uniform(name, *data));
-
-        self.framebuffer_vao.bind();
-        self.framebuffer_vao.draw();
-        self.framebuffer_vao.unbind();
-
-        post_processing_shader.unbind();
+    
+        const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
+        
+        self.framebuffer.render(0, Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
 
         self.glfw_window.swap_buffers();
     }

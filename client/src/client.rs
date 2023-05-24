@@ -1,5 +1,6 @@
 use std::time::Instant;
 use aeonetica_engine::*;
+use aeonetica_engine::error::ErrorResult;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
 use crate::client_runtime::ClientRuntime;
@@ -9,7 +10,7 @@ use crate::renderer::window::Window;
 
 const FULL_SEC: usize = 1_000_000_000;
 
-pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore) {
+pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore) -> ErrorResult<()> {
     let _ = client.nc.borrow().send(&ClientPacket {
         client_id,
         conv_id: Id::new(),
@@ -18,7 +19,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
 
     log!("sent login");
 
-    let mut window = Window::new(false);
+    let mut window = Window::new(false)?;
     let mut time = 0;
     let mut frames = 0;
     let mut last_full_sec = 0;
@@ -59,5 +60,5 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
         client_id: client.client_id,
         conv_id: Id::new(),
         message: ClientMessage::Logout,
-    }, SendMode::Safe).expect("couldnt exit client");
+    }, SendMode::Safe)
 }

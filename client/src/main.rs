@@ -53,5 +53,7 @@ fn main() {
         e.log_exit();
     }).unwrap();
 
-    run(client, client_id, &mut store)
+    if let Err(err) = run(client, client_id, &mut store) {
+        err.log_exit()
+    }
 }

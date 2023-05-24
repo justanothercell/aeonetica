@@ -1,5 +1,6 @@
 pub mod framebuffer;
 pub mod vertex_array;
+pub mod renderbuffer;
 
 use std::{marker::PhantomData, cell::Cell};
 

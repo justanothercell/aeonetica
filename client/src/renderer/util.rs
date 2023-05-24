@@ -1,3 +1,5 @@
+use super::buffer::framebuffer::FrameBuffer;
+
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PolygonMode {
@@ -33,6 +35,11 @@ pub fn enable_blend_mode(enabled: bool) {
     unsafe {
         if enabled { gl::Enable(gl::BLEND) } else { gl::Disable(gl::BLEND) }
     }
+}
+
+pub enum Target<'a> {
+    Raw,
+    FrameBuffer(&'a FrameBuffer)
 }
 
 #[macro_export]
