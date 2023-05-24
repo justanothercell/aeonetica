@@ -57,3 +57,11 @@ macro_rules! to_raw_byte_vec {
     }
 }
 pub use to_raw_byte_vec;
+
+#[macro_export]
+macro_rules! get_gl_str {
+    ($name: expr) => {
+        unsafe { std::ffi::CStr::from_ptr(gl::GetString($name) as *const i8).to_str().unwrap_or("no such value") }
+    };
+}
+pub(crate) use get_gl_str;

@@ -100,70 +100,65 @@ impl Window {
     const FRAMEBUFFER_SIZE: Vector2<u32> = Vector2 { x: 1920, y: 1080 };
 
     pub(crate) fn new(full_screen: bool) -> ErrorResult<Self> {
-        match glfw::init(glfw::FAIL_ON_ERRORS) {
-            Ok(mut glfw) => {
-                glfw.window_hint(WindowHint::ContextVersion(4, 5));
-                glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
-                glfw.window_hint(WindowHint::DoubleBuffer(true));
+        let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).expect("error creating window");
+        
+        glfw.window_hint(WindowHint::ContextVersion(4, 5));
+        glfw.window_hint(WindowHint::OpenGlProfile(OpenGlProfileHint::Core));
+        glfw.window_hint(WindowHint::DoubleBuffer(true));
 
-                let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {
-                    glfw.create_window(
-                    Self::DEFAULT_WINDOW_WIDTH,
-                    Self::DEFAULT_WINDOW_HEIGHT,
-                    Self::DEFAULT_WINDOW_TITLE,
-                    if full_screen {
-                        monitor.map_or(WindowMode::Windowed, WindowMode::FullScreen)
-                    } else {
-                        WindowMode::Windowed
-                    }
-                )}).ok_or_else(|| aeonetica_engine::error::Error::new(IOError("error creating glfw window".to_string()), Fatality::FATAL, true))?;
+        let (mut window, events) = glfw.with_primary_monitor(|glfw, monitor| {
+            glfw.create_window(
+                Self::DEFAULT_WINDOW_WIDTH,
+                Self::DEFAULT_WINDOW_HEIGHT,
+                Self::DEFAULT_WINDOW_TITLE,
+                if full_screen {
+                    monitor.map_or(WindowMode::Windowed, WindowMode::FullScreen)
+                } else {
+                    WindowMode::Windowed
+                }
+            )
+        }).ok_or_else(|| aeonetica_engine::error::Error::new(IOError("error creating glfw window".to_string()), Fatality::FATAL, true))?;
                 
-                window.make_current();
-                window.set_key_polling(true);
-
-                window.set_icon_from_pixels(load_window_icons()?);
+        window.make_current();
+        window.set_key_polling(true);
+        window.set_icon_from_pixels(load_window_icons()?);
                 
-                let mut context_provider = OpenGlContextProvider::new();
+        let mut context_provider = OpenGlContextProvider::new();
 
-                gl::load_with(|s| context_provider.insert(s, glfw.get_proc_address_raw(s)));
-                glfw.set_swap_interval(glfw::SwapInterval::None);
-                window.set_all_polling(true);
+        gl::load_with(|s| context_provider.insert(s, glfw.get_proc_address_raw(s)));
+        glfw.set_swap_interval(glfw::SwapInterval::None);
+        window.set_all_polling(true);
 
-                log!(r#"
+        log!(r#"
 ==== OpenGL info ====
   -> Vendor: {}
   -> Renderer: {}
-  -> Version: {}"#, 
-                    unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VENDOR) as *const i8).to_str().unwrap() },
-                    unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::RENDERER) as *const i8).to_str().unwrap() },
-                    unsafe { std::ffi::CStr::from_ptr(gl::GetString(gl::VERSION) as *const i8).to_str().unwrap() }
-                );
+  -> Version: {}"#,
+            get_gl_str!(gl::VENDOR), get_gl_str!(gl::RENDERER), get_gl_str!(gl::VERSION)
+        );
 
-                let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))?;
-                let framebuffer = FrameBuffer::new([
-                    Attachment::Color(Texture::create(Self::FRAMEBUFFER_SIZE)),
-                    Attachment::DepthStencil(RenderBuffer::new(Self::FRAMEBUFFER_SIZE)?)
-                ], true)?;
+        let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))?;
+        let framebuffer = FrameBuffer::new([
+            Attachment::Color(Texture::create(Self::FRAMEBUFFER_SIZE)),
+            Attachment::DepthStencil(RenderBuffer::new(Self::FRAMEBUFFER_SIZE)?)
+        ], true)?;
 
-                enable_blend_mode(true);
-                blend_mode(BlendMode::One);
+        enable_blend_mode(true);
+        blend_mode(BlendMode::One);
 
-                let mut window = Self {
-                    glfw_handle: glfw,
-                    glfw_window: window,
-                    event_receiver: events,
-                    framebuffer,
-                    default_post_processing_shader,
-                    context_provider,
-                    framebuffer_viewport: Viewport::default()
-                };
+        let mut window = Self {
+            glfw_handle: glfw,
+            glfw_window: window,
+            event_receiver: events,
+            framebuffer,
+            default_post_processing_shader,
+            context_provider,
+            framebuffer_viewport: Viewport::default()
+        };
 
-                window.framebuffer_viewport = Viewport::calculate(&window);
+        window.framebuffer_viewport = Viewport::calculate(&window);
 
-                Ok(window)
-            },
-            Err(err) => panic!("Error creating window: {err}!") 
-        }
+        Ok(window)
     }
 
     pub(crate) fn poll_events(&mut self, client: &mut ClientRuntime, context: &mut RenderContext, store: &mut DataStore) {

@@ -1,20 +1,15 @@
 use aeonetica_engine::error::*;
 
+use crate::get_gl_str;
+
 #[derive(Debug)]
 pub struct GLError(pub String, pub u32);
 
 impl GLError {
     #[cfg(debug_assertions)]
     pub fn from_gl_errno() -> Self {
-        unsafe {
-            let errno = gl::GetError();
-            let message = std::ffi::CStr::from_ptr(gl::GetString(errno) as *const i8)
-                .to_str()
-                .unwrap_or("error getting error message")
-                .to_string();
-
-            Self(message, errno)
-        }
+        let errno = unsafe { gl::GetError() };
+        Self(get_gl_str!(errno).to_string(), errno)
     }
 
     // checking for errors is slloowwww

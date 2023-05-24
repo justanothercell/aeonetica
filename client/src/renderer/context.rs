@@ -1,23 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use aeonetica_engine::Id;
-use aeonetica_engine::error::{ErrorValue, IntoError, Error, Fatality};
-use aeonetica_engine::{log, error::ErrorResult, TypeId};
-use aeonetica_engine::math::camera::Camera;
-use aeonetica_engine::util::id_map::IdMap;
-use aeonetica_engine::util::type_to_id;
+use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}};
 
 use crate::client_runtime::ClientHandleBox;
-use crate::{
-    renderer::window::events::Event,
-    renderer::layer::Layer, client_runtime::ClientRuntime, data_store::DataStore
-};
-use crate::renderer::Renderer;
+use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
-use super::buffer::framebuffer::FrameBuffer;
-use super::layer::LayerUpdater;
-use super::shader::PostProcessingLayer;
+use super::{buffer::framebuffer::FrameBuffer, layer::LayerUpdater, shader::PostProcessingLayer};
 
 #[derive(Debug)]
 struct LayerAlreadyExists(&'static str);
