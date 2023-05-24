@@ -24,24 +24,28 @@
 ## Quickstart
 1. Clone the repo and (optionally) go to [release branch](https://github.com/DragonFIghter603/aeonetica/tree/release) for stability
     ```shell
-    git clone https://github.com/DragonFIghter603/aeonetica.git --recursive
-    git checkout -b release
+    $ git clone https://github.com/DragonFIghter603/aeonetica.git --recursive
+    $ git checkout -b release
     ```
 2. Compile the client, server and mods
     ```shell
-    py build.py
+    $ python3 build.py
     ```
 3. Run first the client and then the server in two separate command prompts next to each other
     ```shell
-    cd server
-    cargo run -- <server_ip:server_port>
+    $ cd server
+    $ cargo run -- <server_ip:server_port>
     # example: cargo run -- 127.0.0.1:6090
+    # or simply:
+    $ python3 ./build.py -r
 
     # and
    
-    cd client
-    cargo run -- <client_ip:client_port> <server_ip:server_port> 
+    $ cd client
+    $ cargo run -- <client_ip:client_port> <server_ip:server_port> 
     # example: cargo run -- 127.0.0.1:9000 127.0.0.1:6090
+    # or simply:
+    $ python3 ./build.py -r
     ```
     Alternatively, run the binaries of client/server from `<crate>/target/release/<executable>.exe`. <br>
     Build with `--release` flag `py build.py --release` and `cargo run --rlease` for better performance. <br>
