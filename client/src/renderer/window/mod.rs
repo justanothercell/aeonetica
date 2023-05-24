@@ -1,16 +1,16 @@
 pub mod events;
 
 use core::f32;
-use std::{sync::mpsc::Receiver, collections::HashMap, rc::Rc};
+use std::{sync::mpsc::Receiver, collections::HashMap};
 
 use aeonetica_engine::{log, math::vector::*, error::{*, builtin::IOError}};
-use crate::{renderer::{context::RenderContext, buffer::{*, framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::Texture}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use crate::{renderer::{context::RenderContext, buffer::{framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::Texture}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
 use self::events::Event;
 
-use super::{buffer::{framebuffer::FrameBuffer, vertex_array::VertexArray}, shader, texture::ImageError};
+use super::{buffer::framebuffer::FrameBuffer, shader, texture::ImageError};
 
 pub struct OpenGlContextProvider(HashMap<&'static str, GLProc>);
 
@@ -88,7 +88,6 @@ pub(crate) struct Window {
     context_provider: OpenGlContextProvider,
 
     framebuffer: FrameBuffer,
-    framebuffer_vao: VertexArray,
     framebuffer_viewport: Viewport,
 
     default_post_processing_shader: shader::Program,
@@ -146,25 +145,6 @@ impl Window {
                     Attachment::DepthStencil(RenderBuffer::new(Self::FRAMEBUFFER_SIZE)?)
                 ], true)?;
 
-                let mut framebuffer_vao = VertexArray::new()?;
-                framebuffer_vao.bind();
-    
-                type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
-                let layout = Vertices::build();
-                let vertices = Vertices::array([
-                    vertex!([-1.0, -1.0, 0.0], [0.0, 0.0]),
-                    vertex!([1.0,  -1.0, 0.0], [1.0, 0.0]),
-                    vertex!([1.0,  1.0,  0.0], [1.0, 1.0]),
-                    vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
-                ]);
-                
-                let vertex_buffer = Buffer::new(BufferType::Array, to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)?;
-                framebuffer_vao.set_vertex_buffer(vertex_buffer);
-                
-                const INDICES: [u32; 6] = [ 0, 1, 2, 2, 3, 0 ];
-                let index_buffer = Buffer::new(BufferType::ElementArray, to_raw_byte_slice!(&INDICES), None, BufferUsage::STATIC)?;
-                framebuffer_vao.set_index_buffer(index_buffer);
-
                 enable_blend_mode(true);
                 blend_mode(BlendMode::One);
 
@@ -173,7 +153,6 @@ impl Window {
                     glfw_window: window,
                     event_receiver: events,
                     framebuffer,
-                    framebuffer_vao,
                     default_post_processing_shader,
                     context_provider,
                     framebuffer_viewport: Viewport::default()
@@ -255,7 +234,7 @@ impl Window {
             .for_each(|(name, data)| post_processing_shader.upload_uniform(name, *data));
     
         const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
-        
+
         self.framebuffer.render(0, Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
 
         self.glfw_window.swap_buffers();
@@ -272,7 +251,6 @@ impl Window {
     pub(crate) fn finish(self) {
         self.glfw_window.close();
         self.default_post_processing_shader.delete();
-        self.framebuffer_vao.delete();
         self.framebuffer.delete();
     }
 }

@@ -133,6 +133,10 @@ impl FrameBuffer {
             rb.delete();
         }
 
+        if let Some(vao) = self.vao {
+            vao.delete();
+        }
+
         for texture in self.textures {
             texture.delete();
         }
