@@ -14,30 +14,19 @@ impl Attachment {
     fn attach(self, fb: &mut FrameBuffer) -> ErrorResult<()> {
         match self {
             Attachment::Color(texture) => unsafe {
-                gl::BindTexture(gl::TEXTURE_2D, 0);
-
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as i32);
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as i32);
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
-                gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
-
-                let attachment = fb.textures.len() as u32;
-                gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0 + attachment, gl::TEXTURE_2D, texture.id(), 0); 
-
-                fb.textures.push(texture);
-                
                 // TODO: check if enough free color attachment pointers exist
+                let idx = fb.textures.len() as u32;
+
+                gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0 + idx, gl::TEXTURE_2D, texture.id(), 0); 
+                fb.textures.push(texture);
             },
-            Attachment::DepthStencil(rb) => {
-                if let Some(_) = fb.rb {
+            Attachment::DepthStencil(rb) => unsafe {
+                if fb.renderbuffer.is_some() {
                     return Err(Error::new(DataError("renderbuffer already exists in framebuffer".to_string()), Fatality::DEFAULT, true));
                 }
                 
-                unsafe {
-                    gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rb.id());
-                }
-
-                fb.rb = Some(rb);
+                gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rb.id());
+                fb.renderbuffer = Some(rb);
             }
         }
 
@@ -46,9 +35,9 @@ impl Attachment {
 }
 
 pub struct FrameBuffer {
-    fbo_id: RenderID,
+    id: RenderID,
 
-    rb: Option<RenderBuffer>,
+    renderbuffer: Option<RenderBuffer>,
     textures: Vec<Texture>,
 
     vao: Option<VertexArray>
@@ -80,19 +69,19 @@ fn new_framebuffer_vao() -> ErrorResult<VertexArray> {
 impl FrameBuffer {
     pub fn new<const N: usize>(attachments: [Attachment; N], freestanding: bool) -> ErrorResult<Self> {
         let mut fb = Self {
-            fbo_id: 0,
-            rb: None,
+            id: 0,
+            renderbuffer: None,
             textures: vec![],
             vao: if freestanding { Some(new_framebuffer_vao()?) } else { None }
         };
         
         unsafe {
-            gl::GenFramebuffers(1, &mut fb.fbo_id);
-            if fb.fbo_id == 0 {
+            gl::GenFramebuffers(1, &mut fb.id);
+            if fb.id == 0 {
                 return Err(GLError::from_gl_errno().into_error());
             }
 
-            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.fbo_id);
+            gl::BindFramebuffer(gl::FRAMEBUFFER, fb.id);
         }
 
         for attachment in attachments {
@@ -113,7 +102,7 @@ impl FrameBuffer {
     }
 
     pub fn bind(&self) {
-        unsafe { gl::BindFramebuffer(gl::FRAMEBUFFER, self.fbo_id) }
+        unsafe { gl::BindFramebuffer(gl::FRAMEBUFFER, self.id) }
     }
 
     pub fn unbind(&self) {
@@ -126,10 +115,10 @@ impl FrameBuffer {
 
     pub fn delete(self) {
         unsafe { 
-            gl::DeleteFramebuffers(1, &self.fbo_id);
+            gl::DeleteFramebuffers(1, &self.id);
         }
         
-        if let Some(rb) = self.rb {
+        if let Some(rb) = self.renderbuffer {
             rb.delete();
         }
 
@@ -143,7 +132,7 @@ impl FrameBuffer {
     }
 
     pub fn size(&self) -> Option<Vector2<u32>> {
-        self.rb.as_ref().map(|rb| *rb.size())
+        self.renderbuffer.as_ref().map(|rb| *rb.size())
     }
 
     pub fn render(&self, attachment: usize, target: Target, shader: &shader::Program, frame_uniform: &UniformStr) {
