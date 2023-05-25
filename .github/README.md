@@ -50,13 +50,14 @@
     ```
     Alternatively, run the binaries of client/server from `<crate>/target/release/<executable>.exe`. <br>
     Build with `--release` flag `py build.py --release` and `cargo run --rlease` for better performance. <br>
-    For multiple clients, use a different `clipet_port` for each: `9000`, `9001`, ...
+    For multiple clients, use a different `client_port` for each: `9000`, `9001`, ...
 
 ## Dependencies
 
 ### GNU/Linux:
 
-- rust nightly toolchain 1.70 or newer
+- rust **nightly** toolchain 1.70 or newer
+- python 3.x
 - `libglfw3-dev`
 - `libxinerama-dev`
 - `libxcursor-dev`
@@ -67,7 +68,8 @@
 
 ### Windows:
 
-- rust nightly toolchain 1.70 or newer
+- rust **nightly** toolchain 1.70 or newer
+- python 3.x
 
 > **Note**
 > All other dependencies should get fetched by `cargo` automatically.
