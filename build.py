@@ -18,10 +18,10 @@ if __name__ == '__main__':
         ('client', subprocess.Popen(['cargo', 'build', *mode],
                                     shell=True, cwd=dname+'/client',
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)),
-        ('mods/player', subprocess.Popen(['py', 'build.py', '-w', 'player', '-d', '../server/mods', *mode],
+        ('mods/player', subprocess.Popen([sys.executable, 'build.py', '-w', 'player', '-d', '../server/mods', *mode],
                                          shell=True, cwd=dname+'/mods',
                                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)),
-        ('mods/world', subprocess.Popen(['py', 'build.py', '-w', 'world', '-d', '../server/mods', *mode],
+        ('mods/world', subprocess.Popen([sys.executable, 'build.py', '-w', 'world', '-d', '../server/mods', *mode],
                                         shell=True, cwd=dname+'/mods',
                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL))
     ]
