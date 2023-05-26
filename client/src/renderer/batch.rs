@@ -214,7 +214,7 @@ impl Batch {
     }
 
     pub fn is_deletable(&self) -> bool {
-        self.indices.len() == 0 && self.vertices.len() == 0
+        self.indices.is_empty() && self.vertices.is_empty()
     }
 
     pub fn update_indices(&self) {
@@ -330,11 +330,11 @@ impl<'a> VertexData<'a> {
     }
 
     pub fn shader(&self) -> &Rc<shader::Program> {
-        &self.shader
+        self.shader
     }
 
     fn patch_texture_id(&mut self, slot: u32) {
-        patch_texture_id(self.vertices, &self.layout, slot)
+        patch_texture_id(self.vertices, self.layout, slot)
     }
 
     pub fn z_index(&self) -> u8 {

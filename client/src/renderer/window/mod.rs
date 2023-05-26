@@ -173,7 +173,7 @@ impl Window {
                     self.framebuffer_viewport = Viewport::calculate(self);
                     handled = true
                 }
-                Event::MouseMoved(pos) => *pos = self.framebuffer_viewport.translate(pos.clone()),
+                Event::MouseMoved(pos) => *pos = self.framebuffer_viewport.translate(*pos),
                 Event::Unknown() => handled = true,
                 _ => ()
             }

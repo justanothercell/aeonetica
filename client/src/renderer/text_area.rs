@@ -25,7 +25,7 @@ impl Renderable for TextArea {
     }
 
     fn is_dirty(&self) -> bool {
-        return false;
+        false
     }
 
     fn location(&self) -> &Option<VertexLocation> {

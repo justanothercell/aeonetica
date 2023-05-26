@@ -158,6 +158,6 @@ impl RenderContext {
         for (layer_box, _) in self.layer_stack.layer_stack.iter() {
             layer_box.borrow_mut().quit();
         }
-        self.post_processing_layer.map(|layer|layer.detach());
+        if let Some(layer) = self.post_processing_layer { layer.detach() }
     }
 }
