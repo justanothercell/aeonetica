@@ -4,7 +4,7 @@ import subprocess
 import sys
 import os
 
-from server.build import fetch_mods
+import server.build as server
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -27,7 +27,7 @@ if __name__ == '__main__':
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)),
     ]
     
-    for mod in fetch_mods('server/mods/mods.ron'):
+    for mod in server.fetch_mods('server/mods/mods.ron'):
         process = subprocess.Popen([sys.executable, 'build.py', '-w', mod, '-d', '../server/mods', *mode],
                                    cwd=dname+'/mods', 
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
