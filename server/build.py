@@ -12,10 +12,8 @@ ENDC = '\033[0m'
 BLUE = '\033[94m'
 GREEN = '\033[92m'
 
-mods = []
-
 def fetch_mods(ron_file):
-    global mods
+    mods = []
     print(f'{BLUE}{BOLD}=>> FETCHING MODS: {ENDC}')
     
     with open(ron_file, 'r') as file:
@@ -26,12 +24,12 @@ def fetch_mods(ron_file):
             
             mod = line[1:line.find(':')]
             mods.append(mod)
-            print(f'{GREEN} -> found `{mod}`')
+            print(f'{GREEN} -> found `{mod}` {ENDC}')
+    return mods
 
 if __name__ == '__main__':
-    fetch_mods(f'{dname}/mods/mods.ron')
     os.chdir(f'{dname}/../mods')
-    for mod in mods:
+    for mod in fetch_mods(f'{dname}/mods/mods.ron'):
         print(f'{BLUE}{BOLD}=>> COMPILING MOD {mod}:{ENDC}')
         subprocess.call([sys.executable, 'build.py', '-w', mod, '-d', '../server/mods'])
     os.chdir(dname)
