@@ -56,7 +56,7 @@ impl<T> Vector2<T> {
     }
 }
 
-impl<T: Neg> Vector2<T> {
+impl<T: Neg<Output=T>> Vector2<T> {
     pub fn rotate_90(self) -> Self {
         Self {
             x: -self.y,
