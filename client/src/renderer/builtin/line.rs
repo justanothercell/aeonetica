@@ -102,8 +102,6 @@ impl Line {
             ], 
             &self.params
         ));
-
-        log!(ERROR, "verts: {:?}", self.vertices);
     }
 }
 
