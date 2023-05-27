@@ -91,7 +91,7 @@ impl FrameBuffer {
         unsafe {
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
                 let mut err = GLError::from_gl_errno().into_error();
-                err.add_info(format!("error creating framebuffer"));
+                err.add_info("error creating framebuffer".to_string());
                 Err(err)
             }
             else {

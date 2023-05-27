@@ -159,7 +159,7 @@ impl Renderer {
             location.batch(),
             |batch| {
                 batch.remove_vertices(location);
-                batch.is_deletable().then(|| batch.id().clone())
+                batch.is_deletable().then(|| *batch.id())
             }
         );
 
