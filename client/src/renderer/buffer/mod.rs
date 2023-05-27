@@ -24,7 +24,7 @@ macro_rules! shader_tuple_impls {
 
 pub struct Vertex;
 impl ShaderLayoutType for Vertex {
-    type Type = [f32; 3];
+    type Type = [f32; 2];
 }
 
 pub struct TexCoord;

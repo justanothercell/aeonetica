@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use aeonetica_client::renderer::builtin::Line;
+use aeonetica_client::renderer::builtin::{Line, TextArea};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;

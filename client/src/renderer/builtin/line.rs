@@ -95,10 +95,10 @@ impl Line {
 
         self.vertices = Some(self.material.vertices(
             [
-                [x1, y1, 0.0],
-                [x2, y2, 0.0],
-                [x3, y3, 0.0],
-                [x4, y4, 0.0]
+                [x1, y1],
+                [x2, y2],
+                [x3, y3],
+                [x4, y4]
             ], 
             &self.params
         ));

@@ -12,7 +12,7 @@ pub trait Material {
     fn shader(&self) -> &Rc<shader::Program>;
     fn texture_id<const N: usize>(data: &Self::Data<N>) -> Option<RenderID>;
     fn layout<'a>() -> &'a Rc<BufferLayout>;
-    fn vertices<const N: usize>(&self, vertices: [[f32; 3]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N];
+    fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N];
 }
 
 pub struct FlatColor {
@@ -48,7 +48,7 @@ impl FlatColor {
 impl Material for FlatColor {
     type Layout = BufferLayoutBuilder<(Vertex, Color)>;
     type Data<const N: usize> = [f32; 4];
-    type VertexTuple = VertexTuple2<[f32; 3], [f32; 4]>;
+    type VertexTuple = VertexTuple2<[f32; 2], [f32; 4]>;
 
     fn shader(&self) -> &Rc<shader::Program> {
         &self.shader
@@ -65,7 +65,7 @@ impl Material for FlatColor {
         }   
     }
 
-    fn vertices<const N: usize>(&self, vertices: [[f32; 3]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
+    fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], *data)))
     }
 }
@@ -101,7 +101,7 @@ impl FlatTexture {
 impl Material for FlatTexture {
     type Layout = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
     type Data<const N: usize> = ([[f32; 2]; N], RenderID);
-    type VertexTuple = VertexTuple3<[f32; 3], [f32; 2], Sampler2D>;
+    type VertexTuple = VertexTuple3<[f32; 2], [f32; 2], Sampler2D>;
 
     fn shader(&self) -> &Rc<shader::Program> {
         &self.shader
@@ -118,7 +118,7 @@ impl Material for FlatTexture {
         }   
     }
 
-    fn vertices<const N: usize>(&self, vertices: [[f32; 3]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
+    fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], data.0[i], Sampler2D(0))))
     }
 }

@@ -237,10 +237,10 @@ impl Renderer {
             let char_sprite = char_sprite.unwrap();
 
             let vertices = Vertices::array([
-                vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.left(), char_sprite.top()], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.right(), char_sprite.top()], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
-                vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.left(), char_sprite.bottom()], Sampler2D(0))
+                vertex!([position.x() - half_size.x(), position.y() - half_size.y()], [char_sprite.left(), char_sprite.top()], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() - half_size.y()], [char_sprite.right(), char_sprite.top()], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() + half_size.y()], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
+                vertex!([position.x() - half_size.x(), position.y() + half_size.y()], [char_sprite.left(), char_sprite.bottom()], Sampler2D(0))
             ]);
 
             self.add_vertices(

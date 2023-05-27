@@ -50,10 +50,10 @@ fn new_framebuffer_vao() -> ErrorResult<VertexArray> {
     type Vertices = BufferLayoutBuilder<(Vertex, TexCoord)>;
     let layout = Vertices::build();
     let vertices = Vertices::array([
-        vertex!([-1.0, -1.0, 0.0], [0.0, 0.0]),
-        vertex!([1.0,  -1.0, 0.0], [1.0, 0.0]),
-        vertex!([1.0,  1.0,  0.0], [1.0, 1.0]),
-        vertex!([-1.0, 1.0,  0.0], [0.0, 1.0])
+        vertex!([-1.0, -1.0], [0.0, 0.0]),
+        vertex!([ 1.0, -1.0], [1.0, 0.0]),
+        vertex!([ 1.0,  1.0], [1.0, 1.0]),
+        vertex!([-1.0,  1.0], [0.0, 1.0])
     ]);
 
     let vertex_buffer = Buffer::new(BufferType::Array, to_raw_byte_slice!(&vertices), Some(Rc::new(layout)), BufferUsage::STATIC)?;
