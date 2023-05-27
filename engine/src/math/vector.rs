@@ -118,6 +118,13 @@ impl Vector2<f32> {
 
         self
     }
+
+    pub fn rotate_90(self) -> Self {
+        Self {
+            x: -self.y,
+            y: self.x
+        }
+    }
 }
 
 impl Vector2<f64> {
