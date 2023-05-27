@@ -13,4 +13,8 @@ impl Tile {
     pub fn sprite_sheet_index(&self) -> u16 {
         *self as u16
     }
+
+    pub fn is_solid(&self) -> bool {
+        (*self as u16) == 0
+    }
 }

@@ -13,11 +13,11 @@ pub enum Nullable<T> {
 #[allow(unused)]
 impl<T> Nullable<T> {
     #[inline]
-    pub const fn some(value: T) -> Self {
+    pub const fn value(value: T) -> Self {
         Self::Value(value)
     }
     #[inline]
-    pub const fn none() -> Self {
+    pub const fn null() -> Self {
         Self::Null
     }
     #[inline]
@@ -283,14 +283,14 @@ impl<T> Deref for Nullable<T>{
     type Target = T;
     #[track_caller]
     fn deref(&self) -> &<Self as Deref>::Target {
-        self.ref_option().unwrap()
+        self.as_ref().unwrap()
     }
 }
 
 impl<T> DerefMut for Nullable<T>{
     #[track_caller]
     fn deref_mut(&mut self) -> &mut T {
-        self.mut_option().unwrap()
+        self.as_mut().unwrap()
     }
 }
 

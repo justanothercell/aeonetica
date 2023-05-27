@@ -7,8 +7,9 @@ use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Ca
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::nullable::Nullable;
 
-use crate::common::{Chunk, CHUNK_SIZE};
+use crate::common::{Chunk, CHUNK_SIZE, WorldView};
 use crate::server::world::World;
+use crate::tiles::Tile;
 
 #[allow(clippy::large_enum_variant)]
 pub enum ClientChunk {
@@ -42,6 +43,9 @@ impl ClientMod for WorldModClient {
     fn start<'a>(&self, store: &mut DataStore, provider: OpenGlRenderContextProvider<'a>) -> &'a mut RenderContext {
         let context = provider.make_context();
         println!("started worldmodclient");
+        store.add_store(ClientWorld {
+            chunks: Default::default(),
+        });
         context.push(WorldLayer::new()).expect("duplicate layer");
         context.push(UILayer::new()).expect("duplicate layer");
         store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
@@ -49,8 +53,24 @@ impl ClientMod for WorldModClient {
     }
 }
 
+pub struct ClientWorld {
+    chunks: HashMap<Vector2<i32>, ClientChunk>
+}
+
+impl WorldView for ClientWorld {
+    fn is_loaded(&self, pos: Vector2<i32>) -> bool {
+        self.chunks.contains_key(&Self::chunk(pos))
+    }
+
+    fn get_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<Tile> {
+        if let ClientChunk::Chunk(chunk, _) = self.chunks.get(&Self::chunk(pos))? {
+            return Nullable::Value(chunk.get_tile(Self::pos_in_chunk(pos)))
+        }
+        Nullable::Null
+    }
+}
+
 pub(crate) struct WorldHandle {
-    chunks: HashMap<Vector2<i32>, ClientChunk>,
     chunk_queue: Vec<Chunk>,
     tile_sprites: SpriteSheet,
 }
@@ -58,7 +78,6 @@ pub(crate) struct WorldHandle {
 impl WorldHandle {
     fn new() -> Self {
         Self {
-            chunks: Default::default(),
             chunk_queue: vec![],
             tile_sprites: SpriteSheet::from_texture(
                 Texture::from_bytes(include_bytes!("../assets/include/tilemap.png")).unwrap(),
@@ -87,18 +106,20 @@ impl ClientHandle for WorldHandle {
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
-        let center_chunk: Vector2<_> = (store.get_store::<CameraPosition>().0 / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
+        let cam = store.get_store::<CameraPosition>().0;
+        let chunks = &mut store.mut_store::<ClientWorld>().chunks;
+        let center_chunk: Vector2<_> = (cam / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
         for x in (center_chunk.x-2)..=(center_chunk.x+2) {
             for y in (center_chunk.y-1)..=(center_chunk.y+1) {
                 let k = Vector2::from((x, y));
-                self.chunks.entry(k).or_insert_with(|| {
+                chunks.entry(k).or_insert_with(|| {
                     messenger.call_server_fn(World::request_world_chunk, k, SendMode::Safe);
                     ClientChunk::Requested
                 });
             }
         }
 
-        self.chunks.retain(|k, v|{
+        chunks.retain(|k, v|{
             let d = *k - center_chunk;
             if d.x.abs() > 2 || d.y.abs() > 2 {
                 if let ClientChunk::Chunk(_, quads) = v {
@@ -130,8 +151,8 @@ impl ClientHandle for WorldHandle {
                 renderer.add(&mut quad);
                 quads.push(quad);
             }
-            self.chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
-            log!(DEBUG, "loaded chunks: {}", self.chunks.len());
+            chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
+            log!(DEBUG, "loaded chunks: {}", chunks.len());
         }
     }
 }

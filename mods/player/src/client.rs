@@ -5,9 +5,7 @@ use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, builtin::Quad};
-use aeonetica_client::renderer::context::RenderContext;
 use aeonetica_client::renderer::texture::Texture;
-use aeonetica_client::renderer::window::{OpenGlRenderContextProvider};
 use aeonetica_engine::{log, TypeId};
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
@@ -16,8 +14,8 @@ use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::math::vector::Vector2;
-use aeonetica_server::ecs::messaging::Messenger;
-use world_mod::client::WorldLayer;
+use world_mod::common::WorldView;
+use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraPosition;
 use crate::server::Player;
 
@@ -68,7 +66,7 @@ impl PlayerHandle {
             position: Default::default(),
             quad: Null,
             key_state: [false; 4],
-            speed: 6.0
+            speed: 10.0
         }
     }
 
@@ -121,16 +119,20 @@ impl ClientHandle for PlayerHandle {
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
         let quad = &mut *self.quad;
         if self.is_controlling {
-            match self.key_state {
-                [true, _, false, _] => self.position.y -= self.speed * delta_time as f32,
-                [false, _, true, _] => self.position.y += self.speed * delta_time as f32,
-                _ => {}
-            }
+            let v = Vector2::new(match self.key_state {
+                    [_, true, _, false] => -1.0,
+                    [_, false, _, true] => 1.0,
+                    _ => 0.0
+                },
+                match self.key_state {
+                    [true, _, false, _] => -1.0,
+                    [false, _, true, _] => 1.0,
+                    _ => 0.0
+                });
 
-            match self.key_state {
-                [_, true, _, false] => self.position.x -= self.speed * delta_time as f32,
-                [_, false, _, true] => self.position.x += self.speed * delta_time as f32,
-                _ => {}
+            if v.mag_sq() > 0.0 {
+                let world = &mut *store.get_store::<ClientWorld>();
+                world.calc_move(&mut self.position, Vector2::new(1.0, 1.0), v.normalized() * self.speed * delta_time as f32);
             }
 
             if (self.position - self.p_position).mag_sq() > 0.05 {

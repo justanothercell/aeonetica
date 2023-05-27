@@ -5,13 +5,14 @@ use aeonetica_engine::{ClientId, EntityId, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::math::vector::Vector2;
 use aeonetica_engine::util::id_map::{IdMap, IdSet};
+use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::events::ConnectionListener;
 use aeonetica_server::ecs::messaging::Messenger;
 use aeonetica_server::ecs::module::Module;
 use crate::client::WorldHandle;
-use crate::common::{Chunk, CHUNK_SIZE, Population};
+use crate::common::{Chunk, CHUNK_SIZE, Population, WorldView};
 use crate::server::gen::GenProvider;
 use crate::tiles::Tile;
 
@@ -77,11 +78,15 @@ impl World {
     }
 
     pub fn get_tile_at(&mut self, pos: Vector2<i32>) -> Tile {
-        self.get_chunk_at(pos / 16).get_tile(((pos % CHUNK_SIZE as i32) + (CHUNK_SIZE as i32, CHUNK_SIZE as i32).into()) % CHUNK_SIZE as i32)
+        self.get_chunk_at(World::chunk(pos)).get_tile(World::pos_in_chunk(pos))
+    }
+
+    pub fn try_get_tile_no_gen(&self, pos: Vector2<i32>) -> Nullable<Tile> {
+        Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_tile(World::pos_in_chunk(pos)))
     }
 
     pub fn set_tile_at(&mut self, pos: Vector2<i32>, t: Tile) {
-        self.mut_chunk_at(pos / 16).set_tile(((pos % CHUNK_SIZE as i32) + (CHUNK_SIZE as i32, CHUNK_SIZE as i32).into()) % CHUNK_SIZE as i32, t)
+        self.mut_chunk_at(World::chunk(pos)).set_tile(World::pos_in_chunk(pos), t)
     }
 
     pub fn mut_chunk_at(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
@@ -92,6 +97,51 @@ impl World {
             self.mut_chunk_at_raw(chunk_pos)
         }
     }
+
+    pub fn try_get_chunk_no_gen(&self, chunk_pos: Vector2<i32>) -> Nullable<&Chunk> {
+        if self.cached_chunk_pos == chunk_pos {
+            return Nullable::Value(unsafe { &*(self.cached_chunk_raw_ptr as *const Chunk) })
+        }
+
+        let mut cp = chunk_pos;
+        let mut chunk_ref = match (chunk_pos.x >= 0, chunk_pos.y >= 0) {
+            (true, true) => {
+                &self.origin_ne
+            },
+            (true, false) => {
+                cp.y = -cp.y - 1;
+                &self.origin_se
+            },
+            (false, true) => {
+                cp.x = -cp.x - 1;
+                &self.origin_nw
+            },
+            (false, false) => {
+                cp.x = -cp.x - 1;
+                cp.y = -cp.y - 1;
+                &self.origin_sw
+            },
+        };
+        while cp.x > 0 {
+            cp.x -= 1;
+            if chunk_ref.further_x.is_none() {
+                return Nullable::Null
+            }
+            chunk_ref = chunk_ref.further_x.as_ref().unwrap();
+        }
+        while cp.y > 0 {
+            cp.y -= 1;
+            if chunk_ref.further_y.is_none() {
+                return Nullable::Null
+            }
+            chunk_ref = chunk_ref.further_y.as_ref().unwrap();
+        }
+        let mut_self = unsafe { &mut *(self as *const Self as usize as *mut Self)};
+        mut_self.cached_chunk_pos = chunk_pos;
+        mut_self.cached_chunk_raw_ptr = &chunk_ref.chunk as *const Chunk as usize;
+        Nullable::Value(&chunk_ref.chunk)
+    }
+
 
     pub fn mut_chunk_at_raw(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
         if self.cached_chunk_pos == chunk_pos {
@@ -150,6 +200,16 @@ impl World {
         log!(DEBUG, "client requested chunk {chunk_pos}");
         let chunk = engine.mut_module_of::<Self>(id).get_chunk_at(chunk_pos).clone();
         engine.mut_module_of::<Messenger>(id).call_client_fn_for(WorldHandle::receive_chunk_data, client, chunk, SendMode::Safe);
+    }
+}
+
+impl WorldView for World {
+    fn is_loaded(&self, pos: Vector2<i32>) -> bool {
+        self.try_get_chunk_no_gen(World::chunk(pos)).is_value()
+    }
+
+    fn get_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<Tile> {
+        self.try_get_tile_no_gen(pos)
     }
 }
 
