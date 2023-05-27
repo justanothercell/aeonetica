@@ -16,7 +16,7 @@ use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::math::vector::Vector2;
 use world_mod::common::WorldView;
 use world_mod::client::{ClientWorld, WorldLayer};
-use world_mod::client::CameraPosition;
+use world_mod::client::CameraData;
 use crate::server::Player;
 
 pub struct PlayerModClient {
@@ -141,7 +141,7 @@ impl ClientHandle for PlayerHandle {
             }
 
             quad.set_position(self.position);
-            store.mut_store::<CameraPosition>().set(self.position);
+            store.mut_store::<CameraData>().position = self.position;
         } else if self.interpolation_delta * self.interpolation_delta < 1.0 {
             let delta = self.position - self.p_position;
             quad.set_position(self.p_position + delta * self.interpolation_delta);

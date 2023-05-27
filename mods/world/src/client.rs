@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use noise::{Fbm, NoiseFn, Perlin};
 use aeonetica_client::renderer::builtin::{Line, TextArea};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
+use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
@@ -18,13 +20,22 @@ pub enum ClientChunk {
 }
 
 #[derive(PartialEq)]
-pub struct CameraPosition(Vector2<f32>);
+pub struct CameraData {
+    pub position: Vector2<f32>,
+    trauma: f32
+}
 
-impl CameraPosition {
-    pub fn set(&mut self, position: Vector2<f32>) {
-        self.0 = position;
+
+impl CameraData {
+    pub fn add_trauma(&mut self, trauma: f32) {
+        self.trauma = (self.trauma + trauma).clamp(0.0, 1.0);
+    }
+
+    pub fn clear_trauma(&mut self) {
+        self.trauma = 0.0;
     }
 }
+
 
 pub struct WorldModClient {
 
@@ -48,7 +59,10 @@ impl ClientMod for WorldModClient {
         });
         context.push(WorldLayer::new()).expect("duplicate layer");
         context.push(UILayer::new()).expect("duplicate layer");
-        store.add_store(CameraPosition(Vector2::new(0.0, 0.0)));
+        store.add_store(CameraData {
+            position: Vector2::new(0.0, 0.0),
+            trauma: 0.0,
+        });
         context
     }
 }
@@ -106,7 +120,7 @@ impl ClientHandle for WorldHandle {
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
-        let cam = store.get_store::<CameraPosition>().0;
+        let cam = store.get_store::<CameraData>().position;
         let chunks = &mut store.mut_store::<ClientWorld>().chunks;
         let center_chunk: Vector2<_> = (cam / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
         for x in (center_chunk.x-2)..=(center_chunk.x+2) {
@@ -157,11 +171,19 @@ impl ClientHandle for WorldHandle {
     }
 }
 
-pub struct WorldLayer;
+pub struct WorldLayer {
+    shake_noise: Box<dyn NoiseFn<f64, 2>>,
+    time: f64,
+    manual_shake_queued: bool
+}
 
 impl WorldLayer {
     fn new() -> Self {
-        Self {}
+        Self {
+            shake_noise: Box::new(Fbm::<Perlin>::new(0)),
+            time: 0.0,
+            manual_shake_queued: false
+        }
     }
 }
 
@@ -175,10 +197,27 @@ impl Layer for WorldLayer {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, _delta_time: f64) {
-        let new_pos = store.get_store::<CameraPosition>().0;
-        if new_pos != *camera.position() {
-            camera.set_position(new_pos);
+    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
+        self.time += delta_time;
+        let mut cam = store.mut_store::<CameraData>();
+        if self.manual_shake_queued {
+            cam.add_trauma(0.2);
+            self.manual_shake_queued = false;
+        }
+        // easing f(t) = t - t² + t³
+        let shake = cam.trauma - cam.trauma * cam.trauma + cam.trauma * cam.trauma * cam.trauma;
+        let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake;
+        camera.set_position(pos);
+        cam.trauma = (cam.trauma - delta_time as f32 / 2.0).clamp(0.0, 1.0);
+    }
+
+    fn event(&mut self, event: &Event) -> bool {
+        match event {
+            Event::KeyPressed(KeyCode::Enter) => {
+                self.manual_shake_queued = true;
+                true
+            }
+            _ => false
         }
     }
 }
