@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use aeonetica_engine::{math::vector::Vector2, log};
+use aeonetica_engine::math::vector::Vector2;
 
 use crate::renderer::{material::{FlatColor, Material}, VertexLocation, shader, Renderable, batch::VertexData, util};
 
