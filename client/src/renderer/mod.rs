@@ -1,3 +1,4 @@
+pub mod buffer;
 pub mod builtin;
 pub mod context;
 pub mod glerror;
@@ -10,7 +11,6 @@ pub mod util;
 pub mod window;
 
 mod batch;
-mod buffer;
 
 pub use batch::VertexLocation;
 
@@ -24,7 +24,7 @@ use batch::*;
 use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, log};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
-use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}};
+use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}, util::Target};
 
 pub(self) type RenderID = gl::types::GLuint;
 
@@ -111,7 +111,7 @@ impl Renderer {
         self.shader = None;
     }
 
-    pub fn draw_vertices(&mut self, _target: &FrameBuffer) {
+    pub fn draw_vertices(&mut self, _target: &Target) {
         let mut_ref_ptr = self as *mut _;
         self.batches.iter().rev().for_each(|(_, batch)|
             batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
@@ -199,7 +199,7 @@ impl Renderer {
         } 
     }
 
-    pub(super) fn on_layer_update(&mut self, camera: &Camera, target: &FrameBuffer, updater: LayerUpdater, delta_time: f64) {
+    pub(super) fn on_layer_update(&mut self, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64) {
         let ref_mut_ptr = self as *mut _;
         self.pipeline.pipeline(unsafe { &mut *ref_mut_ptr }, camera, target, updater, delta_time);
     }

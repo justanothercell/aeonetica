@@ -14,7 +14,9 @@ pub enum PolygonMode {
 #[allow(unused)]
 #[inline]
 pub fn polygon_mode(mode: PolygonMode) {
-    unsafe { gl::PolygonMode(gl::FRONT_AND_BACK, mode as gl::types::GLenum) };
+    unsafe {
+        gl::PolygonMode(gl::FRONT_AND_BACK, mode as gl::types::GLenum)
+    };
 }
 
 #[allow(unused)]
@@ -27,13 +29,22 @@ pub enum BlendMode {
 
 #[inline]
 pub fn blend_mode(mode: BlendMode) {
-    unsafe { gl::BlendFunc(mode as gl::types::GLenum, gl::ONE_MINUS_SRC_ALPHA) };
+    unsafe {
+        gl::BlendFunc(mode as gl::types::GLenum, gl::ONE_MINUS_SRC_ALPHA)
+    }
 }
 
 #[inline]
 pub fn enable_blend_mode(enabled: bool) {
     unsafe {
         if enabled { gl::Enable(gl::BLEND) } else { gl::Disable(gl::BLEND) }
+    }
+}
+
+#[inline]
+pub fn viewport(position: Vector2<i32>, size: Vector2<i32>) {
+    unsafe {
+        gl::Viewport(position.x(), position.y, size.x(), size.y())
     }
 }
 
@@ -48,6 +59,7 @@ macro_rules! to_raw_byte_slice {
         unsafe { ::std::mem::transmute::<_, &mut [u8]>(($value, ::std::mem::size_of_val($value))) }
     };
 }
+use aeonetica_engine::math::vector::Vector2;
 pub use to_raw_byte_slice;
 
 #[macro_export]

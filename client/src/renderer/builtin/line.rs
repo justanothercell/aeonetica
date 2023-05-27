@@ -88,17 +88,13 @@ impl Line {
     fn recalculate_vertex_data(&mut self) {
         let n = (self.to - self.from).normalized().rotate_90();
         let w = Vector2::new(self.weight, self.weight).half();
-        let (x1, y1) = (self.from + n * w).into();
-        let (x2, y2) = (self.from - n * w).into();
-        let (x3, y3) = (self.to - n * w).into();
-        let (x4, y4) = (self.to + n * w).into();
 
         self.vertices = Some(self.material.vertices(
             [
-                [x1, y1],
-                [x2, y2],
-                [x3, y3],
-                [x4, y4]
+                (self.from + n * w).into_array(),
+                (self.from - n * w).into_array(),
+                (self.to   - n * w).into_array(),
+                (self.to   + n * w).into_array()
             ], 
             &self.params
         ));
