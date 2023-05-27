@@ -32,12 +32,12 @@ impl World {
         let gen = self.generator.clone();
         let chunk = self.mut_chunk_at_raw(chunk_pos);
         let scale = 0.75;
-        let scale2 = 1.5;
+        let scale2 = 1.6;
         for x in 0..CHUNK_SIZE as i32 {
             for y in 0..CHUNK_SIZE as i32 {
                 let p = Vector2::new(x, y).to_f64() / 16.0 * scale + chunk_pos.to_f64() * scale;
                 let ps2 = Vector2::new(x, y).to_f64() / 16.0 * scale2 + chunk_pos.to_f64() * scale2;
-                let accent_2 = gen.space_cave_noise.get(ps2.into_array()) < -0.875;
+                let accent_2 = gen.space_cave_noise.get(ps2.into_array()) < -0.865;
                 let current = gen.cave_noise.get(p.into_array()) > 0.0 || accent_2;
                 let around =
                     (gen.cave_noise.get((p + Vector2::new(1.0/16.0 * scale, 0.0/16.0 * scale)).into_array()) > 0.0) as i32 +
