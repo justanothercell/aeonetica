@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use aeonetica_client::renderer::builtin::{Line, TextArea};
+use aeonetica_client::renderer::builtin::Line;
 use aeonetica_client::renderer::material::FlatTexture;
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
@@ -10,6 +10,10 @@ use aeonetica_engine::util::nullable::Nullable;
 use crate::common::{Chunk, CHUNK_SIZE, WorldView};
 use crate::server::world::World;
 use crate::tiles::Tile;
+
+use self::pipeline::WorldRenderPipeline;
+
+mod pipeline;
 
 #[allow(clippy::large_enum_variant)]
 pub enum ClientChunk {
@@ -80,7 +84,7 @@ impl WorldHandle {
         Self {
             chunk_queue: vec![],
             tile_sprites: SpriteSheet::from_texture(
-                Texture::from_bytes(include_bytes!("../assets/include/tilemap.png")).unwrap(),
+                Texture::from_bytes(include_bytes!("../../assets/include/tilemap.png")).unwrap(),
                 Vector2::new(16, 16)
             ).expect("error loading world spritesheet"),
         }
@@ -169,6 +173,7 @@ impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
         let mut line = Line::new(Vector2::new(0.0, 0.0), Vector2::new(20.0, 10.0), 0.1, 2, [1.0, 0.0, 1.0, 1.0]);
         renderer.add(&mut line);
+        renderer.set_pipeline(WorldRenderPipeline::new().expect("error instanciating custom render pipeline"));
     }
 
     fn instantiate_camera(&self) -> Camera {

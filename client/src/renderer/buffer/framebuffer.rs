@@ -135,7 +135,7 @@ impl FrameBuffer {
         self.renderbuffer.as_ref().map(|rb| *rb.size())
     }
 
-    pub fn render(&self, attachment: usize, target: Target, shader: &shader::Program, frame_uniform: &UniformStr) {
+    pub fn render(&self, attachment: usize, target: &Target, shader: &shader::Program, frame_uniform: &UniformStr) {
         debug_assert!(attachment < self.textures.len() && self.vao.is_some());
 
         shader.bind();
@@ -157,5 +157,12 @@ impl FrameBuffer {
         }
 
         shader.unbind();
+    }
+
+    pub fn clear(&self, color: [f32; 4]) {
+        unsafe {
+            gl::ClearColor(color[0], color[1], color[2], color[3]);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        }
     }
 }

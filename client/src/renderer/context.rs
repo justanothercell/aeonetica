@@ -6,7 +6,7 @@ use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{i
 use crate::client_runtime::ClientHandleBox;
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
-use super::{buffer::framebuffer::FrameBuffer, layer::LayerUpdater, shader::PostProcessingLayer};
+use super::{buffer::framebuffer::FrameBuffer, layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
 
 #[derive(Debug)]
 struct LayerAlreadyExists(&'static str);
@@ -40,7 +40,7 @@ impl LayerBox {
         self.layer.quit(&mut self.renderer)
     }
 
-    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &FrameBuffer, store: &mut DataStore, delta_time: f64) {
+    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &Target, store: &mut DataStore, delta_time: f64) {
         self.layer.update_camera(store, &mut self.camera, delta_time);
         self.renderer.on_layer_update(&self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), delta_time);
     }
@@ -133,7 +133,7 @@ impl RenderContext {
         log!(PACK, "Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, target: &FrameBuffer, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, target: &Target, store: &mut DataStore, delta_time: f64) {
         let handles = client.handles();
         self.layer_stack.layer_stack.iter_mut()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active())

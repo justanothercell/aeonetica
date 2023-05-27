@@ -65,7 +65,7 @@ impl Viewport {
     }
 
     fn apply(&self) {
-        unsafe { gl::Viewport(self.offset.x(), self.offset.y(), self.size.x(), self.size.y()) }
+        viewport(self.offset, self.size);
     }
 
     fn translate(&self, input: Vector2<f32>) -> Vector2<f32> {
@@ -192,18 +192,12 @@ impl Window {
     pub(crate) fn on_render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
         // main frame rendering
         self.framebuffer.bind();
-        
-        unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
+        self.framebuffer.clear([0.0, 0.0, 0.0, 1.0]);
 
-            let [width, height]: [u32; 2] = self.framebuffer.size().unwrap().into();
-            gl::Viewport(0, 0, width as i32, height as i32);
+        viewport(Vector2::default(), self.framebuffer.size().unwrap().map(|i| i as i32));
+        enable_blend_mode(true);
 
-            enable_blend_mode(true);
-        }
-
-        context.on_render(client, &self.framebuffer, store, delta_time);
+        context.on_render(client, &Target::FrameBuffer(&self.framebuffer), store, delta_time);
 
         self.framebuffer.unbind();
         
@@ -230,7 +224,7 @@ impl Window {
     
         const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
 
-        self.framebuffer.render(0, Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
+        self.framebuffer.render(0, &Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
 
         self.glfw_window.swap_buffers();
     }
