@@ -6,7 +6,8 @@ pub enum Tile {
     Wall,
     FloorStoneBrick,
     FloorStone,
-    FloorHardStone
+    FloorHardStone,
+    Lamp
 }
 
 impl Tile {
