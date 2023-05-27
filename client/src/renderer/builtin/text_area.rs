@@ -1,6 +1,6 @@
 use aeonetica_engine::{math::vector::Vector2, log};
 
-use super::*;
+use crate::renderer::*;
 
 pub struct TextArea {
     position: Vector2<f32>,
@@ -15,7 +15,7 @@ pub struct TextArea {
     spacing: f32,
 
     location: Option<VertexLocation>,
-    vertices: Vec<VertexTuple3<[f32; 3], [f32; 2], Sampler2D>>,
+    vertices: Vec<VertexTuple3<[f32; 2], [f32; 2], Sampler2D>>,
     indices: Vec<u32>
 }
 
@@ -36,7 +36,7 @@ impl Renderable for TextArea {
         self.location = location;
     }
 
-    fn texture_id(&self) -> Option<super::RenderID> {
+    fn texture_id(&self) -> Option<RenderID> {
         Some(self.font.sprite_sheet().texture().id())
     }
 
@@ -64,7 +64,6 @@ thread_local! {
 }
 
 impl TextArea {
-
     fn layout<'a>() -> &'a Rc<BufferLayout> {
         unsafe {
             let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| l as *const _);
@@ -183,10 +182,10 @@ impl TextArea {
             let char_sprite = char_sprite.unwrap();
 
             self.vertices.extend_from_slice(&TextAreaVertices::array([
-                vertex!([position.x() - half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.left(),  char_sprite.top()   ], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() - half_size.y(), 0.0], [char_sprite.right(), char_sprite.top()   ], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
-                vertex!([position.x() - half_size.x(), position.y() + half_size.y(), 0.0], [char_sprite.left(),  char_sprite.bottom()], Sampler2D(0))
+                vertex!([position.x() - half_size.x(), position.y() - half_size.y()], [char_sprite.left(),  char_sprite.top()   ], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() - half_size.y()], [char_sprite.right(), char_sprite.top()   ], Sampler2D(0)),
+                vertex!([position.x() + half_size.x(), position.y() + half_size.y()], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
+                vertex!([position.x() - half_size.x(), position.y() + half_size.y()], [char_sprite.left(),  char_sprite.bottom()], Sampler2D(0))
             ]));
         }
     }

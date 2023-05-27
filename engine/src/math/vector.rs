@@ -47,6 +47,22 @@ impl<T> Vector2<T> {
     pub fn into_array(self) -> [T;2] {
         [self.x, self.y]
     }
+
+    pub fn flip_xy(self) -> Self {
+        Self {
+            x: self.y,
+            y: self.x
+        }
+    }
+}
+
+impl<T: Neg> Vector2<T> {
+    pub fn rotate_90(self) -> Self {
+        Self {
+            x: -self.y,
+            y: self.x
+        }
+    }
 }
 
 impl Vector2<i32> {

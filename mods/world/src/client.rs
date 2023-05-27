@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use aeonetica_client::renderer::builtin::{Line, TextArea};
 use aeonetica_client::renderer::material::FlatTexture;
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, Quad}};
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, util::{id_map::IdMap, type_to_id}, math::{camera::Camera, vector::Vector2}, networking::messaging::ClientEntity, *};
 use aeonetica_engine::networking::SendMode;
@@ -144,6 +145,11 @@ impl WorldLayer {
 }
 
 impl Layer for WorldLayer {
+    fn attach(&mut self, renderer: &mut Renderer) {
+        let mut line = Line::new(Vector2::new(0.0, 0.0), Vector2::new(20.0, 10.0), 0.1, 2, [1.0, 0.0, 1.0, 1.0]);
+        renderer.add(&mut line);
+    }
+
     fn instantiate_camera(&self) -> Camera {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
