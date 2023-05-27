@@ -1,20 +1,18 @@
-pub mod window;
-pub mod layer;
+pub mod builtin;
 pub mod context;
-pub mod util;
-pub mod quad;
+pub mod glerror;
+pub mod layer;
+pub mod material;
+pub mod pipeline;
 pub mod shader;
 pub mod texture;
-pub mod text_area;
-pub mod material;
-pub mod glerror;
-pub mod pipeline;
+pub mod util;
+pub mod window;
 
-mod buffer;
 mod batch;
+mod buffer;
 
 pub use batch::VertexLocation;
-pub use quad::*;
 
 use std::rc::Rc;
 

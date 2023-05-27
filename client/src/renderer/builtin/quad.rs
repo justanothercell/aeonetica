@@ -1,7 +1,6 @@
 use core::f32;
 
-
-use super::{*, material::{Material, FlatColor, FlatTexture}};
+use crate::renderer::{*, material::{Material, FlatColor, FlatTexture}};
 
 const QUAD_INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
 

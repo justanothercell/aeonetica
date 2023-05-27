@@ -4,7 +4,7 @@ use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
-use aeonetica_client::renderer::{Renderer, Quad};
+use aeonetica_client::renderer::{Renderer, builtin::Quad};
 use aeonetica_client::renderer::context::RenderContext;
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::{OpenGlRenderContextProvider};

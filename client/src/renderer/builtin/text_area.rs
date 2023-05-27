@@ -1,6 +1,6 @@
 use aeonetica_engine::{math::vector::Vector2, log};
 
-use super::*;
+use crate::renderer::*;
 
 pub struct TextArea {
     position: Vector2<f32>,
@@ -36,7 +36,7 @@ impl Renderable for TextArea {
         self.location = location;
     }
 
-    fn texture_id(&self) -> Option<super::RenderID> {
+    fn texture_id(&self) -> Option<RenderID> {
         Some(self.font.sprite_sheet().texture().id())
     }
 
