@@ -1,6 +1,6 @@
 use aeonetica_engine::math::camera::Camera;
 
-use super::{Renderer, buffer::framebuffer::FrameBuffer, layer::LayerUpdater, util::Target};
+use super::{Renderer, layer::LayerUpdater, util::Target};
 
 pub trait Pipeline {
     fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64);

@@ -1,4 +1,4 @@
-use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::{framebuffer::*, renderbuffer::RenderBuffer}, texture::Texture, util::Target, shader::{self, UniformStr}}, uniform_str};
+use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::framebuffer::*, texture::*, util::Target, shader::{self, UniformStr}}, uniform_str};
 use aeonetica_engine::{math::{camera::Camera, vector::Vector2}, error::ErrorResult};
 
 pub(super) struct WorldRenderPipeline {
@@ -14,10 +14,10 @@ impl WorldRenderPipeline {
     pub fn new() -> ErrorResult<Self> {
         Ok(Self {
             intermediate_fb: FrameBuffer::new([
-                    Attachment::Color(Texture::create(Self::FB_SIZE)),
-                    Attachment::DepthStencil(RenderBuffer::new(Self::FB_SIZE)?)
+                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)),
+                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)),
                 ], true)?,
-            shader: shader::Program::from_source(include_str!("../../assets/world_shader.glsl"))?
+            shader: shader::Program::from_source(include_str!("../../assets/world-shader.glsl"))?
         })
     }
 }

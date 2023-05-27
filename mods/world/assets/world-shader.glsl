@@ -21,8 +21,8 @@ in vec2 v_FrameCoord;
 
 uniform sampler2D u_Frame;
 
-out vec4 color;
+layout (location = 0) out vec4 r_Color;
 
 void main() {
-    color = texture(u_Frame, v_FrameCoord);
+    r_Color = texture(u_Frame, v_FrameCoord);
 }

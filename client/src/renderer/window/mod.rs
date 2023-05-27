@@ -4,7 +4,7 @@ use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap};
 
 use aeonetica_engine::{log, math::vector::*, error::{*, builtin::IOError}};
-use crate::{renderer::{context::RenderContext, buffer::{framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::Texture}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
+use crate::{renderer::{context::RenderContext, buffer::{framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::{Texture, Format}}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
 
@@ -139,7 +139,7 @@ impl Window {
 
         let default_post_processing_shader = shader::Program::from_source(include_str!("../../../assets/default-shader.glsl"))?;
         let framebuffer = FrameBuffer::new([
-            Attachment::Color(Texture::create(Self::FRAMEBUFFER_SIZE)),
+            Attachment::Color(Texture::create(Self::FRAMEBUFFER_SIZE, Format::RgbaF16)),
             Attachment::DepthStencil(RenderBuffer::new(Self::FRAMEBUFFER_SIZE)?)
         ], true)?;
 

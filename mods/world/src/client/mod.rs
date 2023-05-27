@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use noise::{Fbm, NoiseFn, Perlin};
-use aeonetica_client::renderer::builtin::{Line, TextArea};
 use aeonetica_client::renderer::material::FlatTexture;
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{window::{OpenGlContextProvider}, layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, TypeId};
@@ -13,18 +12,24 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
+use aeonetica_engine::error::ExpectLog;
+
 use crate::client::pipeline::WorldRenderPipeline;
+use crate::client::materials::{WithGlow, WithTerrain};
+
 use crate::common::{Chunk, CHUNK_SIZE, WorldView};
 use crate::server::world::World;
 use crate::tiles::Tile;
 
+use self::materials::GlowTexture;
 
 mod pipeline;
+mod materials;
 
 #[allow(clippy::large_enum_variant)]
 pub enum ClientChunk {
     Requested,
-    Chunk(Chunk, Vec<Quad<FlatTexture>>)
+    Chunk(Chunk, Vec<Block>)
 }
 
 #[derive(PartialEq)]
@@ -108,7 +113,7 @@ impl WorldHandle {
         }
     }
 
-    pub(crate) fn receive_chunk_data(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
+    pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, chunk: Chunk) {
         log!(DEBUG, "receive_chunk_data {:?}", chunk.chunk_pos);
         self.chunk_queue.push(chunk);
     }
@@ -116,6 +121,20 @@ impl WorldHandle {
 
 impl ClientEntity for WorldHandle {
 
+}
+
+pub enum Block {
+    Default(Quad<FlatTexture>),
+    Glowing(Quad<GlowTexture>)
+}
+
+impl Block {
+    fn remove_from(&mut self, renderer: &mut Renderer) {
+        match self {
+            Self::Default(quad) => renderer.remove(quad),
+            Self::Glowing(quad) => renderer.remove(quad)
+        }
+    }
 }
 
 impl ClientHandle for WorldHandle {
@@ -146,7 +165,7 @@ impl ClientHandle for WorldHandle {
             if d.x.abs() > 2 || d.y.abs() > 2 {
                 if let ClientChunk::Chunk(_, quads) = v {
                     for quad in quads {
-                        renderer.remove(quad);
+                        quad.remove_from(renderer);
                     }
                 }
                 false
@@ -164,14 +183,28 @@ impl ClientHandle for WorldHandle {
 
                 let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
                 let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
-                let mut quad = Quad::with_sprite(
-                    Vector2::new(x as f32, y as f32), 
-                    Vector2::new(1.0, 1.0), 
-                    0, 
-                    self.tile_sprites.get(index as u32 - 1).unwrap(),
-                );
-                renderer.add(&mut quad);
-                quads.push(quad);
+
+                if index == Tile::Lamp as u16 {
+                    let mut quad = Quad::with_glow_sprite(
+                        Vector2::new(x as f32, y as f32), 
+                        Vector2::new(1.0, 1.0), 
+                        1, 
+                        self.tile_sprites.get(index as u32 - 1).unwrap(),
+                    [0.9, 0.8, 0.5, 1.0]
+                    );
+                    renderer.add(&mut quad);
+                    quads.push(Block::Glowing(quad));
+                }
+                else {
+                    let mut quad = Quad::with_terrain_sprite(
+                        Vector2::new(x as f32, y as f32), 
+                        Vector2::new(1.0, 1.0), 
+                        0, 
+                        self.tile_sprites.get(index as u32 - 1).unwrap(),
+                    );
+                    renderer.add(&mut quad);
+                    quads.push(Block::Default(quad));
+                }
             }
             chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
             log!(DEBUG, "loaded chunks: {}", chunks.len());
@@ -197,9 +230,7 @@ impl WorldLayer {
 
 impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
-        let mut line = Line::new(Vector2::new(0.0, 0.0), Vector2::new(20.0, 10.0), 0.1, 2, [1.0, 0.0, 1.0, 1.0]);
-        renderer.add(&mut line);
-        renderer.set_pipeline(WorldRenderPipeline::new().expect("error instanciating custom render pipeline"));
+        renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
     }
 
     fn instantiate_camera(&self) -> Camera {

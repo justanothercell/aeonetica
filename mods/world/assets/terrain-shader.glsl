@@ -1,5 +1,5 @@
 #[description]
-default shader for the FlatTexture material
+Shader for normal world terrain
 
 #[vertex]
 #version 450 core
@@ -28,7 +28,9 @@ flat in int v_TexIdx;
 uniform sampler2D u_Textures[16];
 
 layout (location = 0) out vec4 r_Color;
+layout (location = 1) out vec4 r_Attach0;
 
 void main() {
     r_Color = texture(u_Textures[v_TexIdx], v_TexCoord);
+    r_Attach0 = vec4(0.0);
 }

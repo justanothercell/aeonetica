@@ -161,3 +161,18 @@ pub mod builtin {
         }
     }
 }
+
+pub trait ExpectLog {
+    type Inner;
+    fn expect_log(self) -> Self::Inner;
+}
+
+impl<T> ExpectLog for ErrorResult<T> {
+    type Inner = T;
+    fn expect_log(self) -> Self::Inner {
+        match self {
+            Err(err) => err.log_exit(),
+            Ok(val) => val
+        }
+    }
+}

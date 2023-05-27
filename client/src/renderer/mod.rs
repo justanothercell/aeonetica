@@ -24,9 +24,9 @@ use batch::*;
 use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, log};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
-use self::{sprite_sheet::Sprite, font::BitmapFont, buffer::framebuffer::FrameBuffer, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}, util::Target};
+use self::{sprite_sheet::Sprite, font::BitmapFont, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}, util::Target};
 
-pub(self) type RenderID = gl::types::GLuint;
+pub type RenderID = gl::types::GLuint;
 
 #[derive(Debug)]
 pub struct RenderError(String);
