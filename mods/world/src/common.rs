@@ -23,7 +23,7 @@ impl Chunk {
         Self {
             population: Population::Uninit,
             chunk_pos,
-            tiles: [Tile::Air; CHUNK_SIZE*CHUNK_SIZE]
+            tiles: [Tile::Wall; CHUNK_SIZE*CHUNK_SIZE]
         }
     }
 
@@ -42,4 +42,10 @@ impl Chunk {
     pub fn set_tile(&mut self, pos: Vector2<i32>, tile: Tile) {
         self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
     }
+}
+
+pub trait WorldView {
+    fn get_tile(&self, pos: Vector2<i32>) -> Tile;
+
+    fn set_tile(&mut self, pos: Vector2<i32>, tile: Tile);
 }

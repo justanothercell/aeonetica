@@ -86,8 +86,8 @@ impl ClientHandle for WorldHandle {
     }
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
-        let center_chunk: Vector2<_> = store.get_store::<CameraPosition>().0.ceil().round_i32() / Vector2::from((CHUNK_SIZE as i32, CHUNK_SIZE as i32));
-        for x in (center_chunk.x-1)..=(center_chunk.x+1) {
+        let center_chunk: Vector2<_> = (store.get_store::<CameraPosition>().0 / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
+        for x in (center_chunk.x-2)..=(center_chunk.x+2) {
             for y in (center_chunk.y-1)..=(center_chunk.y+1) {
                 let k = Vector2::from((x, y));
                 self.chunks.entry(k).or_insert_with(|| {
@@ -98,8 +98,8 @@ impl ClientHandle for WorldHandle {
         }
 
         self.chunks.retain(|k, v|{
-            if (*k - center_chunk).mag_sq() > 2 {
-                log!("unloading chunk {:?}", k);
+            let d = *k - center_chunk;
+            if d.x.abs() > 2 || d.y.abs() > 2 {
                 if let ClientChunk::Chunk(_, quads) = v {
                     for quad in quads {
                         renderer.remove(quad);
@@ -111,7 +111,6 @@ impl ClientHandle for WorldHandle {
 
         for chunk in self.chunk_queue.drain(..) {
             let mut quads = vec![];
-            log!("loading chunk {:?}", chunk.chunk_pos);
 
             for (i, tile) in chunk.tiles().iter().enumerate() {
                 let index = tile.sprite_sheet_index();

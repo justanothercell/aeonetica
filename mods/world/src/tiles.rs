@@ -3,9 +3,10 @@ use aeonetica_engine::nanoserde::{self, DeBin, SerBin};
 #[repr(u16)]
 #[derive(Debug, Copy, Clone, SerBin, DeBin)]
 pub enum Tile {
-    Air,
-    StoneBrick,
-    Stone,
+    Wall,
+    FloorStoneBrick,
+    FloorStone,
+    FloorHardStone
 }
 
 impl Tile {

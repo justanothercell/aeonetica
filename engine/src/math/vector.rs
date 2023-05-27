@@ -118,6 +118,13 @@ impl Vector2<f32> {
 
         self
     }
+
+    pub fn to_i32(&self) -> Vector2<i32> {
+        Vector2::new(self.x as i32, self.y as i32)
+    }
+    pub fn to_f64(&self) -> Vector2<f64> {
+        Vector2::new(self.x as f64, self.y as f64)
+    }
 }
 
 impl Vector2<f64> {

@@ -1,8 +1,10 @@
 use std::cell::{RefCell, RefMut};
+use std::collections::HashMap;
 use std::rc::Rc;
 use aeonetica_engine::{ClientId, EntityId, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::math::vector::Vector2;
+use aeonetica_engine::util::id_map::{IdMap, IdSet};
 use aeonetica_server::ecs::Engine;
 use aeonetica_server::ecs::entity::Entity;
 use aeonetica_server::ecs::events::ConnectionListener;
@@ -18,7 +20,8 @@ pub const WORLD: &str = "WORLD";
 struct ChunkHolder {
     further_x: Option<Box<ChunkHolder>>,
     further_y: Option<Box<ChunkHolder>>,
-    chunk: Chunk
+    chunk: Chunk,
+    subscribed_players: IdSet
 }
 
 impl ChunkHolder {
@@ -27,6 +30,7 @@ impl ChunkHolder {
             further_x: None,
             further_y: None,
             chunk: Chunk::new(chunk_pos),
+            subscribed_players: Default::default()
         }
     }
 }

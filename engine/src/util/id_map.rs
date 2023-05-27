@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::BuildHasher;
 use crate::Id;
 
 pub type IdMap<T> = HashMap<Id, T, IdHashBuilder>;
+pub type IdSet = HashSet<Id, IdHashBuilder>;
 
 #[derive(Default)]
 pub struct IdHashBuilder;
