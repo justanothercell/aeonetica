@@ -148,14 +148,12 @@ impl ClientHandle for PlayerHandle {
                     self.velocity.x = 0.0;
                 }
                 if delta.y.abs() < 0.01 * delta_time as f32 {
-                    if self.velocity.y > 0.01 * delta_time as f32 {
-                        store.mut_store::<CameraData>().add_trauma(self.velocity.y / 10.0);
+                    if self.velocity.y > 16.0 {
+                        store.mut_store::<CameraData>().add_trauma((self.velocity.y / 50.0) * (self.velocity.y / 50.0));
                     }
                     self.velocity.y = 0.0;
                 }
             }
-
-            println!("{v:?}");
 
             if (self.position - self.p_position).mag_sq() > 0.05 {
                 messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
@@ -178,7 +176,6 @@ impl ClientHandle for PlayerHandle {
         match event {
             Event::KeyPressed(KeyCode::Space) => {
                 self.velocity.y -= self.jump_force;
-                println!("tshump");
                 true
             }
             Event::KeyPressed(KeyCode::A) => {
