@@ -1,3 +1,4 @@
+use std::ops::Mul;
 use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
@@ -14,7 +15,7 @@ use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::math::vector::Vector2;
-use world_mod::common::WorldView;
+use world_mod::common::{GRAVITY, WorldView};
 use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraData;
 use crate::server::Player;
@@ -53,8 +54,11 @@ pub struct PlayerHandle {
     quad: Nullable<Quad<FlatTexture>>,
 
     // movement stuff
-    key_state: [bool; 4],
+    key_left: bool,
+    key_right: bool,
     speed: f32,
+    jump_force: f32,
+    velocity: Vector2<f32>
 }
 
 impl PlayerHandle {
@@ -65,8 +69,12 @@ impl PlayerHandle {
             p_position: Default::default(),
             position: Default::default(),
             quad: Null,
-            key_state: [false; 4],
-            speed: 10.0
+
+            key_left: false,
+            key_right: false,
+            speed: 10.0,
+            jump_force: 15.0,
+            velocity: Default::default(),
         }
     }
 
@@ -119,21 +127,35 @@ impl ClientHandle for PlayerHandle {
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
         let quad = &mut *self.quad;
         if self.is_controlling {
-            let v = Vector2::new(match self.key_state {
-                    [_, true, _, false] => -1.0,
-                    [_, false, _, true] => 1.0,
+            self.velocity.y -= GRAVITY * delta_time as f32;
+            self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
+            self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
+            let v = if self.velocity.x.abs() < 0.05 {
+                self.velocity.x = 0.0;
+                self.velocity + Vector2::new(match (self.key_left, self.key_right) {
+                    (true, false) => -self.speed,
+                    (false, true) => self.speed,
                     _ => 0.0
-                },
-                match self.key_state {
-                    [true, _, false, _] => -1.0,
-                    [false, _, true, _] => 1.0,
-                    _ => 0.0
-                });
+                }, 0.0)
+            } else { self.velocity };
 
             if v.mag_sq() > 0.0 {
                 let world = &mut *store.get_store::<ClientWorld>();
-                world.calc_move(&mut self.position, Vector2::new(1.0, 1.0), v.normalized() * self.speed * delta_time as f32);
+                let p = self.position;
+                world.calc_move(&mut self.position, Vector2::new(1.0, 1.0), v * delta_time as f32);
+                let delta = self.position - p;
+                if delta.x.abs() < 0.01 * delta_time as f32 {
+                    self.velocity.x = 0.0;
+                }
+                if delta.y.abs() < 0.01 * delta_time as f32 {
+                    if self.velocity.y > 0.01 * delta_time as f32 {
+                        store.mut_store::<CameraData>().add_trauma(self.velocity.y / 10.0);
+                    }
+                    self.velocity.y = 0.0;
+                }
             }
+
+            println!("{v:?}");
 
             if (self.position - self.p_position).mag_sq() > 0.05 {
                 messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
@@ -154,36 +176,25 @@ impl ClientHandle for PlayerHandle {
     fn event(&mut self, event: &Event, _messenger: &mut ClientMessenger, _renderer: &mut Renderer, _store: &mut DataStore) -> bool {
         if !self.is_controlling { return false }
         match event {
-            Event::KeyPressed(KeyCode::W) => {
-                self.key_state[0] = true;
+            Event::KeyPressed(KeyCode::Space) => {
+                self.velocity.y -= self.jump_force;
+                println!("tshump");
                 true
             }
             Event::KeyPressed(KeyCode::A) => {
-                self.key_state[1] = true;
-                true
-            }
-            Event::KeyPressed(KeyCode::S) => {
-                self.key_state[2] = true;
+                self.key_left = true;
                 true
             }
             Event::KeyPressed(KeyCode::D) => {
-                self.key_state[3] = true;
-                true
-            }
-            Event::KeyReleased(KeyCode::W) => {
-                self.key_state[0] = false;
+                self.key_right = true;
                 true
             }
             Event::KeyReleased(KeyCode::A) => {
-                self.key_state[1] = false;
-                true
-            }
-            Event::KeyReleased(KeyCode::S) => {
-                self.key_state[2] = false;
+                self.key_left = false;
                 true
             }
             Event::KeyReleased(KeyCode::D) => {
-                self.key_state[3] = false;
+                self.key_right = false;
                 true
             }
             _ => false

@@ -5,6 +5,7 @@ use aeonetica_engine::util::nullable::Nullable;
 use crate::tiles::Tile;
 
 pub const CHUNK_SIZE: usize = 16;
+pub const GRAVITY: f32 = -20.0;
 
 #[derive(SerBin, DeBin, Debug, Clone)]
 pub enum Population {

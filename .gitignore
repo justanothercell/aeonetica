@@ -19,3 +19,5 @@ win_ter_setup.py
 assets/font_and_glyphs/generated.png
 assets/font_and_glyphs/generated_x16.png
 assets/font_and_glyphs/gen/
+
+PROFILE_DIR
