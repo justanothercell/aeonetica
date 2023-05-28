@@ -56,8 +56,10 @@ pub struct PlayerHandle {
     // movement stuff
     key_left: bool,
     key_right: bool,
+    key_hover: bool,
     speed: f32,
-    jump_force: f32,
+    hover_force: f32,
+    hover_energy: f32,
     velocity: Vector2<f32>
 }
 
@@ -72,8 +74,10 @@ impl PlayerHandle {
 
             key_left: false,
             key_right: false,
+            key_hover: false,
             speed: 10.0,
-            jump_force: 15.0,
+            hover_force: 12.0,
+            hover_energy: 1.0,
             velocity: Default::default(),
         }
     }
@@ -128,6 +132,10 @@ impl ClientHandle for PlayerHandle {
         let quad = &mut *self.quad;
         if self.is_controlling {
             self.velocity.y -= GRAVITY * delta_time as f32;
+            if self.key_hover {
+                self.velocity.y = (self.velocity.y * (1.0 - delta_time as f32 * 10.0)) - self.hover_force * delta_time as f32 * 10.0;
+                println!("{}", self.velocity.y);
+            }
             self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
             self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
             let v = if self.velocity.x.abs() < 0.05 {
@@ -175,7 +183,7 @@ impl ClientHandle for PlayerHandle {
         if !self.is_controlling { return false }
         match event {
             Event::KeyPressed(KeyCode::Space) => {
-                self.velocity.y -= self.jump_force;
+                self.key_hover = true;
                 true
             }
             Event::KeyPressed(KeyCode::A) => {
@@ -184,6 +192,10 @@ impl ClientHandle for PlayerHandle {
             }
             Event::KeyPressed(KeyCode::D) => {
                 self.key_right = true;
+                true
+            }
+            Event::KeyReleased(KeyCode::Space) => {
+                self.key_hover = false;
                 true
             }
             Event::KeyReleased(KeyCode::A) => {
