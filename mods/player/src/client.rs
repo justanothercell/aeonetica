@@ -115,7 +115,7 @@ impl ClientHandle for PlayerHandle {
             Quad::with_texture(
             self.position,
             Vector2::new(1.0, 1.0),
-            1,
+            10,
             store.get_or_create(PlayerTexture::load).get().id(),
         ))
     }

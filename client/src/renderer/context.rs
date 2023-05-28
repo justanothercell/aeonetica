@@ -6,7 +6,7 @@ use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{i
 use crate::client_runtime::ClientHandleBox;
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
-use super::{buffer::framebuffer::FrameBuffer, layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
+use super::{layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
 
 #[derive(Debug)]
 struct LayerAlreadyExists(&'static str);

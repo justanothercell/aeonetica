@@ -13,6 +13,33 @@ use super::{RenderID, glerror::GLError};
 #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
 pub struct Sampler2D(pub i32);
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Format {
+    RgbaU8  = gl::RGBA8  as isize,
+    RgbU8   = gl::RGB8   as isize,
+    RgbaF16 = gl::RGB16F as isize
+}
+
+impl Format {
+    fn base_type(&self) -> gl::types::GLenum {
+        match self {
+            Self::RgbU8 | Self::RgbaU8 => gl::UNSIGNED_BYTE,
+            Self::RgbaF16 => gl::FLOAT
+        }
+    }
+
+    fn internal(&self) -> gl::types::GLenum {
+        *self as gl::types::GLenum
+    }
+
+    fn data(&self) -> gl::types::GLenum {
+        match self {
+            Self::RgbU8 => gl::RGB,
+            Self::RgbaU8 | Self::RgbaF16 => gl::RGBA
+        }
+    }
+}
+
 pub enum TexCoordFormat {
     LeftRightTopBottom,
     RightLeftTopBottom,
@@ -129,12 +156,12 @@ impl Texture {
         Ok(t)
     }
 
-    pub fn create(size: Vector2<u32>) -> Self {
+    pub fn create(size: Vector2<u32>, format: Format) -> Self {
         let mut t = Self {
             id: 0,
             size,
-            internal_format: gl::RGB,
-            data_format: gl::RGB
+            internal_format: format.internal(),
+            data_format: format.data()
         };
 
         unsafe {
@@ -144,7 +171,7 @@ impl Texture {
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
 
-            gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as i32, size.x() as i32, size.y() as i32, 0, gl::RGB, gl::UNSIGNED_BYTE, std::ptr::null());
+            gl::TexImage2D(gl::TEXTURE_2D, 0, t.internal_format as i32, size.x() as i32, size.y() as i32, 0, t.data_format, format.base_type(), std::ptr::null());
         }
 
         t

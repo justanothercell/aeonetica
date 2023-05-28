@@ -16,8 +16,10 @@ impl Attachment {
             Attachment::Color(texture) => unsafe {
                 // TODO: check if enough free color attachment pointers exist
                 let idx = fb.textures.len() as u32;
+                let attachment = gl::COLOR_ATTACHMENT0 + idx;
 
-                gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0 + idx, gl::TEXTURE_2D, texture.id(), 0); 
+                gl::FramebufferTexture(gl::FRAMEBUFFER, attachment, texture.id(), 0);
+
                 fb.textures.push(texture);
             },
             Attachment::DepthStencil(rb) => unsafe {
@@ -89,6 +91,10 @@ impl FrameBuffer {
         }
         
         unsafe {
+            let n_attachments =  fb.textures.len() as i32;
+            let tex_attachments = (gl::COLOR_ATTACHMENT0 .. gl::COLOR_ATTACHMENT0 + n_attachments as u32).collect::<Vec<_>>();
+            gl::DrawBuffers(n_attachments, tex_attachments.as_ptr());
+
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
                 let mut err = GLError::from_gl_errno().into_error();
                 err.add_info("error creating framebuffer".to_string());
@@ -102,7 +108,9 @@ impl FrameBuffer {
     }
 
     pub fn bind(&self) {
-        unsafe { gl::BindFramebuffer(gl::FRAMEBUFFER, self.id) }
+        unsafe { 
+            gl::BindFramebuffer(gl::FRAMEBUFFER, self.id);
+        }
     }
 
     pub fn unbind(&self) {
@@ -145,16 +153,12 @@ impl FrameBuffer {
         }
 
         self.textures[attachment].bind(0);
-        shader.upload_uniform(frame_uniform, &(attachment as i32));
+        shader.upload_uniform(frame_uniform, &0);
 
         let vao = self.vao.as_ref().unwrap();
         vao.bind();
         vao.draw();
         vao.unbind();
-
-        if let Target::FrameBuffer(fb) = target {
-            fb.unbind();
-        }
 
         shader.unbind();
     }

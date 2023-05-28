@@ -21,8 +21,8 @@ void main() {
 
 in vec4 v_Color;
 
-out vec4 color;
+layout (location = 0) out vec4 r_Color;
 
 void main() {
-    color = v_Color;
+    r_Color = v_Color;
 }
