@@ -1,4 +1,4 @@
-use std::ops::Mul;
+use std::ops::{Add, Mul, Sub};
 use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
@@ -60,6 +60,7 @@ pub struct PlayerHandle {
     speed: f32,
     hover_force: f32,
     hover_energy: f32,
+    is_grounded: bool,
     velocity: Vector2<f32>
 }
 
@@ -78,6 +79,7 @@ impl PlayerHandle {
             speed: 10.0,
             hover_force: 12.0,
             hover_energy: 1.0,
+            is_grounded: false,
             velocity: Default::default(),
         }
     }
@@ -133,8 +135,12 @@ impl ClientHandle for PlayerHandle {
         if self.is_controlling {
             self.velocity.y -= GRAVITY * delta_time as f32;
             if self.key_hover {
-                self.velocity.y = (self.velocity.y * (1.0 - delta_time as f32 * 10.0)) - self.hover_force * delta_time as f32 * 10.0;
-                println!("{}", self.velocity.y);
+                if self.hover_energy > 0.0 {
+                    self.velocity.y = (self.velocity.y * (1.0 - delta_time as f32 * 10.0)) - self.hover_force * delta_time as f32 * 10.0;
+                }
+                self.hover_energy = self.hover_energy.sub(0.75 * delta_time as f32).max(0.0);
+            } else {
+                self.hover_energy = self.hover_energy.add( if self.is_grounded { 0.875 } else { 0.1 } * delta_time as f32).min(1.0);
             }
             self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
             self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
@@ -148,7 +154,7 @@ impl ClientHandle for PlayerHandle {
             } else { self.velocity };
 
             if v.mag_sq() > 0.0 {
-                let world = &mut *store.get_store::<ClientWorld>();
+                let world = store.get_store::<ClientWorld>();
                 let p = self.position;
                 world.calc_move(&mut self.position, Vector2::new(1.0, 1.0), v * delta_time as f32);
                 let delta = self.position - p;
@@ -160,8 +166,14 @@ impl ClientHandle for PlayerHandle {
                         store.mut_store::<CameraData>().add_trauma((self.velocity.y / 50.0) * (self.velocity.y / 50.0));
                     }
                     self.velocity.y = 0.0;
+                    let world = store.get_store::<ClientWorld>();
+                    self.is_grounded = world.overlap_aabb(  self.position + Vector2::new(0.0, 0.01), Vector2::new(1.0, 1.0));
+                } else {
+                    self.is_grounded = false;
                 }
             }
+
+            println!("{} {} {}", self.velocity.y, self.is_grounded, self.hover_energy);
 
             if (self.position - self.p_position).mag_sq() > 0.05 {
                 messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
