@@ -135,6 +135,6 @@ impl Renderable for Line {
     }
 
     fn is_dirty(&self) -> bool {
-        self.location.is_none()
+        self.vertices.is_none()
     }
 }

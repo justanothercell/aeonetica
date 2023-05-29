@@ -70,8 +70,8 @@ impl ClientMod for WorldModClient {
         store.add_store(ClientWorld {
             chunks: Default::default(),
         });
+
         context.push(WorldLayer::new()).expect("duplicate layer");
-        context.push(UILayer::new()).expect("duplicate layer");
         store.add_store(CameraData {
             position: Vector2::new(0.0, 0.0),
             trauma: 0.0,
@@ -246,9 +246,9 @@ impl Layer for WorldLayer {
         }
         // easing f(t) = t - t² + t³
         let shake = cam.trauma - cam.trauma * cam.trauma + cam.trauma * cam.trauma * cam.trauma;
-        let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake;
+        let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake * 1.5;
         camera.set_position(pos);
-        cam.trauma = (cam.trauma - delta_time as f32 / 2.0).clamp(0.0, 1.0);
+        cam.trauma = (cam.trauma - delta_time as f32 / 3.0).clamp(0.0, 1.0);
     }
 
     fn event(&mut self, event: &Event) -> bool {
@@ -260,28 +260,4 @@ impl Layer for WorldLayer {
             _ => false
         }
     }
-}
-
-pub struct UILayer {
-
-}
-
-impl UILayer {
-    fn new() -> Self {
-        Self {
-             
-        }
-    }
-}
-
-impl Layer for UILayer {
-    fn instantiate_camera(&self) -> Camera {
-        Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
-    }
-
-    fn attach(&mut self, _renderer: &mut Renderer) {
-        log!(ERROR, "UI layer attached")
-    }
-
-    fn is_overlay(&self) -> bool { true }
 }

@@ -3,11 +3,16 @@ use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
-use aeonetica_client::renderer::material::FlatTexture;
+use aeonetica_client::renderer::material::{FlatColor, FlatTexture};
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, builtin::Quad};
+use aeonetica_client::renderer::builtin::Line;
+use aeonetica_client::renderer::context::RenderContext;
+use aeonetica_client::renderer::layer::Layer;
 use aeonetica_client::renderer::texture::Texture;
+use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, TypeId};
+use aeonetica_engine::math::camera::Camera;
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
@@ -29,6 +34,20 @@ impl ClientMod for PlayerModClient {
         handlers.insert(type_to_id::<PlayerHandle>(), || Box::new(PlayerHandle::new()));
         log!("registered  client player mod stuffs");
     }
+
+    fn start<'a>(&self, store: &mut DataStore, provider: OpenGlRenderContextProvider<'a>) -> &'a mut RenderContext {
+        let context = provider.make_context();
+
+        context.push(UILayer::new()).expect("duplicate layer");
+        store.add_store(PlayerUIView {
+            hover_energy: 1.0
+        });
+        context
+    }
+}
+
+struct PlayerUIView {
+    hover_energy: f32,
 }
 
 #[derive(Clone)]
@@ -140,8 +159,10 @@ impl ClientHandle for PlayerHandle {
                 }
                 self.hover_energy = self.hover_energy.sub(0.75 * delta_time as f32).max(0.0);
             } else {
-                self.hover_energy = self.hover_energy.add( if self.is_grounded { 0.875 } else { 0.1 } * delta_time as f32).min(1.0);
+                self.hover_energy = self.hover_energy.add( if self.is_grounded { 1.0 } else { 0.125 } * delta_time as f32).min(1.0);
             }
+            store.mut_store::<PlayerUIView>().hover_energy = self.hover_energy;
+
             self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
             self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
             let v = if self.velocity.x.abs() < 0.05 {
@@ -172,8 +193,6 @@ impl ClientHandle for PlayerHandle {
                     self.is_grounded = false;
                 }
             }
-
-            println!("{} {} {}", self.velocity.y, self.is_grounded, self.hover_energy);
 
             if (self.position - self.p_position).mag_sq() > 0.05 {
                 messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
@@ -221,4 +240,40 @@ impl ClientHandle for PlayerHandle {
             _ => false
         }
     }
+}
+
+
+pub struct UILayer {
+    hover_energy_bar: Line,
+    hover_energy_bar_bg: Line,
+}
+
+impl UILayer {
+    fn new() -> Self {
+        Self {
+            hover_energy_bar: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  1, [0.0, 0.3, 1.0, 1.0]),
+            hover_energy_bar_bg: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  0, [0.5, 0.0, 0.0, 1.0]),
+        }
+    }
+}
+
+impl Layer for UILayer {
+    fn instantiate_camera(&self) -> Camera {
+        Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
+    }
+
+    fn attach(&mut self, renderer: &mut Renderer) {
+        log!(ERROR, "UI layer attached");
+        renderer.add(&mut self.hover_energy_bar);
+        renderer.add(&mut self.hover_energy_bar_bg);
+    }
+
+    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+        let hover_energy = store.get_store::<PlayerUIView>().hover_energy;
+
+        self.hover_energy_bar.set_to(*self.hover_energy_bar.from() + Vector2::new(1.5 * hover_energy, 0.0));
+        renderer.draw(&mut self.hover_energy_bar).expect("err drawing");
+    }
+
+    fn is_overlay(&self) -> bool { true }
 }

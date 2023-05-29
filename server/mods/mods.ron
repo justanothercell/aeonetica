@@ -4,6 +4,7 @@
     modstack: {
         // path:name
         "world:world": [ "42" ],
-		"player:player": []
+		"player:player": [],
+        "worms:worms": []
     }
 )
