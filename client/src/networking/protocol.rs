@@ -37,20 +37,14 @@ impl ClientRuntime {
                 exit(0)
             }
             ServerMessage::AddClientHandle(eid, handle_id) => {
-                log!("added client handle");
+                log!("added client handle: {handle_id}");
                 self.registered_handles.get(handle_id).map(|creator| {
                     let mut handle = creator();
                     handle.init();
-                    println!("43FB-1930-3175-8C30 <-> {}", handle.owning_layer());
-                    for (id, _) in &context.layer_stack.layer_map {
-                        println!("> {id}");
-                    }
                     let mut messenger = ClientMessenger::new(self.nc.clone(), self.client_id, *eid);
                     if let Some(layer) = context.layer_stack.layer_map.get(&handle.owning_layer()) {
-                        println!("called with Value");
                         handle.start(&mut messenger, Value(&mut layer.borrow_mut().renderer), store);
                     } else {
-                        println!("called with Null");
                         handle.start(&mut messenger, Null, store);
                     }
                     self.handles.insert(*eid, ClientHandleBox {

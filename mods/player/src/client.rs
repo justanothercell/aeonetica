@@ -251,8 +251,8 @@ pub struct UILayer {
 impl UILayer {
     fn new() -> Self {
         Self {
-            hover_energy_bar: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  1, [0.0, 0.3, 1.0, 1.0]),
-            hover_energy_bar_bg: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  0, [0.5, 0.0, 0.0, 1.0]),
+            hover_energy_bar: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  11, [0.0, 0.3, 1.0, 1.0]),
+            hover_energy_bar_bg: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  10, [0.5, 0.0, 0.0, 1.0]),
         }
     }
 }

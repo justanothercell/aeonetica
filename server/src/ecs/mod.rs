@@ -1,10 +1,12 @@
 
+use std::any::type_name;
 use std::collections::{HashMap, HashSet};
 use std::collections::hash_set;
 use std::collections::hash_map::{Iter, IterMut, Keys};
 
 
 use crate::ecs::entity::Entity;
+use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
@@ -42,6 +44,13 @@ impl Engine {
             runtime,
             tick: 0
         }
+    }
+
+    /// Obtain a second mutable handle to the Engine.
+    /// This is highly unsafe and should only be used internally.
+    #[inline]
+    pub unsafe fn mut_handle<'a, 'b>(&'a mut self) -> &'b mut Self {
+        unsafe { &mut *(self as *const Engine as usize as *mut Engine) }
     }
 
     #[inline]
@@ -192,6 +201,15 @@ impl Engine {
     #[inline]
     pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Nullable<&mut T> {
         Nullable::from( self.entites.get_mut(id)?.mut_module())
+    }
+
+    #[inline]
+    pub fn two_mut_modules_of<T1: Module + Sized + 'static, T2: Module + Sized + 'static>(&mut self, id: &EntityId) -> (Nullable<&mut T1>, Nullable<&mut T2>) {
+        if type_to_id::<T1>() == type_to_id::<T2>() {
+            panic!("cannot borrow the same two types from same entity: {}", type_name::<T1>())
+        }
+        let mut_engine = unsafe { self.mut_handle() };
+        (self.mut_module_of::<T1>(id), mut_engine.mut_module_of::<T2>(id))
     }
 
     #[inline]

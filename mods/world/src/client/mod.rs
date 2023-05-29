@@ -114,7 +114,6 @@ impl WorldHandle {
     }
 
     pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, chunk: Chunk) {
-        log!(DEBUG, "receive_chunk_data {:?}", chunk.chunk_pos);
         self.chunk_queue.push(chunk);
     }
 }
@@ -207,7 +206,6 @@ impl ClientHandle for WorldHandle {
                 }
             }
             chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
-            log!(DEBUG, "loaded chunks: {}", chunks.len());
         }
     }
 }
