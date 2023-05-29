@@ -1,3 +1,5 @@
+#![feature(array_windows)]
+
 use aeonetica_engine::register;
 
 pub(crate) mod client;

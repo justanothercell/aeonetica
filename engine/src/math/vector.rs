@@ -135,6 +135,11 @@ impl Vector2<f32> {
         self
     }
 
+    pub fn euler(&self) -> f32 {
+        let angle = self.y.atan2(self.x);
+        angle
+    }
+
     pub fn to_i32(&self) -> Vector2<i32> {
         Vector2::new(self.x as i32, self.y as i32)
     }

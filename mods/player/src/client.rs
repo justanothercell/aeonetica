@@ -201,7 +201,7 @@ impl ClientHandle for PlayerHandle {
 
             quad.set_position(self.position);
             store.mut_store::<CameraData>().position = self.position;
-        } else if self.interpolation_delta * self.interpolation_delta < 1.0 {
+        } else if self.interpolation_delta < 1.0 {
             let delta = self.position - self.p_position;
             quad.set_position(self.p_position + delta * self.interpolation_delta);
             self.interpolation_delta = (delta_time as f32 * self.speed + self.interpolation_delta).min(1.0);
