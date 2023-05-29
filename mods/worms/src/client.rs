@@ -56,15 +56,15 @@ impl WormHandle {
             self.segments = segments.clone();
             self.interpolation_delta = 1.0;
             for (i, segment) in self.segments.iter().enumerate() {
-                let mut quad = Quad::with_sprite(
+                let quad = Quad::with_sprite(
                     *segment,
                     Vector2::new(1.0, 1.0),
-                    20,
+                    100,
                     sheet.0.get(match i { 0 => 0, _ if i == self.segments.len() - 1 => 2, _ => 1 }).unwrap(),
                 );
-                renderer.draw(&mut quad).expect("unable to draw quad");
-                self.quads.push(quad)
+                self.quads.push(quad);
             }
+            self.quads.iter_mut().rev().for_each(|quad| renderer.draw(quad).expect("unable to draw quad"));
         } else {
             for (i, segment) in self.segments.iter().enumerate() {
                 self.quads[i].set_position(*segment);

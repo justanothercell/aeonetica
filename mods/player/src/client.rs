@@ -264,6 +264,7 @@ impl Layer for UILayer {
 
     fn attach(&mut self, renderer: &mut Renderer) {
         log!(ERROR, "UI layer attached");
+        renderer.add(&mut self.hover_energy_bar_bg);
     }
 
     fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
