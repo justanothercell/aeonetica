@@ -38,13 +38,13 @@ impl ServerMod for PlayerModServer {
                 // adding player to list of players
                 players.insert(*client, pid);
                 let players_positions = players.iter().map(|(k, v)| {
-                    (k, v, engine.mut_module_of::<Player>(&v).position)
+                    (k, v, engine.mut_module_of::<Player>(v).position)
                 }).collect::<Vec<_>>();
                 {
                     let mut player = engine.mut_entity(&pid);
                     let position = player.mut_module::<Player>().position;
 
-                    let messenger: &mut Messenger = &mut *player.mut_module();
+                    let messenger: &mut Messenger = &mut player.mut_module();
                     messenger.register_receiver(Player::client_position_update);
 
                     // register this player for all players
@@ -65,7 +65,7 @@ impl ServerMod for PlayerModServer {
                 log!("set up client ons server side");
             }, |id, engine, client| {
                 // get list of players and entity id of client player
-                let mut prcrc = engine.get_module_of::<PlayerHandler>(id).players.clone();
+                let prcrc = engine.get_module_of::<PlayerHandler>(id).players.clone();
                 let players = prcrc.borrow();
                 let eid = *players.get(client).unwrap();
 				// unregister this player for all other players
@@ -106,7 +106,7 @@ impl Player {
 }
 
 impl Module for Player {
-    fn start(id: &EntityId, engine: &mut Engine) where Self: Sized {
+    fn start(_id: &EntityId, _engine: &mut Engine) where Self: Sized {
 
     }
 }

@@ -136,8 +136,8 @@ impl Vector2<f32> {
     }
 
     pub fn euler(&self) -> f32 {
-        let angle = self.y.atan2(self.x);
-        angle
+        
+        self.y.atan2(self.x)
     }
 
     pub fn to_i32(&self) -> Vector2<i32> {
@@ -220,15 +220,15 @@ impl<T> From<(T, T)> for Vector2<T> {
     }
 }
 
-impl<T> Into<(T, T)> for Vector2<T> {
-    fn into(self) -> (T, T) {
-        (self.x, self.y)
+impl<T> From<Vector2<T>> for (T, T) {
+    fn from(val: Vector2<T>) -> Self {
+        (val.x, val.y)
     }
 }
 
-impl<T> Into<[T; 2]> for Vector2<T> {
-    fn into(self) -> [T; 2] {
-        [self.x, self.y]
+impl<T> From<Vector2<T>> for [T; 2] {
+    fn from(val: Vector2<T>) -> Self {
+        [val.x, val.y]
     }
 }
 

@@ -49,7 +49,7 @@ impl Engine {
     /// Obtain a second mutable handle to the Engine.
     /// This is highly unsafe and should only be used internally.
     #[inline]
-    pub unsafe fn mut_handle<'a, 'b>(&'a mut self) -> &'b mut Self {
+    pub unsafe fn mut_handle<'b>(&mut self) -> &'b mut Self {
         unsafe { &mut *(self as *const Engine as usize as *mut Engine) }
     }
 
@@ -195,12 +195,12 @@ impl Engine {
 
     #[inline]
     pub fn get_module_of<T: Module + Sized + 'static>(&self, id: &EntityId) -> Nullable<&T> {
-        Nullable::from(self.entites.get(id)?.get_module())
+        self.entites.get(id)?.get_module()
     }
 
     #[inline]
     pub fn mut_module_of<T: Module + Sized + 'static>(&mut self, id: &EntityId) -> Nullable<&mut T> {
-        Nullable::from( self.entites.get_mut(id)?.mut_module())
+        self.entites.get_mut(id)?.mut_module()
     }
 
     #[inline]
@@ -214,12 +214,12 @@ impl Engine {
 
     #[inline]
     pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Nullable<&T> {
-        Nullable::from(self.get_entity_by_tag(tag)?.get_module())
+        self.get_entity_by_tag(tag)?.get_module()
     }
 
     #[inline]
     pub fn mut_module_by_tag<T: Module + Sized + 'static>(&mut self, tag: &str) -> Nullable<&mut T> {
-        Nullable::from( self.mut_entity_by_tag(tag)?.mut_module())
+        self.mut_entity_by_tag(tag)?.mut_module()
     }
 
     #[inline]

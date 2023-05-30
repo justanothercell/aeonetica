@@ -35,7 +35,7 @@ impl<T: Clone + Default> From<T> for Matrix4<T> {
         matrix.0[0] = value.clone();
         matrix.0[5] = value.clone();
         matrix.0[10] = value.clone();
-        matrix.0[15] = value.clone();
+        matrix.0[15] = value;
 
         matrix
     }
@@ -238,7 +238,7 @@ impl Matrix4<f32> {
         det = 1.0 / det;
 
         for i in 0..16 {
-            inv.0[i] = inv.0[i] * det;
+            inv.0[i] *= det;
         }
 
         inv
@@ -262,7 +262,7 @@ impl Mul for &Matrix4<f32> {
 
             for i in 0..4 {
                 let (brod0, brod1, brod2, brod3) = (
-                    _mm_set1_ps(self.0[4 * i + 0]),
+                    _mm_set1_ps(self.0[4 * i]),
                     _mm_set1_ps(self.0[4 * i + 1]),
                     _mm_set1_ps(self.0[4 * i + 2]),
                     _mm_set1_ps(self.0[4 * i + 3])

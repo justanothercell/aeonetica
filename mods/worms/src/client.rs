@@ -4,7 +4,7 @@ use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMe
 use aeonetica_engine::{networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
 use world_mod::client::WorldLayer;
 
-use crate::server::{Worm, WORM_SPEED};
+use crate::server::{WORM_SPEED};
 
 
 pub struct WormsModClient {
@@ -19,7 +19,7 @@ impl WormsModClient {
 }
 
 impl ClientMod for WormsModClient {
-    fn register_handlers(&self, handlers: &mut aeonetica_engine::util::id_map::IdMap<fn() -> Box<dyn ClientHandle>>, store: &mut DataStore) {
+    fn register_handlers(&self, handlers: &mut aeonetica_engine::util::id_map::IdMap<fn() -> Box<dyn ClientHandle>>, _store: &mut DataStore) {
         handlers.insert(type_to_id::<WormHandle>(),  WormHandle::new_boxed);
     }
 }
@@ -54,7 +54,7 @@ impl WormHandle {
     }
 
     pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, (segments, looking_dir, teleporting): (Vec<Vector2<f32>>, Vector2<f32>, bool)) {
-        if self.segments.len() == 0 {
+        if self.segments.is_empty() {
             let sheet = store.get_or_create(WormSheet::load);
             self.p_segments = segments.clone();
             self.segments = segments.clone();
@@ -102,7 +102,7 @@ impl ClientHandle for WormHandle {
         messenger.register_receiver(WormHandle::receive_position)
     }
 
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, _store: &mut DataStore, delta_time: f64) {
         if self.interpolation_delta < 1.0 {
             for (i, (segment, p_segment)) in self.segments.iter().zip(&self.p_segments).enumerate() {
                 let delta = *segment - *p_segment;

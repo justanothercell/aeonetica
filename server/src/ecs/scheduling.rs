@@ -57,7 +57,7 @@ macro_rules! yield_task {
 
 impl Engine {
     pub fn yield_fn(&mut self, waiter: WaitFor) -> Yielder<'_> {
-        Yielder(PrivateYielder, PhantomData::default(), waiter)
+        Yielder(PrivateYielder, PhantomData, waiter)
     }
 
     pub fn queue_task<'a>(&mut self, task: impl Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()> + 'static) {

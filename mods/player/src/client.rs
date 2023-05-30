@@ -3,7 +3,7 @@ use std::rc::Rc;
 use aeonetica_client::ClientMod;
 use aeonetica_client::data_store::DataStore;
 use aeonetica_client::networking::messaging::{ClientHandle, ClientMessenger};
-use aeonetica_client::renderer::material::{FlatColor, FlatTexture};
+use aeonetica_client::renderer::material::{FlatTexture};
 use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::{Renderer, builtin::Quad};
 use aeonetica_client::renderer::builtin::Line;
@@ -103,12 +103,12 @@ impl PlayerHandle {
         }
     }
 
-    pub(crate) fn set_controlling(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, is_controlling: bool) {
+    pub(crate) fn set_controlling(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, is_controlling: bool) {
         log!("got elevated to controller");
         self.is_controlling = is_controlling
     }
 
-    pub(crate) fn receive_position(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) {
+    pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) {
         if !self.is_controlling {
             if teleporting {
                 self.p_position = position;

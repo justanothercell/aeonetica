@@ -77,9 +77,9 @@ where
     }
 
     pub fn remove(&mut self, k: &K) -> Option<V> {
-        self.map.remove(k).and_then(|v| {
+        self.map.remove(k).map(|v| {
             self.remove_from_pairs(k);
-            Some(v)
+            v
         })
     }
 
@@ -94,8 +94,8 @@ where
             let new_c = v.extract_comparable();
 
             if c != new_c {
-                self.remove_from_pairs(&k);
-                self.insert_into_pairs(k.clone(), new_c);
+                self.remove_from_pairs(k);
+                self.insert_into_pairs(*k, new_c);
             }
 
             Some(t)

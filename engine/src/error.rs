@@ -53,7 +53,7 @@ impl Error {
             value: Box::new(value),
             fatality,
             location: *std::panic::Location::caller(),
-            trace: trace.then(|| Backtrace::force_capture()),
+            trace: trace.then(Backtrace::force_capture),
             additional: vec![]
         })
     }
