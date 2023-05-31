@@ -21,6 +21,8 @@ use crate::common::{Chunk, CHUNK_SIZE, WorldView};
 use crate::server::world::World;
 use crate::tiles::Tile;
 
+use debug_mod::Debug;
+
 use self::materials::GlowTexture;
 
 mod pipeline;
@@ -72,6 +74,7 @@ impl ClientMod for WorldModClient {
         });
 
         context.push(WorldLayer::new()).expect("duplicate layer");
+        store.add_default::<Debug<WorldLayer>>();
         store.add_store(CameraData {
             position: Vector2::new(0.0, 0.0),
             trauma: 0.0,
@@ -247,6 +250,14 @@ impl Layer for WorldLayer {
         let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake * 1.5;
         camera.set_position(pos);
         cam.trauma = (cam.trauma - delta_time as f32 / 3.0).clamp(0.0, 1.0);
+    }
+
+    fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+        store.mut_store::<Debug<WorldLayer>>().renderer().start_render(renderer);
+    }
+
+    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+        store.mut_store::<Debug<WorldLayer>>().renderer().finish_render(renderer);
     }
 
     fn event(&mut self, event: &Event) -> bool {

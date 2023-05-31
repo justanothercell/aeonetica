@@ -35,6 +35,8 @@ pub mod util;
 pub mod collections;
 pub mod math;
 
+pub type Color = [f32; 4];
+
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]
 pub struct Id([u8;8]);
 

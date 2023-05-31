@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, renderer::{Renderer, texture::{SpriteSheet, Texture}, builtin::Quad, material::FlatTexture}, data_store::DataStore};
 use aeonetica_engine::{networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
+use debug_mod::Debug;
 use world_mod::client::WorldLayer;
 
 use crate::server::{WORM_SPEED};
@@ -102,7 +103,9 @@ impl ClientHandle for WormHandle {
         messenger.register_receiver(WormHandle::receive_position)
     }
 
-    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, _store: &mut DataStore, delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
+        let dbg = store.mut_store::<Debug<WorldLayer>>();
+        let mut dbg = dbg.renderer();
         if self.interpolation_delta < 1.0 {
             for (i, (segment, p_segment)) in self.segments.iter().zip(&self.p_segments).enumerate() {
                 let delta = *segment - *p_segment;
@@ -110,6 +113,9 @@ impl ClientHandle for WormHandle {
                 self.quads[i].set_rotation(if i == 0 { -self.looking_dir } else { self.segments[i]-self.segments[i-1] }.euler() - PI / 2.0);
                 renderer.draw(&mut self.quads[i]).expect("unable to draw quad");
             }
+        }
+        if self.segments.len() > 0 {
+            dbg.rect(self.segments[0], Vector2::new(1.0, 1.0), 0.1, [1.0, 0.0, 1.0, 1.0]);
         }
         self.interpolation_delta = (delta_time as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);
     }

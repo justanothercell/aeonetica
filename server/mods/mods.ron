@@ -5,6 +5,7 @@
         // path:name
         "world:world": [ "42" ],
 		"player:player": [],
-        "worms:worms": []
+        "worms:worms": [],
+        "debug:debug": []
     }
 )
