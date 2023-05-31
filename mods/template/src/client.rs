@@ -5,7 +5,7 @@ pub struct {{MOD_NAME_CAPITALIZED}}ModClient {
 
 }
 
-impl {{MOD_NAME_CAPITALIZED}}ModServer {
+impl {{MOD_NAME_CAPITALIZED}}ModClient {
     pub(crate) fn new() -> Self {
         Self {}
     }
