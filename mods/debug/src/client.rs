@@ -71,7 +71,7 @@ impl<L: Layer> DebugRenderer<L> {
         }
         for (i, line) in self.lines.iter_mut().enumerate() {
             if i < self.usage_index {
-                println!("{}: {}-{}", i, line.from(), line.to());
+                println!("{}: {} - {}", i, line.from(), line.to());
                 renderer.draw(line).expect("unable to draw line");
             } else {
                 renderer.remove(line);

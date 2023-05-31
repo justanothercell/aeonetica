@@ -66,8 +66,8 @@ impl ServerMod for PlayerModServer {
             }, |id, engine, client| {
                 // get list of players and entity id of client player
                 let prcrc = engine.get_module_of::<PlayerHandler>(id).players.clone();
-                let players = prcrc.borrow();
-                let eid = *players.get(client).unwrap();
+                let mut players = prcrc.borrow_mut();
+                let eid = players.remove(client).unwrap();
 				// unregister this player for all other players
                 let messenger: &mut Messenger = &mut engine.mut_module_of(&eid);
 				for (pid, _eid) in players.iter() {
