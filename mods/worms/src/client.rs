@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, renderer::{Renderer, texture::{SpriteSheet, Texture}, builtin::Quad, material::FlatTexture}, data_store::DataStore};
+use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, renderer::{Renderer, texture::{SpriteSheet, Texture}, builtin::{Quad, Line}, material::FlatTexture}, data_store::DataStore};
 use aeonetica_engine::{networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
 use debug_mod::Debug;
 use world_mod::client::WorldLayer;
@@ -99,8 +99,14 @@ impl ClientHandle for WormHandle {
         type_to_id::<WorldLayer>()
     }
 
-    fn start(&mut self, messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
-        messenger.register_receiver(WormHandle::receive_position)
+    fn start(&mut self, messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
+        messenger.register_receiver(WormHandle::receive_position);
+        let pos = Vector2::new(2.0, 2.0);
+        let size = Vector2::new(2.0, 2.0);
+        renderer.add(&mut Line::new(pos, pos + (size.x, 0.0).into(), 0.2,  255, [1.0, 0.0, 0.0, 1.0]));
+        renderer.add(&mut Line::new(pos + (size.x, 0.0).into(), pos + size, 0.2,  255, [0.0, 1.0, 0.0, 1.0]));
+        renderer.add(&mut Line::new(pos + size, pos + (0.0, size.y).into(), 0.2,  255, [0.0, 0.0, 1.0, 1.0]));
+        renderer.add(&mut Line::new(pos + (0.0, size.y).into(), pos, 0.2,  255, [1.0, 0.0, 1.0, 1.0]));
     }
 
     fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {

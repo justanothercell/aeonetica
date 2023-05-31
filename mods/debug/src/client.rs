@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, cell::{RefCell, RefMut}, rc::Rc};
 
-use aeonetica_client::{ClientMod, renderer::{window::OpenGlRenderContextProvider, context::RenderContext, layer::Layer, Renderer, builtin::Line}};
+use aeonetica_client::{ClientMod, renderer::{layer::Layer, Renderer, builtin::Line}};
 use aeonetica_engine::math::vector::Vector2;
 use aeonetica_engine::Color;
 

@@ -60,8 +60,8 @@ pub struct Renderer {
     view_projection: Option<Matrix4<f32>>,
     batches: OrderedMap<BatchID, Batch, u8>,
     pipeline: Box<dyn Pipeline>,
-
-    batch_counter: BatchID
+    batch_counter: BatchID,
+    
 }
 
 impl Renderer {
