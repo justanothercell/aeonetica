@@ -196,6 +196,19 @@ impl Batch {
             self.update_vertices();
         }
 
+        #[cfg(feature = "gpu_debug")]
+        {
+            use std::io::Write;
+            let renderer = crate::renderer::gpu_debug::RENDERER.with(|f| *f.borrow());
+            let batch = self.id;
+            let z_index = self.z_index;
+            let mut file = std::fs::File::create(format!("gpu_dump/{renderer:08X}_{batch}_{z_index}.batch")).unwrap();
+            file.write_all(&self.indices.len().to_le_bytes()).unwrap();
+            file.write_all(unsafe { std::slice::from_raw_parts(self.indices.as_ptr() as *const u8, self.indices.len() * 4) }).unwrap();
+            file.write_all(&self.vertices.len().to_le_bytes()).unwrap();
+            file.write_all(&self.vertices).unwrap();
+        }
+
         renderer.load_shader(self.shader.clone());
 
         for (slot, texture) in self.textures.iter().enumerate() {
@@ -258,7 +271,7 @@ impl Batch {
         let vertex_buffer = self.vertex_array.vertex_buffer().as_ref().unwrap();
         vertex_buffer.bind();
 
-        eprintln!("Batch {} -> z_index: {} @ 0x{:08X}:\n\tindices ({} u32): {:?}\n\tvertices ({} u8): {:?}", self.id, self.z_index, self as *const _ as usize, self.indices.len(), self.indices, self.vertices.len(), self.vertices);
+        //eprintln!("Batch {} -> z_index: {} @ 0x{:08X}:\n\tindices ({} u32): {:?}\n\tvertices ({} u8): {:?}", self.id, self.z_index, self as *const _ as usize, self.indices.len(), self.indices, self.vertices.len(), self.vertices);
 
         unsafe {
             gl::BufferData(

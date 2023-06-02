@@ -99,7 +99,7 @@ impl Messenger {
             self.receivers.insert(id);
             let _ = self.ns.as_ref().unwrap().borrow().send(&id, &ServerPacket {
                 conv_id: Id::new(),
-                message: ServerMessage::AddClientHandle(self.entity_id, self.handle_type ),
+                message: ServerMessage::AddClientHandle(self.entity_id, self.handle_type),
             }, SendMode::Safe);
             true
         } else { false }

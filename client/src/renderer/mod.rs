@@ -109,24 +109,29 @@ impl Renderer {
     }
 
     pub fn draw_vertices(&mut self, _target: &Target) {
-        eprintln!("drawing all render data for {:08X}", self as *const _ as usize);
+        //eprintln!("drawing all render data for {:08X}", self as *const _ as usize);
+
+        #[cfg(feature = "gpu_debug")]
+        {
+            crate::renderer::gpu_debug::RENDERER.with(|f| *f.borrow_mut() = self as *mut Self as usize);
+        }
 
         let mut_ref_ptr = self as *mut _;
-        self.batches.iter().rev().for_each(|(_, batch)|
-            batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
-        );
+        self.batches.iter().rev().for_each(|(_, batch)| {
+            batch.draw_vertices(unsafe { &mut *mut_ref_ptr });
+        });
 
         self.unload_shader();
 
-        eprintln!("finished all render data for {:08X}", self as *const _ as usize);
+        //eprintln!("finished all render data for {:08X}", self as *const _ as usize);
     }
 
     fn next_id(&mut self) -> BatchID {
         //self.batch_counter += 1;
         // self.batch_counter
-        eprintln!("generating batch id...");
+        //eprintln!("generating batch id...");
         let id = Id::new();
-        eprintln!("generated batch id {id}");
+        //eprintln!("generated batch id {id}");
         id
     }
 
@@ -260,3 +265,11 @@ impl Renderer {
         }
     }
 } 
+
+#[cfg(feature = "gpu_debug")]
+pub(crate) mod gpu_debug{
+    use std::cell::RefCell;
+    thread_local! {
+        pub(crate) static RENDERER: RefCell<usize> = RefCell::new(0);
+    }
+}

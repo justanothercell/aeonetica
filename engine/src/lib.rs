@@ -93,7 +93,7 @@ impl Display for Id {
 }
 
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const MAX_CLIENT_TIMEOUT: u128 = 5000; // 5s
+pub const MAX_CLIENT_TIMEOUT: u128 = 10000; // 10s
 
 #[macro_export]
 macro_rules! log_format {

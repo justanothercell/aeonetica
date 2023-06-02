@@ -12,3 +12,7 @@ gl = "0.14.0"
 regex = "1.7.1"
 image = "0.24.5"
 lazy_static = "1.4.0"
+
+[features]
+# default = ["gpu_debug"]
+gpu_debug = []
