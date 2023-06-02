@@ -29,9 +29,15 @@ def fetch_mods(ron_file):
 
 if __name__ == '__main__':
     os.chdir(f'{dname}/../mods')
-    for mod in fetch_mods(f'{dname}/mods/mods.ron'):
+    
+    mod_override = [i for i, arg in enumerate(sys.argv) if arg == '-m' or arg == '--mods']
+    mods = fetch_mods(f'{dname}/mods/mods.ron') if len(mod_override) == 0 else [sys.argv[mod_override[0] + 1]]
+
+    for mod in mods:
         print(f'{BLUE}{BOLD}=>> COMPILING MOD {mod}:{ENDC}')
         subprocess.call([sys.executable, 'build.py', '-w', mod, '-d', '../server/mods'])
+    
     os.chdir(dname)
     print(f'{BLUE}{BOLD}=>> COMPILING SERVER: {ENDC}')
-    subprocess.call(['cargo', 'run' if len(sys.argv) > 1 and sys.argv[1] in ['-r', '--run'] else 'build'])
+    
+    subprocess.call(['cargo', 'run' if '-r' in sys.argv or '--run' in sys.argv else 'build'])
