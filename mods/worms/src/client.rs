@@ -76,7 +76,7 @@ impl WormHandle {
 
         if teleporting {
             self.p_segments = segments.clone();
-            self.interpolation_delta = 1.0;
+            self.interpolation_delta = 1.0; 
             self.segments = segments;
             self.looking_dir = looking_dir;
         } else {

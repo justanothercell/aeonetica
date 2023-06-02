@@ -225,7 +225,7 @@ impl WorldLayer {
 
 impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
-        renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
+      //  renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
     }
 
     fn instantiate_camera(&self) -> Camera {

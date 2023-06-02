@@ -3,9 +3,9 @@ use std::{rc::Rc, cell::Cell};
 use crate::{uniform_str, renderer::{shader::UniformStr, RenderError}};
 
 use super::{buffer::{Buffer, BufferLayout, BufferType, BufferUsage, vertex_array::VertexArray}, RenderID, shader::{self, ShaderDataType}, Renderer, material::Material};
-use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}};
+use aeonetica_engine::{collections::ordered_map::ExtractComparable, error::{ErrorResult, IntoError}, Id};
 
-pub type BatchID = u32;
+pub type BatchID = Id;
 
 #[derive(Debug)]
 struct Offset {
@@ -45,8 +45,8 @@ pub(super) struct Batch {
 }
 
 impl Batch {
-    const MAX_BATCH_VERTEX_COUNT: u32 = 1024;
-    const MAX_BATCH_INDEX_COUNT: u32 = 1024;
+    const MAX_BATCH_VERTEX_COUNT: u32 = 16000;
+    const MAX_BATCH_INDEX_COUNT: u32 = 16000;
 
     const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
     const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();
@@ -97,12 +97,26 @@ impl Batch {
     }
 
     pub fn has_space_for(&self, data: &VertexData) -> bool {
-        if self.z_index != data.z_index { return false }
-        self.vertex_array.vertex_buffer().as_ref().unwrap().count() < Self::MAX_BATCH_VERTEX_COUNT &&
-        self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() <= Self::MAX_BATCH_INDEX_COUNT &&
-        &self.shader == data.shader() &&
-        self.layout.eq(data.layout()) &&
-        if let Some(t) = data.texture { self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS } else { true } 
+        // check if the data belongs in the batch
+        if self.z_index != data.z_index || self.shader != *data.shader() || self.layout != *data.layout() {
+            return false
+        }
+
+        // check if the batch has space for the data
+        if self.vertex_array.vertex_buffer().as_ref().unwrap().count() + data.vertices_num_bytes() >= Self::MAX_BATCH_VERTEX_COUNT {
+            return false
+        }
+
+        if self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() >= Self::MAX_BATCH_INDEX_COUNT {
+            return false
+        }
+
+        // check if the batch contains or has space for the texture
+        if let Some(t) = data.texture { 
+            return self.textures.contains(&t) || self.textures.len() < Self::NUM_TEXTURE_SLOTS
+        }
+
+        return true;
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
@@ -116,17 +130,17 @@ impl Batch {
             data.patch_texture_id(index as u32);
         }
 
-        let num_vert_bytes = self.vertices.len();
-        let num_vertices = num_vert_bytes as u32 / self.layout.stride();
+        let num_existing_vert_bytes = self.vertices.len();
+        let num_existing_vertices = num_existing_vert_bytes as u32 / self.layout.stride();
         self.vertices.extend_from_slice(data.vertices);
         self.vertices_dirty.set(true);
         
-        let indices = data.indices().iter().map(|i| i + num_vertices);
-        let num_indices = self.indices.len();
+        let indices = data.indices().iter().map(|i| i + num_existing_vertices);
+        let num_existing_indices = self.indices.len();
         self.indices.extend(indices);
         self.indices_dirty.set(true);
 
-        self.offsets.push(Offset::new(num_vert_bytes, num_indices));
+        self.offsets.push(Offset::new(num_existing_vert_bytes, num_existing_indices));
 
         VertexLocation {
             batch: self.id, 
@@ -137,9 +151,9 @@ impl Batch {
     }
 
     pub fn modify_vertices(&mut self, location: &VertexLocation, data: &mut [u8], texture: Option<RenderID>) -> ErrorResult<()> {
-        let num_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
-        if num_bytes < data.len() {
-            return Err(RenderError(format!("unexpected vertices length; got {}, expected {}", data.len(), num_bytes)).into_error());
+        let num_vert_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
+        if num_vert_bytes != data.len() {
+            return Err(RenderError(format!("unexpected vertices length; got {}, expected {}", data.len(), num_vert_bytes)).into_error());
         }
 
         if let Some(texture) = texture {
@@ -151,24 +165,25 @@ impl Batch {
 
         let offset = &self.offsets[location.offset_index()];
 
-        self.vertices[offset.vertices..offset.vertices + num_bytes].copy_from_slice(data);
+        self.vertices[offset.vertices..offset.vertices + num_vert_bytes].copy_from_slice(data);
         self.vertices_dirty.set(true);
 
         Ok(())
     }
 
     pub fn remove_vertices(&mut self, location: &VertexLocation) {
-        let index = location.offset_index();
-        let offset = &self.offsets[index];
-        let num_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
-        self.vertices.drain(offset.vertices..offset.vertices + num_bytes);
-        self.indices.drain(offset.indices..offset.indices + location.num_indices() as usize);
+        let offset_index = location.offset_index();
+        let offset = &self.offsets[offset_index];
+        let num_vert_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
+        let num_indices = location.num_indices() as usize;
+        self.vertices.drain(offset.vertices .. offset.vertices + num_vert_bytes);
+        self.indices.drain(offset.indices .. offset.indices + num_indices);
 
-        if self.offsets.len() - index == 1 {
+        if self.offsets.len() - 1 == offset_index {
             self.offsets.pop();
         }
         else {
-            self.offsets[index + 1..].iter_mut().for_each(|offset| offset.reduce(num_bytes, location.num_indices() as usize));
+            self.offsets[offset_index + 1..].iter_mut().for_each(|offset| offset.reduce(num_vert_bytes, num_indices));
         }
     }
 
@@ -189,6 +204,7 @@ impl Batch {
                 gl::BindTexture(gl::TEXTURE_2D, *texture);
             }
         }
+
         if !self.textures.is_empty() {
             const TEXTURES_UNIFORM: UniformStr = uniform_str!("u_Textures");
             self.shader.upload_uniform(&TEXTURES_UNIFORM, &Self::TEXTURE_SLOTS.as_slice())
@@ -241,6 +257,8 @@ impl Batch {
 
         let vertex_buffer = self.vertex_array.vertex_buffer().as_ref().unwrap();
         vertex_buffer.bind();
+
+        eprintln!("Batch {} -> z_index: {} @ 0x{:08X}:\n\tindices ({} u32): {:?}\n\tvertices ({} u8): {:?}", self.id, self.z_index, self as *const _ as usize, self.indices.len(), self.indices, self.vertices.len(), self.vertices);
 
         unsafe {
             gl::BufferData(
@@ -317,8 +335,12 @@ impl<'a> VertexData<'a> {
         self.layout
     }
 
-    pub fn vertices(&mut self) -> &mut [u8] {
+    pub fn mut_vertices(&mut self) -> &mut [u8] {
         self.vertices
+    }
+
+    pub fn vertices_num_bytes(&self) -> u32 {
+        self.vertices.len() as u32
     }
 
     pub fn num_vertices(&self) -> u32 {

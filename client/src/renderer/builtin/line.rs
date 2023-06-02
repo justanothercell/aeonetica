@@ -63,22 +63,22 @@ impl Line {
 
     pub fn set_from(&mut self, from: Vector2<f32>) {
         self.from = from;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn set_to(&mut self, to: Vector2<f32>) {
         self.to = to;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn set_weight(&mut self, weight: f32) {
         self.weight = weight;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn set_color(&mut self, color: [f32; 4]) {
         self.params = color;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn shader(&self) -> &shader::Program {
@@ -103,7 +103,7 @@ impl Line {
 
 impl Renderable for Line {
     fn vertex_data(&mut self) -> VertexData<'_> {
-        if self.vertices.is_none() {
+        if self.is_dirty() {
             self.recalculate_vertex_data();
         }
 
@@ -130,11 +130,11 @@ impl Renderable for Line {
         self.location = location;
     }
 
-    fn has_location(&self) -> bool {
-        self.location.is_some()
-    }
-
     fn is_dirty(&self) -> bool {
         self.vertices.is_none()
+    }
+
+    fn has_location(&self) -> bool {
+        self.location.is_some()
     }
 }

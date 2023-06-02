@@ -21,7 +21,7 @@ use shader::*;
 use texture::*;
 use batch::*;
 
-use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}};
+use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, Id};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
 use self::{sprite_sheet::Sprite, font::BitmapFont, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}, util::Target};
@@ -59,9 +59,7 @@ pub struct Renderer {
     shader: Option<Rc<Program>>,
     view_projection: Option<Matrix4<f32>>,
     batches: OrderedMap<BatchID, Batch, u8>,
-    pipeline: Box<dyn Pipeline>,
-    batch_counter: BatchID,
-    
+    pipeline: Box<dyn Pipeline>,    
 }
 
 impl Renderer {
@@ -73,7 +71,6 @@ impl Renderer {
             view_projection: None,
             pipeline: Box::new(DefaultPipeline::new()),
             batches: OrderedMap::new(),
-            batch_counter: 0,
         }
     }
 
@@ -112,29 +109,40 @@ impl Renderer {
     }
 
     pub fn draw_vertices(&mut self, _target: &Target) {
+        eprintln!("drawing all render data for {:08X}", self as *const _ as usize);
+
         let mut_ref_ptr = self as *mut _;
         self.batches.iter().rev().for_each(|(_, batch)|
             batch.draw_vertices(unsafe { &mut *mut_ref_ptr })
         );
 
         self.unload_shader();
+
+        eprintln!("finished all render data for {:08X}", self as *const _ as usize);
     }
 
     fn next_id(&mut self) -> BatchID {
-        self.batch_counter += 1;
-        self.batch_counter
+        //self.batch_counter += 1;
+        // self.batch_counter
+        eprintln!("generating batch id...");
+        let id = Id::new();
+        eprintln!("generated batch id {id}");
+        id
     }
 
     pub(self) fn delete_batch(&mut self, id: &BatchID) {
-        let _num_batches = self.batches.len() - 1;
-        if let Some(batch) = self.batches.remove(id) { batch.delete() }
+        if let Some(batch) = self.batches.remove(id) { 
+            batch.delete()
+        }
     }
 
     pub fn add_vertices(&mut self, data: &mut VertexData) -> VertexLocation {
         if let Some(idx) = self.batches.iter().position(|(_, batch)| batch.has_space_for(data)) {
+            // matching batch with enough space found
             self.batches.nth_mut(idx, |batch| batch.add_vertices(data)).unwrap()
         }
         else {
+            // create new batch
             let mut batch = Batch::new(self.next_id(), data).expect("Error creating new render batch");
             let location = batch.add_vertices(data);
             self.batches.insert(*batch.id(), batch);
@@ -157,9 +165,9 @@ impl Renderer {
                 batch.remove_vertices(location);
                 batch.is_deletable().then(|| *batch.id())
             }
-        );
+        ).flatten();
 
-        if let Some(Some(id)) = remove {
+        if let Some(id) = remove {
             self.delete_batch(&id);
         }
     }
@@ -171,7 +179,7 @@ impl Renderer {
 
     pub fn modify(&mut self, item: &mut impl Renderable) -> ErrorResult<()> {
         let texture = item.texture_id();
-        self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().vertices(), texture)
+        self.modify_vertices(&item.location().as_ref().unwrap().clone(), item.vertex_data().mut_vertices(), texture)
     }
 
     // add or modify a given item, if needed
@@ -182,7 +190,7 @@ impl Renderer {
         }
         else if item.is_dirty() {
             let texture = item.texture_id();
-            self.modify_vertices(&item.location().clone().unwrap(), item.vertex_data().vertices(), texture)?
+            self.modify_vertices(&item.location().clone().unwrap(), item.vertex_data().mut_vertices(), texture)?
         }
 
         Ok(())

@@ -126,17 +126,17 @@ impl<M: Material> Quad<M> {
 
     pub fn set_position(&mut self, position: Vector2<f32>) {
         self.position = position;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn set_size(&mut self, size: Vector2<f32>) {
         self.size = size;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
-        self.vertices = None;
+        self.set_dirty();
     }
 
     pub fn shader(&self) -> &shader::Program {
@@ -186,7 +186,7 @@ impl<M: Material> Quad<M> {
 
 impl<M: Material> Renderable for Quad<M> {
     fn vertex_data(&mut self) -> VertexData<'_> {
-        if self.vertices.is_none() {
+        if self.is_dirty() {
             self.recalculate_vertex_data();
         }
 
