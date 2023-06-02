@@ -103,10 +103,10 @@ impl ClientHandle for WormHandle {
         messenger.register_receiver(WormHandle::receive_position);
         let pos = Vector2::new(2.0, 2.0);
         let size = Vector2::new(2.0, 2.0);
-        renderer.add(&mut Line::new(pos, pos + (size.x, 0.0).into(), 0.2,  255, [1.0, 0.0, 0.0, 1.0]));
-        renderer.add(&mut Line::new(pos + (size.x, 0.0).into(), pos + size, 0.2,  255, [0.0, 1.0, 0.0, 1.0]));
-        renderer.add(&mut Line::new(pos + size, pos + (0.0, size.y).into(), 0.2,  255, [0.0, 0.0, 1.0, 1.0]));
-        renderer.add(&mut Line::new(pos + (0.0, size.y).into(), pos, 0.2,  255, [1.0, 0.0, 1.0, 1.0]));
+        //renderer.add(&mut Line::new(pos, pos + (size.x, 0.0).into(), 0.2,  255, [1.0, 0.0, 0.0, 1.0]));
+        //renderer.add(&mut Line::new(pos + (size.x, 0.0).into(), pos + size, 0.2,  255, [0.0, 1.0, 0.0, 1.0]));
+        //renderer.add(&mut Line::new(pos + size, pos + (0.0, size.y).into(), 0.2,  255, [0.0, 0.0, 1.0, 1.0]));
+        //renderer.add(&mut Line::new(pos + (0.0, size.y).into(), pos, 0.2,  255, [1.0, 0.0, 1.0, 1.0]));
     }
 
     fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {

@@ -101,14 +101,12 @@ impl WorldView for ClientWorld {
 }
 
 pub(crate) struct WorldHandle {
-    chunk_queue: Vec<Chunk>,
     tile_sprites: SpriteSheet,
 }
 
 impl WorldHandle {
     fn new() -> Self {
         Self {
-            chunk_queue: vec![],
             tile_sprites: SpriteSheet::from_texture(
                 Texture::from_bytes(include_bytes!("../../assets/include/tilemap.png")).unwrap(),
                 Vector2::new(16, 16)
@@ -116,8 +114,41 @@ impl WorldHandle {
         }
     }
 
-    pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, chunk: Chunk) {
-        self.chunk_queue.push(chunk);
+    pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
+        let mut quads = vec![];
+        let chunks = &mut store.mut_store::<ClientWorld>().chunks;
+        for (i, tile) in chunk.tiles().iter().enumerate() {
+            let index = tile.sprite_sheet_index();
+            if index == 0 {
+                continue;
+            }
+
+            let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
+            let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
+
+            if index == Tile::Lamp as u16 {
+                let mut quad = Quad::with_glow_sprite(
+                    Vector2::new(x as f32, y as f32), 
+                    Vector2::new(1.0, 1.0), 
+                    1, 
+                    self.tile_sprites.get(index as u32 - 1).unwrap(),
+                [0.9, 0.8, 0.5, 1.0]
+                );
+                renderer.add(&mut quad);
+                quads.push(Block::Glowing(quad));
+            }
+            else {
+                let mut quad = Quad::with_terrain_sprite(
+                    Vector2::new(x as f32, y as f32), 
+                    Vector2::new(1.0, 1.0), 
+                    0, 
+                    self.tile_sprites.get(index as u32 - 1).unwrap(),
+                );
+                renderer.add(&mut quad);
+                quads.push(Block::Default(quad));
+            }
+        }
+        chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
     }
 }
 
@@ -173,43 +204,6 @@ impl ClientHandle for WorldHandle {
                 false
             } else { true }
         });
-
-        for chunk in self.chunk_queue.drain(..) {
-            let mut quads = vec![];
-
-            for (i, tile) in chunk.tiles().iter().enumerate() {
-                let index = tile.sprite_sheet_index();
-                if index == 0 {
-                    continue;
-                }
-
-                let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
-                let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
-
-                if index == Tile::Lamp as u16 {
-                    let mut quad = Quad::with_glow_sprite(
-                        Vector2::new(x as f32, y as f32), 
-                        Vector2::new(1.0, 1.0), 
-                        1, 
-                        self.tile_sprites.get(index as u32 - 1).unwrap(),
-                    [0.9, 0.8, 0.5, 1.0]
-                    );
-                    renderer.add(&mut quad);
-                    quads.push(Block::Glowing(quad));
-                }
-                else {
-                    let mut quad = Quad::with_terrain_sprite(
-                        Vector2::new(x as f32, y as f32), 
-                        Vector2::new(1.0, 1.0), 
-                        0, 
-                        self.tile_sprites.get(index as u32 - 1).unwrap(),
-                    );
-                    renderer.add(&mut quad);
-                    quads.push(Block::Default(quad));
-                }
-            }
-            chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
-        }
     }
 }
 
