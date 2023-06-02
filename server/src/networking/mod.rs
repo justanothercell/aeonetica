@@ -30,7 +30,6 @@ pub(crate) type ReplyFn = Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>;
 pub(crate) struct ClientHandle {
     pub(crate) last_seen: Instant,
     pub(crate) client_addr: SocketAddr,
-    awaiting_replies: IdMap<ReplyFn>
 }
 
 impl NetworkServer {

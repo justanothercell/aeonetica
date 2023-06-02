@@ -127,6 +127,8 @@ impl PlayerHandle {
 
 impl ClientEntity for PlayerHandle {}
 
+const PLAYER_SIZE: f32 = 0.9;
+
 impl ClientHandle for PlayerHandle {
     fn owning_layer(&self) -> TypeId {
         type_to_id::<WorldLayer>()
@@ -139,7 +141,7 @@ impl ClientHandle for PlayerHandle {
         self.quad = Value(
             Quad::with_texture(
             self.position,
-            Vector2::new(1.0, 1.0),
+            Vector2::new(PLAYER_SIZE, PLAYER_SIZE),
             10,
             store.get_or_create(PlayerTexture::load).get().id(),
         ))
@@ -177,8 +179,13 @@ impl ClientHandle for PlayerHandle {
             if v.mag_sq() > 0.0 {
                 let world = store.get_store::<ClientWorld>();
                 let p = self.position;
-                world.calc_move(&mut self.position, Vector2::new(1.0, 1.0), v * delta_time as f32);
+                let mov_delta = v * delta_time as f32;
+                world.calc_move(&mut self.position, Vector2::new(PLAYER_SIZE, PLAYER_SIZE), mov_delta);
                 let delta = self.position - p;
+                if (delta - mov_delta).mag_sq() < 0.001 && (self.p_position - self.position).mag_sq() > 0.001 {
+                    messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Safe);
+                    self.p_position = self.position;
+                }
                 if delta.x.abs() < 0.01 * delta_time as f32 {
                     self.velocity.x = 0.0;
                 }
@@ -188,7 +195,7 @@ impl ClientHandle for PlayerHandle {
                     }
                     self.velocity.y = 0.0;
                     let world = store.get_store::<ClientWorld>();
-                    self.is_grounded = world.overlap_aabb(  self.position + Vector2::new(0.0, 0.01), Vector2::new(1.0, 1.0));
+                    self.is_grounded = world.overlap_aabb(self.position + Vector2::new(0.0, 0.01), Vector2::new(PLAYER_SIZE, PLAYER_SIZE));
                 } else {
                     self.is_grounded = false;
                 }

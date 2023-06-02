@@ -71,12 +71,10 @@ pub trait WorldView {
 
     /// Returns [`true`] if the aabb bounding box collides with a tile.
     fn overlap_aabb(&self, pos: Vector2<f32>, size: Vector2<f32>) -> bool {
-        let start = pos.floor();
-        let max_size = (size - (pos - start)).ceil().to_i32();
-        let start = start.to_i32();
-        for x in start.x..=(start.x+max_size.x) {
-            for y in start.y..=(start.y+max_size.y) {
-                if self.get_tile((x, y).into()).is_solid() { return true }
+        let max_size = size.ceil().to_i32();
+        for x in 0..=max_size.x {
+            for y in 0..=max_size.y {
+                if self.get_tile(Vector2::new(pos.x + (x as f32).min(size.x), pos.y + (y as f32).min(size.y)).floor().to_i32()).is_solid() { return true }
             }
         }
         false

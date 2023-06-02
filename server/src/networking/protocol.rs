@@ -52,22 +52,15 @@ impl Engine {
     }
 
     pub(crate) fn handle_packet(&mut self, addr: &SocketAddr, packet: &ClientPacket) -> ErrorResult<()> {
-        let mut_ref_ptr = &mut self.runtime as *mut ServerRuntime;
         if let Some(client) = self.runtime.ns.borrow_mut().clients.get_mut(&packet.client_id) {
             client.last_seen = std::time::Instant::now();
-            if let Some(handler) = client.awaiting_replies.remove(&packet.conv_id) {
-                let mut_ref = unsafe { &mut *mut_ref_ptr };
-                handler(mut_ref, packet);
-                return Ok(())
-            }
         }
         match &packet.message {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
                     self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
                         last_seen: std::time::Instant::now(),
-                        client_addr: *addr,
-                        awaiting_replies: Default::default(),
+                        client_addr: *addr
                     });
                     self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
                         conv_id: packet.conv_id,
@@ -141,19 +134,5 @@ impl Engine {
             _ => ()
         }
         Ok(())
-    }
-
-    #[allow(unused)]
-    pub(crate) fn request_response<F: Fn(&mut ServerRuntime, &ClientPacket) + 'static>(&mut self, client_id: &Id, packet: &ServerPacket, handler: F, mode: SendMode) -> ErrorResult<()> {
-        match self.runtime.ns.borrow_mut().clients.get_mut(client_id) {
-            Some(client) => {
-                client.awaiting_replies.insert(packet.conv_id, Box::new(handler));
-                self.runtime.ns.borrow().send(client_id, packet, mode)?;
-                Ok(())
-            }
-            None => {
-                Err(Error::new(NetworkError("invalid client".to_string()), Fatality::DEFAULT, true))
-            }
-        }
     }
 }
