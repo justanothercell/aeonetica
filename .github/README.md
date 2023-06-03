@@ -28,6 +28,7 @@
 ---
 
 ## Quickstart
+Follow the steps below or download the pre-built binaries from the [releases](https://github.com/DragonFIghter603/aeonetica/releases).
 
 1. Clone the repo and (optionally) go to [release branch](https://github.com/DragonFIghter603/aeonetica/tree/release) for stability
     ```shell
