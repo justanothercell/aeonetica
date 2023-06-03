@@ -36,6 +36,8 @@ pub mod collections;
 pub mod math;
 pub mod time;
 
+pub use enable_ansi_support;
+
 pub type Color = [f32; 4];
 
 #[derive(Copy, Clone, SerBin, DeBin, SerRon, DeRon, Eq, PartialEq, Hash)]

@@ -4,6 +4,7 @@ use server::server;
 
 
 fn main() {
+	aeonetica_engine::enable_ansi_support::enable_ansi_support().unwrap_or_else(|e| eprintln!("ansi not supported in this console"));
     // cargo run -- 0.0.0.0:6090
     let mut args: Vec<_> = std::env::args().skip(1).collect();
     log!("started server with args {args:?}");
