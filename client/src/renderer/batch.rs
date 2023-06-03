@@ -103,11 +103,11 @@ impl Batch {
         }
 
         // check if the batch has space for the data
-        if self.vertex_array.vertex_buffer().as_ref().unwrap().count() + data.vertices_num_bytes() >= Self::MAX_BATCH_VERTEX_COUNT {
+        if self.vertices.len() as u32 + data.vertices_num_bytes() >= Self::MAX_BATCH_VERTEX_COUNT {
             return false
         }
 
-        if self.vertex_array.index_buffer().as_ref().unwrap().count() + data.num_indices() >= Self::MAX_BATCH_INDEX_COUNT {
+        if self.indices.len() as u32 + data.num_indices() >= Self::MAX_BATCH_INDEX_COUNT {
             return false
         }
 
@@ -224,7 +224,7 @@ impl Batch {
         }
 
         self.vertex_array.bind();
-        let num_indices = self.vertex_array.index_buffer().as_ref().unwrap().count() as i32;
+        let num_indices = self.indices.len() as i32;
         unsafe {
             gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, std::ptr::null());
         }
@@ -260,7 +260,6 @@ impl Batch {
                 gl::DYNAMIC_DRAW
             )
         }
-        index_buffer.set_count(num_indices as u32);
 
         self.indices_dirty.set(false);
     }
@@ -281,7 +280,6 @@ impl Batch {
                 gl::DYNAMIC_DRAW
             );
         }
-        vertex_buffer.set_count(num_bytes as u32 / self.layout.stride());
 
         self.vertices_dirty.set(false);
     }
