@@ -18,6 +18,8 @@ pub fn run(ip: &str) {
         m.start(mut_engine_ref);
     });
 
+    println!("\x1b[38;5;200mServer successfully set up and ready for clients to connect\x1b[0m");
+
     loop {
         let t = Instant::now();
 
