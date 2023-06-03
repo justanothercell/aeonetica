@@ -213,6 +213,15 @@ impl Engine {
     }
 
     #[inline]
+    pub fn two_mut_modules_of_entities<T1: Module + Sized + 'static, T2: Module + Sized + 'static>(&mut self, id1: &EntityId, id2: &EntityId) -> (Nullable<&mut T1>, Nullable<&mut T2>) {
+        if type_to_id::<T1>() == type_to_id::<T2>() && id1 == id2 {
+            panic!("cannot borrow the same two types from same entity: {}", type_name::<T1>())
+        }
+        let mut_engine = unsafe { self.mut_handle() };
+        (self.mut_module_of::<T1>(id1), mut_engine.mut_module_of::<T2>(id2))
+    }
+
+    #[inline]
     pub fn get_module_by_tag<T: Module + Sized + 'static>(&self, tag: &str) -> Nullable<&T> {
         self.get_entity_by_tag(tag)?.get_module()
     }

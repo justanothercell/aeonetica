@@ -76,7 +76,7 @@ impl Id {
 
 impl Debug for Id {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:X}{:X}-{:X}{:X}-{:X}{:X}-{:X}{:X}", self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5], self.0[6], self.0[7])
+        write!(f, "{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}-{:042X}{:02X}", self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5], self.0[6], self.0[7])
     }
 }
 

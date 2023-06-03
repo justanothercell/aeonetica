@@ -118,10 +118,10 @@ impl ClientHandle for WormHandle {
                 self.quads[i].set_position(*segment + delta * self.interpolation_delta);
                 self.quads[i].set_rotation(if i == 0 { -self.looking_dir } else { self.segments[i]-self.segments[i-1] }.euler() - PI / 2.0);
                 renderer.draw(&mut self.quads[i]).expect("unable to draw quad");
+                if i == 0 {
+                    dbg.rect(*segment, Vector2::new(1.0, 1.0), 0.1, [1.0, 0.0, 1.0, 1.0]);
+                }
             }
-        }
-        if self.segments.len() > 0 {
-            dbg.rect(self.segments[0], Vector2::new(1.0, 1.0), 0.1, [1.0, 0.0, 1.0, 1.0]);
         }
         self.interpolation_delta = (delta_time as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);
     }

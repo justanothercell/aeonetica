@@ -1,7 +1,7 @@
 use aeonetica_engine::{math::vector::Vector2, EntityId, networking::SendMode};
 use aeonetica_server::{ServerMod, ecs::{module::Module, Engine, messaging::Messenger}};
 use player_mod::server::{PLAYER_HANDLER, PlayerHandler, Player};
-
+use world_mod::{server::world::{WORLD, World}, common::WorldView};
 use crate::client::WormHandle;
 
 
@@ -84,10 +84,12 @@ impl Module for Worm {
             }
         }
         if let Some(pos) = target {
+            let wid = **engine.get_entity_id_by_tag(WORLD);
+            let (mut worm, mut world) = engine.two_mut_modules_of_entities::<Worm, World>(id, &wid);
             let dir = (pos - self_pos).normalized();
-            let mut worm = engine.mut_module_of::<Worm>(id);
+            let dir = (worm.looking_dir * 3.0 + dir).normalized();
             worm.looking_dir = dir;
-            worm.segments[0] += dir * WORM_SPEED;
+            world.calc_move(&mut worm.segments[0], (1.0, 1.0).into(), dir * WORM_SPEED);
             self_pos = worm.segments[0];
             let mut last_segment = self_pos;
             for segment in worm.segments.iter_mut().skip(1) {
