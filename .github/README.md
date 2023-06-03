@@ -80,3 +80,7 @@
 > **Note**
 > All other dependencies should get fetched by `cargo` automatically.
 
+## Credit/Main Contributors
+- [DragonFighter603](https://github.com/DragonFIghter603) - server ecs and networking
+- [Spydr06](https://github.com/Spydr06) - client and graphics
+- [Tascripp](https://www.instagram.com/tascripp/) some of the art
