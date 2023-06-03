@@ -21,7 +21,7 @@ use shader::*;
 use texture::*;
 use batch::*;
 
-use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, Id};
+use aeonetica_engine::{math::{vector::Vector2, matrix::Matrix4}, collections::OrderedMap, error::{ErrorResult, ErrorValue, IntoError, Fatality, Error}, Id, time::Time};
 pub(self) use aeonetica_engine::math::camera::Camera;
 
 use self::{sprite_sheet::Sprite, font::BitmapFont, layer::LayerUpdater, pipeline::{Pipeline, DefaultPipeline}, util::Target};
@@ -208,9 +208,9 @@ impl Renderer {
         } 
     }
 
-    pub(super) fn on_layer_update(&mut self, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64) {
+    pub(super) fn on_layer_update(&mut self, camera: &Camera, target: &Target, updater: LayerUpdater, time: Time) {
         let ref_mut_ptr = self as *mut _;
-        self.pipeline.pipeline(unsafe { &mut *ref_mut_ptr }, camera, target, updater, delta_time);
+        self.pipeline.pipeline(unsafe { &mut *ref_mut_ptr }, camera, target, updater, time);
     }
 
     pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {

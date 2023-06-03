@@ -12,6 +12,7 @@ use aeonetica_client::renderer::layer::Layer;
 use aeonetica_client::renderer::texture::Texture;
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, TypeId};
+use aeonetica_engine::time::Time;
 use aeonetica_engine::math::camera::Camera;
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
@@ -151,22 +152,22 @@ impl ClientHandle for PlayerHandle {
         renderer.remove(&mut *self.quad);
     }
 
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, time: Time) {
         let quad = &mut *self.quad;
         if self.is_controlling {
-            self.velocity.y -= GRAVITY * delta_time as f32;
+            self.velocity.y -= GRAVITY * time.delta as f32;
             if self.key_hover {
                 if self.hover_energy > 0.0 {
-                    self.velocity.y = (self.velocity.y * (1.0 - delta_time as f32 * 10.0)) - self.hover_force * delta_time as f32 * 10.0;
+                    self.velocity.y = (self.velocity.y * (1.0 - time.delta as f32 * 10.0)) - self.hover_force * time.delta as f32 * 10.0;
                 }
-                self.hover_energy = self.hover_energy.sub(0.75 * delta_time as f32).max(0.0);
+                self.hover_energy = self.hover_energy.sub(0.75 * time.delta as f32).max(0.0);
             } else {
-                self.hover_energy = self.hover_energy.add( if self.is_grounded { 1.0 } else { 0.125 } * delta_time as f32).min(1.0);
+                self.hover_energy = self.hover_energy.add( if self.is_grounded { 1.0 } else { 0.125 } * time.delta as f32).min(1.0);
             }
             store.mut_store::<PlayerUIView>().hover_energy = self.hover_energy;
 
-            self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
-            self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(delta_time as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
+            self.velocity.y -= self.velocity.y.abs().mul(0.25).max(0.025).mul(time.delta as f32).min(self.velocity.y.abs()).copysign(self.velocity.x);
+            self.velocity.x -= self.velocity.x.abs().mul(0.25).max(0.025).mul(time.delta as f32).min(self.velocity.x.abs()).copysign(self.velocity.x);
             let v = if self.velocity.x.abs() < 0.05 {
                 self.velocity.x = 0.0;
                 self.velocity + Vector2::new(match (self.key_left, self.key_right) {
@@ -179,17 +180,17 @@ impl ClientHandle for PlayerHandle {
             if v.mag_sq() > 0.0 {
                 let world = store.get_store::<ClientWorld>();
                 let p = self.position;
-                let mov_delta = v * delta_time as f32;
+                let mov_delta = v * time.delta as f32;
                 world.calc_move(&mut self.position, Vector2::new(PLAYER_SIZE, PLAYER_SIZE), mov_delta);
                 let delta = self.position - p;
                 if (delta - mov_delta).mag_sq() < 0.001 && (self.p_position - self.position).mag_sq() > 0.001 {
                     messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Safe);
                     self.p_position = self.position;
                 }
-                if delta.x.abs() < 0.01 * delta_time as f32 {
+                if delta.x.abs() < 0.01 * time.delta as f32 {
                     self.velocity.x = 0.0;
                 }
-                if delta.y.abs() < 0.01 * delta_time as f32 {
+                if delta.y.abs() < 0.01 * time.delta as f32 {
                     if self.velocity.y > 16.0 {
                         store.mut_store::<CameraData>().add_trauma((self.velocity.y / 50.0) * (self.velocity.y / 50.0));
                     }
@@ -211,7 +212,7 @@ impl ClientHandle for PlayerHandle {
         } else if self.interpolation_delta < 1.0 {
             let delta = self.position - self.p_position;
             quad.set_position(self.p_position + delta * self.interpolation_delta);
-            self.interpolation_delta = (delta_time as f32 * self.speed + self.interpolation_delta).min(1.0);
+            self.interpolation_delta = (time.delta as f32 * self.speed + self.interpolation_delta).min(1.0);
         }
 
         let _ = renderer.draw(quad);
@@ -274,7 +275,7 @@ impl Layer for UILayer {
         renderer.add(&mut self.hover_energy_bar_bg);
     }
 
-    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _time: Time) {
         let hover_energy = store.get_store::<PlayerUIView>().hover_energy;
 
         self.hover_energy_bar.set_to(*self.hover_energy_bar.from() + Vector2::new(1.5 * hover_energy, 0.0));

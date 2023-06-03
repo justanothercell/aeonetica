@@ -34,6 +34,7 @@ pub mod error;
 pub mod util;
 pub mod collections;
 pub mod math;
+pub mod time;
 
 pub type Color = [f32; 4];
 

@@ -3,6 +3,7 @@ use aeonetica_engine::*;
 use aeonetica_engine::error::ErrorResult;
 use aeonetica_engine::networking::client_packets::{ClientMessage, ClientPacket};
 use aeonetica_engine::networking::SendMode;
+use aeonetica_engine::time::Time;
 use crate::client_runtime::ClientRuntime;
 use crate::data_store::DataStore;
 use crate::renderer::context::RenderContext;
@@ -20,10 +21,13 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     log!("sent login");
 
     let mut window = Window::new(false)?;
-    let mut time = 0;
+    let mut time_nanos = 0;
     let mut frames = 0;
     let mut last_full_sec = 0;
-    let mut delta_time = 0;
+    let mut time = Time {
+        time: 0.0,
+        delta: 0.0
+    };
 
     let mut context = RenderContext::new();
 
@@ -39,21 +43,23 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
             log!(ERROR, "{e}")
         });
         
-        window.on_render(&mut context, &mut client, store, delta_time as f64 / FULL_SEC as f64);
+        window.on_render(&mut context, &mut client, store, time);
         
-        delta_time = t.elapsed().as_nanos() as usize;
-        time += delta_time;
+        let delta_time_nanos = t.elapsed().as_nanos();
+        time_nanos += delta_time_nanos;
+        time.delta = delta_time_nanos as f32 / FULL_SEC as f32;
+        time.time = time_nanos as f32 / FULL_SEC as f32;
         
         frames += 1;
 
-        if time - last_full_sec >= FULL_SEC {
+        if time_nanos - last_full_sec >= FULL_SEC as u128 {
             log!(PACK, "fps: {}", frames);
-            last_full_sec = time;
+            last_full_sec = time_nanos;
             frames = 0;
         }
     }
 
-    log!("shutting down client after {time} ns");
+    log!("shutting down client after {}s", time.time);
     context.finish();
     window.finish();
     client.nc.borrow().send(&ClientPacket {

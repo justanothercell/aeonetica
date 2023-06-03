@@ -1,5 +1,5 @@
 use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::framebuffer::*, texture::*, util::Target, shader::{self, UniformStr}}, uniform_str};
-use aeonetica_engine::{math::{camera::Camera, vector::Vector2}, error::ErrorResult};
+use aeonetica_engine::{time::Time, math::{camera::Camera, vector::Vector2}, error::ErrorResult};
 
 pub(super) struct WorldRenderPipeline {
     intermediate_fb: FrameBuffer,
@@ -23,11 +23,11 @@ impl WorldRenderPipeline {
 }
 
 impl Pipeline for WorldRenderPipeline {
-    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64) {
+    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, time: Time) {
         self.intermediate_fb.bind();
         self.intermediate_fb.clear(Self::FRAME_CCOL);
         renderer.begin_scene(camera);
-        updater.update(renderer, delta_time);
+        updater.update(renderer, time.delta);
         renderer.draw_vertices(target);
         renderer.end_scene();
 

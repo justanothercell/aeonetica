@@ -3,7 +3,7 @@ pub mod events;
 use core::f32;
 use std::{sync::mpsc::Receiver, collections::HashMap};
 
-use aeonetica_engine::{log, math::vector::*, error::{*, builtin::IOError}};
+use aeonetica_engine::{log, math::vector::*, error::{*, builtin::IOError}, time::Time};
 use crate::{renderer::{context::RenderContext, buffer::{framebuffer::Attachment, renderbuffer::RenderBuffer}, util::*, shader::UniformStr, texture::{Texture, Format}}, uniform_str, client_runtime::ClientRuntime, data_store::DataStore};
 use glfw::{*, Window as GlfwWindow, Context as GlfwContext};
 use image::{io::Reader as ImageReader, DynamicImage, EncodableLayout};
@@ -189,7 +189,7 @@ impl Window {
         size.x() as f32 / size.y() as f32
     }
 
-    pub(crate) fn on_render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, context: &mut RenderContext, client: &mut ClientRuntime, store: &mut DataStore, time: Time) {
         // main frame rendering
         self.framebuffer.bind();
         self.framebuffer.clear([0.0, 0.0, 0.0, 1.0]);
@@ -197,7 +197,7 @@ impl Window {
         viewport(Vector2::default(), self.framebuffer.size().unwrap().map(|i| i as i32));
         enable_blend_mode(true);
 
-        context.on_render(client, &Target::FrameBuffer(&self.framebuffer), store, delta_time);
+        context.on_render(client, &Target::FrameBuffer(&self.framebuffer), store, time);
 
         self.framebuffer.unbind();
         

@@ -1,5 +1,6 @@
 use aeonetica_engine::Id;
 use aeonetica_engine::math::camera::Camera;
+use aeonetica_engine::time::Time;
 use aeonetica_engine::util::id_map::IdMap;
 
 use crate::client_runtime::ClientHandleBox;
@@ -14,9 +15,9 @@ pub trait Layer {
     fn attach(&mut self, renderer: &mut Renderer) {} // run on layer creation
     fn quit(&mut self, renderer: &mut Renderer) {} // run on layer deletion
 
-    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {}
-    fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, delta_time: f64) {}
-    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, delta_time: f64) {}
+    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, time: Time) {}
+    fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, time: Time) {}
+    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, time: Time) {}
 
     fn event(&mut self, event: &Event) -> bool { false } // run on window event
 
@@ -44,11 +45,11 @@ impl<'a> LayerUpdater<'a> {
     }
 
     #[inline(always)]
-    pub fn update(self, renderer: &mut Renderer, delta_time: f64) {
-        self.layer.pre_handles_update(self.store, renderer, delta_time);
+    pub fn update(self, renderer: &mut Renderer, time: Time) {
+        self.layer.pre_handles_update(self.store, renderer, time);
         self.handles.iter_mut()
             .filter(|(_id, handle_box)| handle_box.handle.owning_layer() == self.client_id)
-            .for_each(|(_id, handle_box)| handle_box.handle.update(&mut handle_box.messenger, renderer, self.store, delta_time));
-        self.layer.post_handles_update(self.store, renderer, delta_time);
+            .for_each(|(_id, handle_box)| handle_box.handle.update(&mut handle_box.messenger, renderer, self.store, time));
+        self.layer.post_handles_update(self.store, renderer, time);
     }
 }

@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, renderer::{Renderer, texture::{SpriteSheet, Texture}, builtin::{Quad, Line}, material::FlatTexture}, data_store::DataStore};
-use aeonetica_engine::{networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
+use aeonetica_engine::{time::Time, networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
 use debug_mod::Debug;
 use world_mod::client::WorldLayer;
 
@@ -109,7 +109,7 @@ impl ClientHandle for WormHandle {
         //renderer.add(&mut Line::new(pos + (0.0, size.y).into(), pos, 0.2,  255, [1.0, 0.0, 1.0, 1.0]));
     }
 
-    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {
+    fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, time: Time) {
         let dbg = store.mut_store::<Debug<WorldLayer>>();
         let mut dbg = dbg.renderer();
         if self.interpolation_delta < 1.0 {
@@ -123,6 +123,6 @@ impl ClientHandle for WormHandle {
                 }
             }
         }
-        self.interpolation_delta = (delta_time as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);
+        self.interpolation_delta = (time.delta as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);
     }
 }

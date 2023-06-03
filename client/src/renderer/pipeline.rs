@@ -1,9 +1,9 @@
-use aeonetica_engine::math::camera::Camera;
+use aeonetica_engine::{math::camera::Camera, time::Time};
 
 use super::{Renderer, layer::LayerUpdater, util::Target};
 
 pub trait Pipeline {
-    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64);
+    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, time: Time);
 }
 
 pub(super) struct DefaultPipeline;
@@ -15,9 +15,9 @@ impl DefaultPipeline {
 }
 
 impl Pipeline for DefaultPipeline {
-    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, delta_time: f64) {
+    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, time: Time) {
         renderer.begin_scene(camera);
-        updater.update(renderer, delta_time);
+        updater.update(renderer, time);
         renderer.draw_vertices(target);
         renderer.end_scene();
     }

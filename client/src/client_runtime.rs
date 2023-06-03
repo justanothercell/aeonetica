@@ -11,6 +11,7 @@ use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::nanoserde::SerBin;
+use aeonetica_engine::time::Time;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
@@ -88,8 +89,8 @@ pub struct ClientHandleBox {
 
 impl ClientHandleBox {
     #[inline(always)]
-    pub fn update(&mut self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, delta_time: f64) {
-        self.handle.update(&mut self.messenger, renderer, store, delta_time);
+    pub fn update(&mut self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, time: Time) {
+        self.handle.update(&mut self.messenger, renderer, store, time);
     }
 
     #[inline(always)]

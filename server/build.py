@@ -31,6 +31,8 @@ if __name__ == '__main__':
     os.chdir(f'{dname}/../mods')
     
     mode = ['--release'] if '--release' in sys.argv[1:] else []
+    
+    server_mode = ['--release'] if '--sr' in sys.argv[1:] else []
 
     envs = {**os.environ.copy(), 'RUSTFLAGS': '-Awarnings'}
     
@@ -61,4 +63,4 @@ if __name__ == '__main__':
     os.chdir(dname)
     print(f'{BLUE}{BOLD}=>> COMPILING SERVER: {ENDC}')
     
-    subprocess.call(['cargo', 'run' if '-r' in sys.argv or '--run' in sys.argv else 'build'], env=envs)
+    subprocess.call(['cargo', 'run' if '-r' in sys.argv or '--run' in sys.argv else 'build', *server_mode], env=envs)

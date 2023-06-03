@@ -13,6 +13,7 @@ use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::error::ExpectLog;
+use aeonetica_engine::time::Time;
 
 use crate::client::pipeline::WorldRenderPipeline;
 use crate::client::materials::{WithGlow, WithTerrain};
@@ -179,7 +180,7 @@ impl ClientHandle for WorldHandle {
         type_to_id::<WorldLayer>()
     }
 
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _delta_time: f64) {
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _time: Time) {
         let cam = store.get_store::<CameraData>().position;
         let chunks = &mut store.mut_store::<ClientWorld>().chunks;
         let center_chunk: Vector2<_> = (cam / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
@@ -232,8 +233,8 @@ impl Layer for WorldLayer {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, delta_time: f64) {
-        self.time += delta_time;
+    fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, time: Time) {
+        self.time += time.delta;
         let mut cam = store.mut_store::<CameraData>();
         if self.manual_shake_queued {
             cam.add_trauma(0.2);
@@ -243,14 +244,14 @@ impl Layer for WorldLayer {
         let shake = cam.trauma - cam.trauma * cam.trauma + cam.trauma * cam.trauma * cam.trauma;
         let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake * 1.5;
         camera.set_position(pos);
-        cam.trauma = (cam.trauma - delta_time as f32 / 3.0).clamp(0.0, 1.0);
+        cam.trauma = (cam.trauma - time.delta as f32 / 3.0).clamp(0.0, 1.0);
     }
 
-    fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+    fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _time: Time) {
         store.mut_store::<Debug<WorldLayer>>().renderer().start_render(renderer);
     }
 
-    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _delta_time: f64) {
+    fn post_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, _time: Time) {
         store.mut_store::<Debug<WorldLayer>>().renderer().finish_render(renderer);
     }
 

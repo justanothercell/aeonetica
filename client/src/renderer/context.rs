@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}};
+use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}, time::Time};
 
 use crate::client_runtime::ClientHandleBox;
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
@@ -40,9 +40,9 @@ impl LayerBox {
         self.layer.quit(&mut self.renderer)
     }
 
-    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &Target, store: &mut DataStore, delta_time: f64) {
-        self.layer.update_camera(store, &mut self.camera, delta_time);
-        self.renderer.on_layer_update(&self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), delta_time);
+    fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &Target, store: &mut DataStore, time: Time) {
+        self.layer.update_camera(store, &mut self.camera, time);
+        self.renderer.on_layer_update(&self.camera, target, LayerUpdater::new(&mut self.layer, handles, *id, store), time);
     }
 }
 
@@ -133,11 +133,11 @@ impl RenderContext {
         log!(PACK, "Unhandled Event: {event:?}");
     }
 
-    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, target: &Target, store: &mut DataStore, delta_time: f64) {
+    pub(crate) fn on_render(&mut self, client: &mut ClientRuntime, target: &Target, store: &mut DataStore, time: Time) {
         let handles = client.handles();
         self.layer_stack.layer_stack.iter_mut()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active())
-            .for_each(|(layer_box, id)| layer_box.borrow_mut().on_render(id, handles, target, store, delta_time));
+            .for_each(|(layer_box, id)| layer_box.borrow_mut().on_render(id, handles, target, store, time));
     }
 
     pub fn set_post_processing_layer(&mut self, post_processing_layer: Rc<dyn PostProcessingLayer>) {

@@ -8,6 +8,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
+use aeonetica_engine::time::Time;
 use aeonetica_server::ecs::Engine;
 use crate::data_store::DataStore;
 use crate::networking::NetworkClient;
@@ -21,7 +22,7 @@ pub trait ClientHandle: ClientEntity {
     fn start(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore) {}
     fn remove(&mut self, messenger: &mut ClientMessenger, renderer: Nullable<&mut Renderer>, store: &mut DataStore) {}
     
-    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, delta_time: f64) {}
+    fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, time: Time) {}
     fn event(&mut self, event: &Event, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore) -> bool { false }
 }
 
