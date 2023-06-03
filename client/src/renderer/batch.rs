@@ -257,11 +257,11 @@ impl Batch {
         index_buffer.bind();
 
         unsafe {
-            gl::BufferData(
+            gl::BufferSubData(
                 index_buffer.gl_typ(),
+                0isize,
                 (num_indices * std::mem::size_of::<u32>()) as isize,
-                self.indices.as_ptr() as *const _,
-                gl::DYNAMIC_DRAW
+                self.indices.as_ptr() as *const _
             )
         }
 
@@ -277,11 +277,11 @@ impl Batch {
         //eprintln!("Batch {} -> z_index: {} @ 0x{:08X}:\n\tindices ({} u32): {:?}\n\tvertices ({} u8): {:?}", self.id, self.z_index, self as *const _ as usize, self.indices.len(), self.indices, self.vertices.len(), self.vertices);
 
         unsafe {
-            gl::BufferData(
+            gl::BufferSubData(
                 vertex_buffer.gl_typ(),
+                0isize,
                 num_bytes as isize,
-                self.vertices.as_ptr() as *const _,
-                gl::DYNAMIC_DRAW
+                self.vertices.as_ptr() as *const _
             );
         }
 
