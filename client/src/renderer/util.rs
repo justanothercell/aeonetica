@@ -44,7 +44,7 @@ pub fn enable_blend_mode(enabled: bool) {
 #[inline]
 pub fn viewport(position: Vector2<i32>, size: Vector2<i32>) {
     unsafe {
-        gl::Viewport(position.x(), position.y, size.x(), size.y())
+        gl::Viewport(position.x(), position.y, size.x(), size.y());
     }
 }
 

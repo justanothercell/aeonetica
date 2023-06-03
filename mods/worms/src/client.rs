@@ -4,6 +4,7 @@ use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMe
 use aeonetica_engine::{time::Time, networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
 use debug_mod::Debug;
 use world_mod::client::WorldLayer;
+use world_mod::client::materials::WithTerrain;
 
 use crate::server::{WORM_SPEED};
 
@@ -61,7 +62,7 @@ impl WormHandle {
             self.segments = segments.clone();
             self.interpolation_delta = 1.0;
             for (i, segment) in self.segments.iter().enumerate() {
-                let quad = Quad::with_sprite(
+                let quad = Quad::with_terrain_sprite(
                     *segment,
                     Vector2::new(1.0, 1.0),
                     100,
