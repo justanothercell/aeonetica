@@ -1,4 +1,4 @@
-use aeonetica_engine::{math::vector::Vector2, EntityId, networking::SendMode};
+use aeonetica_engine::{time::Time, math::vector::Vector2, EntityId, networking::SendMode};
 use aeonetica_server::{ServerMod, ecs::{module::Module, Engine, messaging::Messenger}};
 use player_mod::server::{PLAYER_HANDLER, PlayerHandler, Player};
 use world_mod::{server::world::{WORLD, World}, common::WorldView};
@@ -57,7 +57,7 @@ impl Worm {
 }
 
 impl Module for Worm {
-    fn tick(id: &EntityId, engine: &mut Engine) {
+    fn tick(id: &EntityId, engine: &mut Engine, _time: Time) {
         let prcrc = engine.mut_module_by_tag::<PlayerHandler>(PLAYER_HANDLER).players.clone();
         let players = prcrc.borrow_mut();
         let worm = engine.get_module_of::<Worm>(id);

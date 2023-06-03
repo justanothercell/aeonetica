@@ -27,7 +27,7 @@ impl Pipeline for WorldRenderPipeline {
         self.intermediate_fb.bind();
         self.intermediate_fb.clear(Self::FRAME_CCOL);
         renderer.begin_scene(camera);
-        updater.update(renderer, time.delta);
+        updater.update(renderer, time);
         renderer.draw_vertices(target);
         renderer.end_scene();
 
