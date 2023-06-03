@@ -45,8 +45,8 @@ pub(super) struct Batch {
 }
 
 impl Batch {
-    const MAX_BATCH_VERTEX_COUNT: u32 = 16000;
-    const MAX_BATCH_INDEX_COUNT: u32 = 16000;
+    const MAX_BATCH_VERTEX_COUNT: u32 = 6000;
+    const MAX_BATCH_INDEX_COUNT: u32 = 6000;
 
     const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
     const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();
@@ -176,8 +176,12 @@ impl Batch {
         let offset = &self.offsets[offset_index];
         let num_vert_bytes: usize = (location.num_vertices() * self.layout.stride()) as usize;
         let num_indices = location.num_indices() as usize;
+        
         self.vertices.drain(offset.vertices .. offset.vertices + num_vert_bytes);
+        self.vertices_dirty.set(true);
+
         self.indices.drain(offset.indices .. offset.indices + num_indices);
+        self.indices_dirty.set(true);
 
         if self.offsets.len() - 1 == offset_index {
             self.offsets.pop();
