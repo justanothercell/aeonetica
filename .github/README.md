@@ -19,7 +19,13 @@
 
 ---
 
-2D multiplayer moddable game engine with server side ECS
+2D multiplayer moddable game engine with server side ECS 
+
+---
+
+<img src="img/img_worm.png" alt="" style="width: 510px; image-rendering: pixelated">
+
+---
 
 ## Quickstart
 
@@ -73,10 +79,4 @@
 
 > **Note**
 > All other dependencies should get fetched by `cargo` automatically.
-
----
-
-<img src="img/progress_screenshot.png" alt="" style="width: 510px; image-rendering: pixelated">
-
----
 

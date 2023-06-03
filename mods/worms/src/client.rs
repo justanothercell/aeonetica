@@ -111,17 +111,12 @@ impl ClientHandle for WormHandle {
     }
 
     fn update(&mut self, _messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, time: Time) {
-        let dbg = store.mut_store::<Debug<WorldLayer>>();
-        let mut dbg = dbg.renderer();
         if self.interpolation_delta < 1.0 {
             for (i, (segment, p_segment)) in self.segments.iter().zip(&self.p_segments).enumerate() {
                 let delta = *segment - *p_segment;
                 self.quads[i].set_position(*segment + delta * self.interpolation_delta);
                 self.quads[i].set_rotation(if i == 0 { -self.looking_dir } else { self.segments[i]-self.segments[i-1] }.euler() - PI / 2.0);
                 renderer.draw(&mut self.quads[i]).expect("unable to draw quad");
-                if i == 0 {
-                    dbg.rect(*segment, Vector2::new(1.0, 1.0), 0.1, [1.0, 0.0, 1.0, 1.0]);
-                }
             }
         }
         self.interpolation_delta = (time.delta as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);

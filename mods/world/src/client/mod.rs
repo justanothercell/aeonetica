@@ -243,7 +243,7 @@ impl Layer for WorldLayer {
         camera.set_position(pos);
 
         cam.trauma = (cam.trauma - time.delta as f32 / 3.0).clamp(0.0, 1.0);
-        camera.set_rotation(self.shake_noise.get([time.time as f64 * 5.0, 732.183]) as f32 * shake * 0.25);
+        camera.set_rotation(self.shake_noise.get([time.time as f64 * 5.0, 732.183]) as f32 * shake * 0.0);
         cam.trauma = (cam.trauma - time.delta as f32 / 3.0).clamp(0.0, 1.0);
     }
 
