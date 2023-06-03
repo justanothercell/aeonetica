@@ -20,11 +20,6 @@ impl Offset {
             indices,
         }
     }
-
-    fn reduce(&mut self, dv: usize, di: usize) {
-        self.vertices -= dv;
-        self.indices -= di;
-    }
 }
 
 pub(super) struct Batch {
@@ -187,7 +182,12 @@ impl Batch {
             self.offsets.pop();
         }
         else {
-            self.offsets[offset_index + 1..].iter_mut().for_each(|offset| offset.reduce(num_vert_bytes, num_indices));
+            self.indices[offset.indices..].iter_mut().for_each(|i| *i -= location.num_vertices());
+
+            self.offsets[offset_index + 1..].iter_mut().for_each(|offset| {
+                offset.vertices -= num_vert_bytes;
+                offset.indices -= num_indices;
+            });
         }
     }
 
