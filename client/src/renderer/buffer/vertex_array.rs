@@ -88,8 +88,8 @@ impl VertexArray {
         &mut self.index_buffer
     }
 
-    pub fn draw(&self) {
-        unsafe { gl::DrawElements(gl::TRIANGLES, self.index_buffer.as_ref().unwrap().count() as i32, gl::UNSIGNED_INT, std::ptr::null()); }
+    pub fn draw(&self, num_indices: i32) {
+        unsafe { gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, std::ptr::null()); }
     }
 
     pub fn delete(self) {

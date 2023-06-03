@@ -157,7 +157,7 @@ impl FrameBuffer {
 
         let vao = self.vao.as_ref().unwrap();
         vao.bind();
-        vao.draw();
+        vao.draw(6);
         vao.unbind();
 
         shader.unbind();

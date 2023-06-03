@@ -2,7 +2,7 @@ pub mod framebuffer;
 pub mod vertex_array;
 pub mod renderbuffer;
 
-use std::{marker::PhantomData, cell::Cell};
+use std::marker::PhantomData;
 
 use super::{*, glerror::GLError};
 
@@ -88,7 +88,6 @@ pub struct Buffer {
     id: RenderID,
     typ: BufferType,
     layout: Option<Rc<BufferLayout>>,
-    count: Cell<u32>,
 }
 
 #[allow(unused)]
@@ -105,7 +104,6 @@ impl Buffer {
                 id,
                 typ,
                 layout,
-                count: Cell::new((data.len() / std::mem::size_of::<gl::types::GLuint>()) as u32),
             })
         }
         else {
@@ -125,7 +123,6 @@ impl Buffer {
                 id,
                 typ,
                 layout,
-                count: Cell::new(0),
             })
         }
         else {
@@ -147,14 +144,6 @@ impl Buffer {
 
     pub(super) fn layout(&self) -> &Option<Rc<BufferLayout>> {
         &self.layout
-    }
-
-    pub(super) fn count(&self) -> u32 {
-        self.count.get()
-    }
-
-    pub(super) fn set_count(&self, count: u32) {
-        self.count.set(count);
     }
     
     pub(super) fn gl_typ(&self) -> gl::types::GLenum {
