@@ -42,7 +42,7 @@ if __name__ == '__main__':
     processes = []
     for mod in mods:
         print(f'{BLUE}{BOLD}=>> COMPILING MOD {mod}{ENDC}')
-        process = subprocess.Popen([sys.executable, 'build.py', '-w', mod, '-d', '.', *mode], env=envs)
+        process = subprocess.Popen([sys.executable, 'build.py', '-w', mod, '-d', '../server/mods', *mode], env=envs)
         processes.append((f'mods/{mod}', process))
     
     total = len(processes)
