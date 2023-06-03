@@ -26,7 +26,7 @@ use debug_mod::Debug;
 use self::materials::GlowTexture;
 
 mod pipeline;
-mod materials;
+pub mod materials;
 
 #[allow(clippy::large_enum_variant)]
 pub enum ClientChunk {
@@ -210,7 +210,7 @@ impl ClientHandle for WorldHandle {
 pub struct WorldLayer {
     shake_noise: Box<dyn NoiseFn<f64, 2>>,
     time: f64,
-    manual_shake_queued: bool
+    manual_shake_queued: bool,
 }
 
 impl WorldLayer {
@@ -218,14 +218,14 @@ impl WorldLayer {
         Self {
             shake_noise: Box::new(Fbm::<Perlin>::new(0)),
             time: 0.0,
-            manual_shake_queued: false
+            manual_shake_queued: false,
         }
     }
 }
 
 impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
-      //  renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
+        renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
     }
 
     fn instantiate_camera(&self) -> Camera {
@@ -243,6 +243,7 @@ impl Layer for WorldLayer {
         let shake = cam.trauma - cam.trauma * cam.trauma + cam.trauma * cam.trauma * cam.trauma;
         let pos = cam.position + Vector2::new(self.shake_noise.get([self.time * 5.0, 0.0]) as f32, self.shake_noise.get([self.time * 5.0, 123.51]) as f32) * shake * 1.5;
         camera.set_position(pos);
+        camera.set_rotation(self.shake_noise.get([self.time * 5.0, 732.183]) as f32 * shake);
         cam.trauma = (cam.trauma - delta_time as f32 / 3.0).clamp(0.0, 1.0);
     }
 

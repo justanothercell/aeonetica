@@ -90,22 +90,28 @@ impl Matrix4<f32> {
 
         match axis {
             Axis::X => {
+                self.0[0] = 1.0;
                 self.0[1] = c;
                 self.0[2] = -s;
                 self.0[8] = s;
                 self.0[10] = -c;
+                self.0[15] = 1.0;
             }
             Axis::Y => {
                 self.0[0] = c;
                 self.0[2] = -s;
+                self.0[5] = 1.0;
                 self.0[8] = s;
                 self.0[10] = c;
+                self.0[15] = 1.0;
             }
             Axis::Z => {
                 self.0[0] = c;
                 self.0[1] = -s;
                 self.0[4] = s;
                 self.0[5] = c;
+                self.0[10] = 1.0;
+                self.0[15] = 1.0;
             }
         }
 

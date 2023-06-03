@@ -23,6 +23,7 @@ use aeonetica_engine::math::vector::Vector2;
 use world_mod::common::{GRAVITY, WorldView};
 use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraData;
+use world_mod::client::materials::WithTerrain;
 use crate::server::Player;
 
 pub struct PlayerModClient {
@@ -139,7 +140,7 @@ impl ClientHandle for PlayerHandle {
         messenger.register_receiver(Self::receive_position);
 
         self.quad = Value(
-            Quad::with_texture(
+            Quad::with_terrain_texture(
             self.position,
             Vector2::new(PLAYER_SIZE, PLAYER_SIZE),
             10,

@@ -21,7 +21,7 @@ pub(super) fn terrain_material() -> Rc<FlatTexture> {
     TERRAIN_MATERIAL_INSTANCE.with(|material| material.clone())
 }
 
-pub(super) trait WithTerrain {
+pub trait WithTerrain {
     fn with_terrain_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID) -> Self;
     fn with_terrain_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite) -> Self;
 }
