@@ -30,14 +30,35 @@ def fetch_mods(ron_file):
 if __name__ == '__main__':
     os.chdir(f'{dname}/../mods')
     
+    mode = ['--release'] if '--release' in sys.argv[1:] else []
+
+    envs = {**os.environ.copy(), 'RUSTFLAGS': '-Awarnings'}
+    
     mod_override = [i for i, arg in enumerate(sys.argv) if arg == '-m' or arg == '--mods']
     mods = fetch_mods(f'{dname}/mods/mods.ron') if len(mod_override) == 0 else [sys.argv[mod_override[0] + 1]]
 
+    print(f'{BOLD}{BLUE}=>> COMPILING EVERYTHING:{ENDC}')
+
+    processes = []
     for mod in mods:
-        print(f'{BLUE}{BOLD}=>> COMPILING MOD {mod}:{ENDC}')
-        subprocess.call([sys.executable, 'build.py', '-w', mod, '-d', '../server/mods'])
+        print(f'{BLUE}{BOLD}=>> COMPILING MOD {mod}{ENDC}')
+        process = subprocess.Popen([sys.executable, 'build.py', '-w', mod, '-d', '.', *mode], env=envs)
+        processes.append((f'mods/{mod}', process))
+    
+    total = len(processes)
+    print(f'Queued {total} builds: {[x[0] for x in processes]}')
+
+    def finished(n, p):
+        status = p.poll()
+        if status is None:
+            return False
+        print(f'completed build {BOLD}{n}{ENDC} with exit status: {status} ({total - len(processes) + 1} of {total})')
+        return True
+        
+    while len(processes) > 0:
+        processes[:] = [x for x in processes if not finished(*x)]
     
     os.chdir(dname)
     print(f'{BLUE}{BOLD}=>> COMPILING SERVER: {ENDC}')
     
-    subprocess.call(['cargo', 'run' if '-r' in sys.argv or '--run' in sys.argv else 'build'])
+    subprocess.call(['cargo', 'run' if '-r' in sys.argv or '--run' in sys.argv else 'build'], env=envs)
