@@ -143,8 +143,8 @@ impl FrameBuffer {
         self.renderbuffer.as_ref().map(|rb| *rb.size())
     }
 
-    pub fn render(&self, attachment: usize, target: &Target, shader: &shader::Program, frame_uniform: &UniformStr) {
-        debug_assert!(attachment < self.textures.len() && self.vao.is_some());
+    pub fn render<const N: usize>(&self, texture_attachments: [(usize, &UniformStr); N], target: &Target, shader: &shader::Program) {
+        debug_assert!(self.vao.is_some());
 
         shader.bind();
 
@@ -152,8 +152,10 @@ impl FrameBuffer {
             fb.bind();
         }
 
-        self.textures[attachment].bind(0);
-        shader.upload_uniform(frame_uniform, &0);
+        for (i, (attachment, uniform)) in texture_attachments.iter().enumerate() {
+            self.textures[*attachment].bind(i as u32);
+            shader.upload_uniform(uniform, &(i as i32));
+        }
 
         let vao = self.vao.as_ref().unwrap();
         vao.bind();

@@ -40,6 +40,12 @@ impl Uniform for Matrix4<f32> {
     }
 }
 
+impl Uniform for u32 {
+    fn upload(&self, location: i32) {
+        unsafe { gl::Uniform1ui(location, *self) }
+    }
+}
+
 impl Uniform for i32 {
     fn upload(&self, location: i32) {
         unsafe { gl::Uniform1i(location, *self) }

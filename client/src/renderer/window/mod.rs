@@ -224,7 +224,7 @@ impl Window {
     
         const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
 
-        self.framebuffer.render(0, &Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
+        self.framebuffer.render([(0, &FRAME_UNIFORM_NAME)], &Target::Raw, post_processing_shader);
 
         self.glfw_window.swap_buffers();
     }

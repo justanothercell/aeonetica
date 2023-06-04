@@ -20,9 +20,11 @@ void main() {
 in vec2 v_FrameCoord;
 
 uniform sampler2D u_Frame;
+uniform sampler2D u_LightMap;
 
 layout (location = 0) out vec4 r_Color;
 
 void main() {
-    r_Color = texture(u_Frame, v_FrameCoord);
+    vec4 light_color = texture(u_LightMap, v_FrameCoord);
+    r_Color = clamp(texture(u_Frame, v_FrameCoord) * vec4(0.5) + light_color, vec4(0.0), vec4(1.0));
 }

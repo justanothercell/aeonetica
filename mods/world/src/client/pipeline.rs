@@ -8,14 +8,16 @@ pub(super) struct WorldRenderPipeline {
 
 impl WorldRenderPipeline {
     const FB_SIZE: Vector2<u32> = Vector2::new(1920, 1080);
-    const FRAME_USTR: UniformStr = uniform_str!("u_Frame");
     const FRAME_CCOL: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+
+    const FRAME_USTR: UniformStr = uniform_str!("u_Frame");
+    const LIGHTMAP_USTR: UniformStr = uniform_str!("u_LightMap");
 
     pub fn new() -> ErrorResult<Self> {
         Ok(Self {
             intermediate_fb: FrameBuffer::new([
-                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)),
-                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)),
+                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)), // main scene colors
+                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)), // light map
                 ], true)?,
             shader: shader::Program::from_source(include_str!("../../assets/world-shader.glsl"))?
         })
@@ -31,6 +33,11 @@ impl Pipeline for WorldRenderPipeline {
         renderer.draw_vertices(target);
         renderer.end_scene();
 
-        self.intermediate_fb.render(0, target, &self.shader, &Self::FRAME_USTR);
+        self.intermediate_fb.render([
+                (0, &Self::FRAME_USTR),
+                (1, &Self::LIGHTMAP_USTR),
+            ],
+            target, &self.shader
+        );
     }
 }
