@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}, time::Time};
 
-use crate::client_runtime::ClientHandleBox;
+use crate::{client_runtime::ClientHandleBox, renderer::window::{self, Window}};
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
 use super::{layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
@@ -124,10 +124,23 @@ impl RenderContext {
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event, store: &mut DataStore) {
         for (layer_box, id) in self.layer_stack.layer_stack.iter()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active()).rev() {
-            if layer_box.borrow_mut().layer.event(&event) { return; }
+            let mut layer_box = layer_box.borrow_mut();
+            let mut event = event.clone();
+
+            if let Event::MouseMoved(position) = &mut event {
+                // translate the event's position to world coordinates
+                *position = layer_box.camera.to_world(*position, Window::FRAMEBUFFER_SIZE.to_f32())
+            }
+            
+            if layer_box.layer.event(&event) { 
+                return;
+            }
+
             if client.handles.iter_mut()
                 .filter(|(_, h_box)| h_box.handle.owning_layer() == *id)
-                .any(|(_, h_box)| h_box.handle.event(&event, &mut h_box.messenger, &mut layer_box.borrow_mut().renderer, store)) { return; }
+                .any(|(_, h_box)| h_box.handle.event(&event, &mut h_box.messenger, &mut layer_box.renderer, store)) { 
+                    return;
+            }
         }
 
         log!(PACK, "Unhandled Event: {event:?}");

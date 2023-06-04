@@ -23,7 +23,7 @@ impl From<glfw::MouseButton> for MouseButton {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
     KeyPressed(KeyCode),
     KeyReleased(KeyCode),

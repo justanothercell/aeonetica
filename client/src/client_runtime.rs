@@ -10,6 +10,7 @@ use std::time::Duration;
 use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
+use aeonetica_engine::math::camera::Camera;
 use aeonetica_engine::nanoserde::SerBin;
 use aeonetica_engine::time::Time;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
@@ -49,7 +50,7 @@ mod paths_util_common {
 pub(crate) use paths_util::*;
 use crate::client_runtime::paths_util_common::mod_hash;
 use crate::data_store::DataStore;
-use crate::renderer::context::RenderContext;
+use crate::renderer::context::{RenderContext, LayerBox};
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ClientState {
@@ -82,21 +83,9 @@ pub(crate) struct LoadingMod{
     available: bool
 }
 
-pub struct ClientHandleBox {
+pub(crate) struct ClientHandleBox {
     pub(crate) handle: Box<dyn ClientHandle>,
     pub(crate) messenger: ClientMessenger
-}
-
-impl ClientHandleBox {
-    #[inline(always)]
-    pub fn update(&mut self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, time: Time) {
-        self.handle.update(&mut self.messenger, renderer, store, time);
-    }
-
-    #[inline(always)]
-    pub fn on_event(&mut self, event: &Event, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore) -> bool {
-        self.handle.event(event, messenger, renderer, store)
-    }
 }
 
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;

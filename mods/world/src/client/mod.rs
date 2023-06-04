@@ -261,6 +261,10 @@ impl Layer for WorldLayer {
                 self.manual_shake_queued = true;
                 true
             }
+            Event::MouseMoved(position) => {
+                println!("mouse moved to: {position}");
+                true
+            }
             _ => false
         }
     }
