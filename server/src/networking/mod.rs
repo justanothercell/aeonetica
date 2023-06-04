@@ -1,4 +1,5 @@
 
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
@@ -22,7 +23,7 @@ pub(crate) struct NetworkServer {
     pub(crate) udp: UdpSocket,
     pub(crate) received: Arc<Mutex<Vec<(SocketAddr, ClientPacket)>>>,
     pub(crate) clients: IdMap<ClientHandle>,
-    pub(crate) tcp: Arc<Mutex<HashMap<SocketAddr, TcpStream>>>
+    pub(crate) tcp: Arc<Mutex<HashMap<SocketAddr, Arc<Mutex<Vec<Vec<u8>>>>>>>
 }
 
 pub(crate) type ReplyFn = Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>;
@@ -39,7 +40,7 @@ impl NetworkServer {
         let received = Arc::new(Mutex::new(vec![]));
         let tcp_sockets = Arc::new(Mutex::new(HashMap::new()));
         let recv = received.clone();
-        let recv_udp = received.clone();
+        let recv_tcp = received.clone();
         let tcp = tcp_sockets.clone();
         std::thread::spawn(move || {
             let mut buf = [0u8; MAX_PACKET_SIZE];
@@ -61,8 +62,10 @@ impl NetworkServer {
             for mut stream in listener.incoming().flatten() {
                 stream.set_nonblocking(false).unwrap();
                 let addr = stream.peer_addr().unwrap();
-                tcp.lock().unwrap().insert(addr, stream.try_clone().unwrap());
-                let recv_udp_inner = recv_udp.clone();
+                let queue = Arc::new(Mutex::new(vec![]));
+                tcp.lock().unwrap().insert(addr, queue.clone());
+                let recv_tcp_inner = recv_tcp.clone();
+                let mut write_stream = stream.try_clone().unwrap();
                 thread::spawn(move || {
                     loop {
                         let r = (||{
@@ -72,7 +75,7 @@ impl NetworkServer {
                             let mut buffer: Vec<u8> = vec![0; size as usize];
                             stream.read_exact(&mut buffer[..])?;
                             match DeBin::deserialize_bin(&buffer[..]) {
-                                Ok(packet) => recv_udp_inner.lock().unwrap().push((addr, packet)),
+                                Ok(packet) => recv_tcp_inner.lock().unwrap().push((addr, packet)),
                                 Err(e) => log!(ERROR, "invalid client packet from {addr}: {e}")
                             }
                             Ok::<_, std::io::Error>(())
@@ -80,6 +83,21 @@ impl NetworkServer {
                         if r.is_err() { break }
                     }
                     log!("terminated tcp connection with {}", addr)
+                });
+                thread::spawn(move || {
+                    loop {
+                        let mut queued: Vec<Vec<u8>> = vec![];
+                        {
+                            let mut q = queue.lock().unwrap();
+                            std::mem::swap(&mut queued, &mut q);
+                        }
+                        if queued.len() > 0 {
+                            for msg in queued {
+                                write_stream.write(&(msg.len() as u32).to_le_bytes()).unwrap();
+                                write_stream.write(&msg[..]).unwrap();
+                            }
+                        }
+                    }
                 });
             }
         });
@@ -116,9 +134,9 @@ impl NetworkServer {
                 std::thread::spawn(move || sock.send_to(&data[..], ip_addr));
             }
             SendMode::Safe => {
-                if let Some(tcp) = self.tcp.lock().unwrap().get_mut(&ip_addr) {
-                    let _ = tcp.write_all(&(data.len() as u32).to_le_bytes());
-                    let _ = tcp.write_all(&data[..]);
+                if let Some(tcp_queue) = self.tcp.lock().unwrap().get_mut(&ip_addr) {
+                    let mut queue = tcp_queue.lock().unwrap();
+                    queue.push(data);
                 }
             }
         }

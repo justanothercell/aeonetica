@@ -22,7 +22,7 @@ impl ServerMod for WormsModServer {
 }
 
 const SEG_LEN: f32 = 0.8;
-pub(crate) const WORM_SPEED: f32 = 0.25;
+pub(crate) const WORM_SPEED: f32 = 5.0;
 
 pub(crate) struct Worm {
     ppos: Vector2<f32>,
@@ -105,7 +105,7 @@ impl Module for Worm {
 
         let dir = worm.looking_dir;
         let before = worm.segments[0];
-        world.calc_move(&mut worm.segments[0], (0.9, 0.9).into(), dir * WORM_SPEED);
+        world.calc_move(&mut worm.segments[0], (0.9, 0.9).into(), dir * WORM_SPEED * time.delta);
         self_pos = worm.segments[0];
         let mut last_segment = self_pos;
         for segment in worm.segments.iter_mut().skip(1) {
@@ -114,11 +114,11 @@ impl Module for Worm {
             last_segment = *segment;
         }
         if (before - self_pos).mag_sq() < 0.005 {
-            if world.overlap_aabb(self_pos + Vector2::new(0.4, -0.05), Vector2::new(0.2, 1.1)) {
+            if world.overlap_aabb(self_pos + Vector2::new(0.1, -0.05), Vector2::new(0.8, 1.1)) {
                 worm.looking_dir.y *= -1.0;
                 worm.attack_cooldown = 0.3;
             }
-            if world.overlap_aabb(self_pos + Vector2::new(-0.05, 0.4), Vector2::new(1.1, 0.2)) {
+            if world.overlap_aabb(self_pos + Vector2::new(-0.05, 0.1), Vector2::new(1.1, 0.8)) {
                 worm.looking_dir.x *= -1.0;
                 worm.attack_cooldown = 0.3;
             }
