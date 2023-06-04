@@ -21,6 +21,7 @@ use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
 use aeonetica_engine::math::vector::Vector2;
+use debug_mod::Debug;
 use world_mod::common::{GRAVITY, WorldView};
 use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraData;
@@ -207,11 +208,13 @@ impl ClientHandle for PlayerHandle {
                 messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Quick);
                 self.p_position = self.position;
             }
-
             quad.set_position(self.position);
             store.mut_store::<CameraData>().position = self.position;
         } else if self.interpolation_delta < 1.0 {
             let delta = self.position - self.p_position;
+            let debug = store.get_store::<Debug<WorldLayer>>();
+            let mut debug = debug.renderer();
+            debug.rect(self.position, Vector2::new(0.9, 0.9), 0.1, [1.0, 0.0, 0.0, 1.0]);
             quad.set_position(self.p_position + delta * self.interpolation_delta);
             self.interpolation_delta = (time.delta as f32 * self.speed + self.interpolation_delta).min(1.0);
         }

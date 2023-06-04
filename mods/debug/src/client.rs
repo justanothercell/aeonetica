@@ -96,10 +96,10 @@ impl<L: Layer> DebugRenderer<L> {
     }
 
     pub fn rect(&mut self, pos: Vector2<f32>, size: Vector2<f32>, w: f32, color: Color) {
-        self.line(pos, pos + (size.x, 0.0).into(), w, [1.0, 0.0, 0.0, 1.0]);
-        self.line(pos + (size.x, 0.0).into(), pos + size, w, [0.0, 1.0, 0.0, 1.0]);
-        self.line(pos + size, pos + (0.0, size.y).into(), w, [0.0, 0.0, 1.0, 1.0]);
-        self.line(pos + (0.0, size.y).into(), pos, w, [1.0, 0.0, 1.0, 1.0]);
+        self.line(pos, pos + (size.x, 0.0).into(), w, color);
+        self.line(pos + (size.x, 0.0).into(), pos + size, w, color);
+        self.line(pos + size, pos + (0.0, size.y).into(), w, color);
+        self.line(pos + (0.0, size.y).into(), pos, w, color);
     }
 
     fn assert_rendering(&self){
