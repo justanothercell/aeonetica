@@ -18,6 +18,8 @@ if __name__ == '__main__':
     os.chdir(dname)
     mode = ['--release'] if '--release' in sys.argv[1:] else []
 
+    print(f'Selected build mode: {BOLD}{mode}{ENDC}')
+
     processes = [
         ('server', subprocess.Popen(['cargo', 'build', *mode],
                                     cwd=dname+'/server',
