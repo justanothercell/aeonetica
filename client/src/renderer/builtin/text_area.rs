@@ -1,11 +1,12 @@
 use std::array;
 
-use aeonetica_engine::{math::vector::Vector2, error::builtin::DataError, util::generic_assert::{Assert, IsTrue}};
+use aeonetica_engine::{math::vector::Vector2, util::generic_assert::{Assert, IsTrue}};
 
 use crate::renderer::{*, material::{Material, FlatTexture}};
 
 pub struct TextArea<const N: usize, const L: usize>
-    where Assert<{L * 4 == N}>: IsTrue
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
 {
     position: Vector2<f32>,
     z_index: u8,
@@ -24,7 +25,8 @@ pub struct TextArea<const N: usize, const L: usize>
 }
 
 impl<const N: usize, const L: usize> Renderable for TextArea<N, L>
-    where Assert<{L * 4 == N}>: IsTrue
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
 {
     fn has_location(&self) -> bool {
         self.location.is_some()
@@ -64,9 +66,10 @@ impl<const N: usize, const L: usize> Renderable for TextArea<N, L>
 
 
 impl<const N: usize, const L: usize> TextArea<N, L>
-    where Assert<{L * 4 == N}>: IsTrue
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
 {
-    pub fn with_string<S: Into<String>>(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, font: Rc<BitmapFont>, material: Rc<FlatTexture>, string: S) -> ErrorResult<Self> {
+    pub fn with_string<S: Into<String>>(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, font: Rc<BitmapFont>, material: Rc<FlatTexture>, string: S) -> Self {
         let string = string.into();
         let mut chars = string.chars();
         let content = array::from_fn(|_| chars.next().unwrap_or(' '));
@@ -75,11 +78,7 @@ impl<const N: usize, const L: usize> TextArea<N, L>
         params.1 = font.sprite_sheet().texture().id();
 
         let indices = Self::gen_indices();
-        if indices.len() as u32 > Batch::MAX_BATCH_INDEX_COUNT {
-            Err(Error::new(DataError(format!("TextArea string is too long. {} excessive characters.", (indices.len() as u32 - Batch::MAX_BATCH_INDEX_COUNT) / 6 + 1)), Fatality::DEFAULT, false))
-        }
-        else {
-            Ok(Self {
+        Self {
                 position,
                 z_index,
                 content,
@@ -91,7 +90,6 @@ impl<const N: usize, const L: usize> TextArea<N, L>
                 location: None,
                 vertices: None,
                 indices
-            })
         }
     }
 

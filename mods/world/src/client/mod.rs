@@ -234,7 +234,7 @@ impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
         renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
         
-        let mut text_area = TextArea::<48, 12>::with_string(Vector2::new(0.0, 0.0), 3, 1.0, 0.2, self.font.clone(), FlatTexture::get(), "Hello, World").expect("error creating TextArea");
+        let mut text_area = TextArea::<48, 12>::with_string(Vector2::new(0.0, 0.0), 3, 1.0, 0.2, self.font.clone(), FlatTexture::get(), "Hello, World");
         renderer.add(&mut text_area);
     }
 
