@@ -2,6 +2,7 @@
 #![feature(result_flattening)]
 #![feature(addr_parse_ascii)]
 #![feature(local_key_cell_methods)]
+//#![feature(generic_const_exprs)]
 
 use std::net::SocketAddr;
 

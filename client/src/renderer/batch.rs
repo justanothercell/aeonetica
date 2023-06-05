@@ -40,8 +40,8 @@ pub(super) struct Batch {
 }
 
 impl Batch {
-    const MAX_BATCH_VERTEX_COUNT: u32 = 6000;
-    const MAX_BATCH_INDEX_COUNT: u32 = 6000;
+    pub(super) const MAX_BATCH_VERTEX_COUNT: u32 = 6000;
+    pub(super) const MAX_BATCH_INDEX_COUNT: u32 = 6000;
 
     const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
     const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();

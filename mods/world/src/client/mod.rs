@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use aeonetica_client::renderer::builtin::TextArea;
+use aeonetica_client::renderer::texture::font::BitmapFont;
 use noise::{Fbm, NoiseFn, Perlin};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
@@ -12,7 +15,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
-use aeonetica_engine::error::ExpectLog;
+use aeonetica_engine::error::{ExpectLog, ErrorResult};
 use aeonetica_engine::time::Time;
 
 use crate::client::pipeline::WorldRenderPipeline;
@@ -74,7 +77,7 @@ impl ClientMod for WorldModClient {
             chunks: Default::default(),
         });
 
-        context.push(WorldLayer::new()).expect("duplicate layer");
+        context.push(WorldLayer::new().expect("error instanciating layer")).expect("duplicate layer");
         store.add_default::<Debug<WorldLayer>>();
         store.add_store(CameraData {
             position: Vector2::new(0.0, 0.0),
@@ -211,20 +214,28 @@ impl ClientHandle for WorldHandle {
 pub struct WorldLayer {
     shake_noise: Box<dyn NoiseFn<f64, 2>>,
     manual_shake_queued: bool,
+    font: Rc<BitmapFont>
 }
 
 impl WorldLayer {
-    fn new() -> Self {
-        Self {
+    fn new() -> ErrorResult<Self> {
+        Ok(Self {
             shake_noise: Box::new(Fbm::<Perlin>::new(0)),
             manual_shake_queued: false,
-        }
+            font: Rc::new(BitmapFont::from_texture_and_fontdata(
+                Texture::from_bytes(include_bytes!("../../assets/fonts/default/default.png"))?, 
+                include_str!("../../assets/fonts/default/default.bmf")
+            )?)
+        })
     }
 }
 
 impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
         renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
+        
+        let mut text_area = TextArea::<48, 12>::with_string(Vector2::new(0.0, 0.0), 3, 1.0, 0.2, self.font.clone(), FlatTexture::get(), "Hello, World").expect("error creating TextArea");
+        renderer.add(&mut text_area);
     }
 
     fn instantiate_camera(&self) -> Camera {
@@ -262,7 +273,7 @@ impl Layer for WorldLayer {
                 true
             }
             Event::MouseMoved(position) => {
-                println!("mouse moved to: {position}");
+                log!(PACK, "mouse moved to: {position}");
                 true
             }
             _ => false

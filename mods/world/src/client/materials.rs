@@ -78,6 +78,14 @@ impl Material for GlowTexture {
     fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], data.0[i], Sampler2D(0), data.2)))
     }
+
+    fn data_slice<const N: usize, const NN: usize>(&self, data: &Self::Data<N>, offset: usize) -> Self::Data<NN> {
+        (std::array::from_fn(|i| data.0[offset + i]), data.1, data.2)
+    }
+
+    fn default_data<const N: usize>(&self) -> Self::Data<N> {
+        (std::array::from_fn(|_| [0.0; 2]), 0, [0.0; 4])
+    }
 }
 
 pub(super) trait WithGlow {

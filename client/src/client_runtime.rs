@@ -1,5 +1,5 @@
 
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
@@ -10,17 +10,13 @@ use std::time::Duration;
 use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
-use aeonetica_engine::math::camera::Camera;
 use aeonetica_engine::nanoserde::SerBin;
-use aeonetica_engine::time::Time;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
-use crate::renderer::Renderer;
-use crate::renderer::window::events::Event;
 use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -50,7 +46,7 @@ mod paths_util_common {
 pub(crate) use paths_util::*;
 use crate::client_runtime::paths_util_common::mod_hash;
 use crate::data_store::DataStore;
-use crate::renderer::context::{RenderContext, LayerBox};
+use crate::renderer::context::RenderContext;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ClientState {

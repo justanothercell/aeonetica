@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}, time::Time};
 
-use crate::{client_runtime::ClientHandleBox, renderer::window::{self, Window}};
+use crate::{client_runtime::ClientHandleBox, renderer::window::Window};
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
 use super::{layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
