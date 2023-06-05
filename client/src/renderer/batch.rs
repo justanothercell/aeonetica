@@ -327,7 +327,7 @@ impl<'a> VertexData<'a> {
         }
     }
 
-    pub fn from_material<M: Material, const N: usize>(vertices: &'a mut [u8], indices: &'a[u32], material: &'a Rc<M>, data: &M::Data<N>, z_index: u8) -> Self {
+    pub fn from_material<M: Material, const N: usize>(vertices: &'a mut [u8], indices: &'a[u32], material: &'a Rc<M>, data: &<M as Material>::Data<N>, z_index: u8) -> Self {
         Self {
             vertices,
             indices,

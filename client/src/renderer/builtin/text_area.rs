@@ -1,10 +1,12 @@
 use std::array;
 
-use aeonetica_engine::{math::vector::Vector2, error::builtin::DataError};
+use aeonetica_engine::{math::vector::Vector2, error::builtin::DataError, util::generic_assert::{Assert, IsTrue}};
 
 use crate::renderer::{*, material::{Material, FlatTexture}};
 
-pub struct TextArea<const N: usize, const L: usize> {
+pub struct TextArea<const N: usize, const L: usize>
+    where Assert<{L * 4 == N}>: IsTrue
+{
     position: Vector2<f32>,
     z_index: u8,
 
@@ -21,7 +23,9 @@ pub struct TextArea<const N: usize, const L: usize> {
     location: Option<VertexLocation>
 }
 
-impl<const N: usize, const L: usize> Renderable for TextArea<N, L> {
+impl<const N: usize, const L: usize> Renderable for TextArea<N, L>
+    where Assert<{L * 4 == N}>: IsTrue
+{
     fn has_location(&self) -> bool {
         self.location.is_some()
     }
@@ -59,10 +63,10 @@ impl<const N: usize, const L: usize> Renderable for TextArea<N, L> {
 }
 
 
-impl<const N: usize, const L: usize> TextArea<N, L> {
+impl<const N: usize, const L: usize> TextArea<N, L>
+    where Assert<{L * 4 == N}>: IsTrue
+{
     pub fn with_string<S: Into<String>>(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, font: Rc<BitmapFont>, material: Rc<FlatTexture>, string: S) -> ErrorResult<Self> {
-        debug_assert_eq!(L * 4, N);
-
         let string = string.into();
         let mut chars = string.chars();
         let content = array::from_fn(|_| chars.next().unwrap_or(' '));
