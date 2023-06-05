@@ -56,9 +56,7 @@ impl CameraData {
 }
 
 
-pub struct WorldModClient {
-
-}
+pub struct WorldModClient;
 
 impl ClientMod for WorldModClient {
     fn init(&mut self, _flags: &Vec<String>) {
@@ -77,7 +75,8 @@ impl ClientMod for WorldModClient {
             chunks: Default::default(),
         });
 
-        context.push(WorldLayer::new().expect("error instanciating layer")).expect("duplicate layer");
+        context.push(WorldLayer::new()).expect("duplicate layer");
+        context.push(UILayer::new().expect("error instanciating layer")).expect("duplicate layer");
         store.add_default::<Debug<WorldLayer>>();
         store.add_store(CameraData {
             position: Vector2::new(0.0, 0.0),
@@ -213,29 +212,21 @@ impl ClientHandle for WorldHandle {
 
 pub struct WorldLayer {
     shake_noise: Box<dyn NoiseFn<f64, 2>>,
-    manual_shake_queued: bool,
-    font: Rc<BitmapFont>
+    manual_shake_queued: bool
 }
 
 impl WorldLayer {
-    fn new() -> ErrorResult<Self> {
-        Ok(Self {
+    fn new() -> Self {
+        Self {
             shake_noise: Box::new(Fbm::<Perlin>::new(0)),
-            manual_shake_queued: false,
-            font: Rc::new(BitmapFont::from_texture_and_fontdata(
-                Texture::from_bytes(include_bytes!("../../assets/fonts/default/default.png"))?, 
-                include_str!("../../assets/fonts/default/default.bmf")
-            )?)
-        })
+            manual_shake_queued: false
+        }
     }
 }
 
 impl Layer for WorldLayer {
     fn attach(&mut self, renderer: &mut Renderer) {
         renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
-        
-        let mut text_area = TextArea::<48, 12>::with_string(Vector2::new(0.0, 0.0), 3, 1.0, 0.2, self.font.clone(), FlatTexture::get(), "Hello, World");
-        renderer.add(&mut text_area);
     }
 
     fn instantiate_camera(&self) -> Camera {
@@ -278,5 +269,39 @@ impl Layer for WorldLayer {
             }
             _ => false
         }
+    }
+}
+
+struct UILayer {
+    font: Rc<BitmapFont>, 
+    fps_display: Nullable<TextArea<48, 12>>
+}
+
+impl Layer for UILayer {
+    fn instantiate_camera(&self) -> Camera {
+        Camera::new(0.0, 160.0, 90.0, 0.0, 1.0, -1.0)
+    }
+
+    fn attach(&mut self, renderer: &mut Renderer) {
+        self.fps_display = Nullable::Value(TextArea::<48, 12>::with_string(Vector2::new(2.0, 2.0), 3, 3.0, 0.5, self.font.clone(), FlatTexture::get(), "FPS: "));
+        renderer.add(&mut *self.fps_display);
+    }
+
+    fn post_handles_update(&mut self, _store: &mut DataStore, renderer: &mut Renderer, time: Time) {
+        let fps = 1.0 / time.delta;
+        (*self.fps_display).set_string(format!("FPS: {}", fps as i32));
+        let _ = renderer.modify(&mut *self.fps_display);
+    }
+}
+
+impl UILayer {
+    fn new() -> ErrorResult<Self> {
+        Ok(Self {
+            font: Rc::new(BitmapFont::from_texture_and_fontdata(
+                Texture::from_bytes(include_bytes!("../../assets/fonts/default/default.png"))?, 
+                include_str!("../../assets/fonts/default/default.bmf")
+            )?),
+            fps_display: Nullable::Null
+        })
     }
 }

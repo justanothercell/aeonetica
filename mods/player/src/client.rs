@@ -41,7 +41,7 @@ impl ClientMod for PlayerModClient {
     fn start<'a>(&self, store: &mut DataStore, provider: OpenGlRenderContextProvider<'a>) -> &'a mut RenderContext {
         let context = provider.make_context();
 
-        context.push(UILayer::new()).expect("duplicate layer");
+        context.push(OverlayLayer::new()).expect("duplicate layer");
         store.add_store(PlayerUIView {
             hover_energy: 1.0
         });
@@ -255,12 +255,12 @@ impl ClientHandle for PlayerHandle {
 }
 
 
-pub struct UILayer {
+pub struct OverlayLayer {
     hover_energy_bar: Line,
     hover_energy_bar_bg: Line,
 }
 
-impl UILayer {
+impl OverlayLayer {
     fn new() -> Self {
         Self {
             hover_energy_bar: Line::new(Vector2::new(-0.25, -0.5), Vector2::new(1.25, -0.5), 0.3,  11, [0.0, 0.3, 1.0, 1.0]),
@@ -269,7 +269,7 @@ impl UILayer {
     }
 }
 
-impl Layer for UILayer {
+impl Layer for OverlayLayer {
     fn instantiate_camera(&self) -> Camera {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }

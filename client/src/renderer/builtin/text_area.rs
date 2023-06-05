@@ -153,7 +153,7 @@ impl<const N: usize, const L: usize> TextArea<N, L>
         let size = self.font_size / self.font.char_size().y;
         let half_size = (self.font.char_size() * size).half();
 
-        let mut x_offset = 0.0;
+        let mut x_offset = self.position.x();
         
         let mut next_char = |i, c| {
             let position = Vector2::new(x_offset, self.position.y());
