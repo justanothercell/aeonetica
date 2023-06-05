@@ -76,9 +76,15 @@ impl Uniform for [f32; 3] {
     }
 }
 
-impl Uniform for &[i32] {
+impl Uniform for Vector2<f32> {
     fn upload(&self, location: i32) {
-        unsafe { gl::Uniform1iv(location, self.len() as i32, self.as_ptr()) }
+        unsafe { gl::Uniform2f(location, self.x(), self.y()) }
+    }
+}
+
+impl<U: Uniform> Uniform for [U] {
+    fn upload(&self, location: i32) {
+        self.iter().enumerate().for_each(|(i, u)| u.upload(location + i as i32));
     }
 }
 
@@ -162,7 +168,7 @@ impl Shader {
 #[derive(PartialEq, Eq)]
 pub struct Program(RenderID);
 impl Program {
-    pub(super) fn new() -> Option<Self> {
+    pub fn new() -> Option<Self> {
         let prog = unsafe { gl::CreateProgram() };
         if prog != 0 {
             Some(Self(prog))
@@ -204,15 +210,15 @@ impl Program {
         String::from_utf8_lossy(&v).into_owned()
     }
 
-    pub(super) fn bind(&self) {
+    pub fn bind(&self) {
         unsafe { gl::UseProgram(self.0) }
     }
 
-    pub(super) fn unbind(&self) {
+    pub fn unbind(&self) {
         unsafe { gl::UseProgram(0) }
     }
 
-    pub(super) fn delete(self) {
+    pub fn delete(self) {
         unsafe { gl::DeleteProgram(self.0) }
     }
 

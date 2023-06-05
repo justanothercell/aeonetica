@@ -224,7 +224,7 @@ impl Batch {
 
         if !self.textures.is_empty() {
             const TEXTURES_UNIFORM: UniformStr = uniform_str!("u_Textures");
-            self.shader.upload_uniform(&TEXTURES_UNIFORM, &Self::TEXTURE_SLOTS.as_slice())
+            self.shader.upload_uniform(&TEXTURES_UNIFORM, Self::TEXTURE_SLOTS.as_slice())
         }
 
         self.vertex_array.bind();

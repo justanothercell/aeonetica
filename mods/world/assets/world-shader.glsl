@@ -26,5 +26,5 @@ layout (location = 0) out vec4 r_Color;
 
 void main() {
     vec4 light_color = texture(u_LightMap, v_FrameCoord);
-    r_Color = clamp(texture(u_Frame, v_FrameCoord) * vec4(0.5) + light_color, vec4(0.0), vec4(1.0));
+    r_Color = clamp(texture(u_Frame, v_FrameCoord) + light_color, vec4(0.0), vec4(1.0));
 }

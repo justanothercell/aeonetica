@@ -41,7 +41,7 @@ impl ClientMod for PlayerModClient {
     fn start<'a>(&self, store: &mut DataStore, provider: OpenGlRenderContextProvider<'a>) -> &'a mut RenderContext {
         let context = provider.make_context();
 
-        context.push(OverlayLayer::new()).expect("duplicate layer");
+        context.push(OverlayLayer::new(), store).expect("duplicate layer");
         store.add_store(PlayerUIView {
             hover_energy: 1.0
         });
@@ -274,7 +274,7 @@ impl Layer for OverlayLayer {
         Camera::new(-24.0, 24.0, 13.5, -13.5, -1.0, 1.0)
     }
 
-    fn attach(&mut self, renderer: &mut Renderer) {
+    fn attach(&mut self, renderer: &mut Renderer, store: &mut DataStore) {
         log!(ERROR, "UI layer attached");
         renderer.add(&mut self.hover_energy_bar_bg);
     }

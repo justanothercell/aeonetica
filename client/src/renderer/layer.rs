@@ -12,8 +12,8 @@ use crate::renderer::window::events::Event;
 pub trait Layer {
     fn instantiate_camera(&self) -> Camera;
 
-    fn attach(&mut self, renderer: &mut Renderer) {} // run on layer creation
-    fn quit(&mut self, renderer: &mut Renderer) {} // run on layer deletion
+    fn attach(&mut self, renderer: &mut Renderer, store: &mut DataStore) {} // run on layer creation
+    fn quit(&mut self, renderer: &mut Renderer, store: &mut DataStore) {} // run on layer deletion
 
     fn update_camera(&mut self, store: &mut DataStore, camera: &mut Camera, time: Time) {}
     fn pre_handles_update(&mut self, store: &mut DataStore, renderer: &mut Renderer, time: Time) {}
@@ -45,11 +45,15 @@ impl<'a> LayerUpdater<'a> {
     }
 
     #[inline(always)]
-    pub fn update(self, renderer: &mut Renderer, time: Time) {
+    pub fn update(&mut self, renderer: &mut Renderer, time: Time) {
         self.layer.pre_handles_update(self.store, renderer, time);
         self.handles.iter_mut()
             .filter(|(_id, handle_box)| handle_box.handle.owning_layer() == self.client_id)
             .for_each(|(_id, handle_box)| handle_box.handle.update(&mut handle_box.messenger, renderer, self.store, time));
         self.layer.post_handles_update(self.store, renderer, time);
+    }
+
+    pub fn store(&mut self) -> &mut &'a mut DataStore {
+        &mut self.store
     }
 }
