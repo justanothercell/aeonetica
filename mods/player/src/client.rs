@@ -186,10 +186,6 @@ impl ClientHandle for PlayerHandle {
                 let mov_delta = v * time.delta as f32;
                 world.calc_move(&mut self.position, Vector2::new(PLAYER_SIZE, PLAYER_SIZE), mov_delta);
                 let delta = self.position - p;
-                if (delta - mov_delta).mag_sq() < 0.001 && (self.p_position - self.position).mag_sq() > 0.001 {
-                    messenger.call_server_fn(Player::client_position_update, (self.position, false), SendMode::Safe);
-                    self.p_position = self.position;
-                }
                 if delta.x.abs() < 0.01 * time.delta as f32 {
                     self.velocity.x = 0.0;
                 }

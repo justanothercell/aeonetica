@@ -2,7 +2,7 @@ pub mod id_map;
 pub mod nullable;
 pub mod generic_assert;
 
-use std::any::{type_name};
+use std::any::{type_name, Any};
 
 use std::fmt::Display;
 use std::path::Path;
@@ -13,6 +13,8 @@ use std::hash::SipHasher;
 use crate::error::*;
 use crate::error::builtin::IOError;
 use crate::{Id, TypeId};
+
+use self::nullable::Nullable;
 
 pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> ErrorResult<()> {
     let mut archive = zip::read::ZipArchive::new(zip)
@@ -81,3 +83,43 @@ pub enum Either<A, B> {
     Right(B)
 }
 
+pub trait Typle {
+    const LEN: usize;
+    type NullableMutTuple<'a>;
+    fn to_type_id_arr() -> [TypeId; Self::LEN];
+    unsafe fn opt_boxed_arr_to_tuple_of_nullable_mut<'a, PseudoTy: ?Sized>(arr: [Option<&mut Box<PseudoTy>>; Self::LEN]) -> Self::NullableMutTuple<'a>;
+}
+
+macro_rules! typle_impls {
+    ($($name: ident $index: literal)+) => {
+        impl<$($name:'static,)+> Typle for ($($name,)+){
+            const LEN: usize = ${count(name)};
+            type NullableMutTuple<'a> = ($($crate::util::nullable::Nullable<&'a mut $name>,)+) where $($name: 'a,)+;
+            
+            fn to_type_id_arr() -> [$crate::TypeId; ${count(name)}]{
+                [$($crate::util::type_to_id::<$name>(),)+]
+            }
+
+            unsafe fn opt_boxed_arr_to_tuple_of_nullable_mut<'a, PseudoTy: ?Sized>(mut arr: [Option<&mut Box<PseudoTy>>; Self::LEN]) -> Self::NullableMutTuple<'a> {
+                ($(arr[$index].take().map(|m| unsafe { &mut*std::mem::transmute::<&mut Box<_>, &(*mut $name, usize)>(m).0 }).into(), )+)
+            }
+        }
+    };
+}
+
+typle_impls! { A 0 }
+typle_impls! { A 0 B 1 }
+typle_impls! { A 0 B 1 C 2 }
+typle_impls! { A 0 B 1 C 2 D 3 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 L 11 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 L 11 M 12 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 L 11 M 12 N 13 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 L 11 M 12 N 13 O 14 }
+typle_impls! { A 0 B 1 C 2 D 3 E 4 F 5 G 6 H 7 I 8 J 9 K 10 L 11 M 12 N 13 O 14 P 15 }

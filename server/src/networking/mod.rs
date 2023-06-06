@@ -106,9 +106,7 @@ impl NetworkServer {
     }
 
     pub(crate) fn queued_packets(&mut self) -> Vec<(SocketAddr, ClientPacket)> {
-        let mut packets = vec![];
-        std::mem::swap(&mut self.received.lock().unwrap() as &mut Vec<(SocketAddr, ClientPacket)>, &mut packets);
-        packets
+        std::mem::replace(&mut self.received.lock().unwrap() as &mut Vec<(SocketAddr, ClientPacket)>, vec![])
     }
 
     pub(crate) fn send(&self, client_id: &Id, packet: &ServerPacket, mode: SendMode) -> ErrorResult<()>{

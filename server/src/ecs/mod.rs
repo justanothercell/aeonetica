@@ -6,7 +6,7 @@ use std::collections::hash_map::{Iter, IterMut, Keys};
 
 
 use crate::ecs::entity::Entity;
-use aeonetica_engine::util::type_to_id;
+use aeonetica_engine::util::{type_to_id, Typle};
 use aeonetica_engine::{ClientId, EntityId, Id, log};
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
@@ -219,6 +219,31 @@ impl Engine {
         }
         let mut_engine = unsafe { self.mut_handle() };
         (self.mut_module_of::<T1>(id1), mut_engine.mut_module_of::<T2>(id2))
+    }
+
+    pub fn many_mut_modules_of_entities<'a, const N: usize, TT: Typle<LEN={ N }>>(&'a mut self, ids: [EntityId; N]) -> TT::NullableMutTuple<'a> where [(); TT::LEN]: {
+        let tids = TT::to_type_id_arr();
+        for i in 0..(ids.len()-1) {
+            for j in (i+1)..ids.len() {
+                if ids[i] == ids[j] && tids[i] == tids[j] {
+                    panic!("cannot borrow the same two types from same entity!")
+                }
+            }
+        }
+        unsafe {
+            #[allow(deprecated)]
+            let mut arr: [Option<&mut Box<_>>; TT::LEN] = std::mem::uninitialized();
+            for (e, i) in (0..ids.len()).enumerate() {
+                let mut_engine = self.mut_handle();
+                if let Some(entity) = mut_engine.entites.get_mut(&ids[i]) {
+                    arr[i] = entity.modules.get_mut(&tids[i])
+                }
+                else {
+                    arr[i] = None;
+                }
+            }
+            TT::opt_boxed_arr_to_tuple_of_nullable_mut(arr)
+        }
     }
 
     #[inline]

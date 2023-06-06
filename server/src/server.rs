@@ -44,11 +44,13 @@ pub fn run(ip: &str) {
         time_nanos += delta_time_nanos;
         time.delta = delta_time_nanos as f32 / FULL_SEC as f32;
         time.time = time_nanos as f32 / FULL_SEC as f32;
+        println!("time.delta = {}  percentage = {}", time.delta, time.delta / (1.0 / TPS as f32) * 100.0);
 
         engine.tick += 1;
 
         if (delta_time_nanos as usize) < 1_000_000_000 / TPS {
             let to_wait = 1_000_000_000 / TPS - delta_time_nanos as usize;
+            println!("to_wait = {}", to_wait as f32 / 1_000_000_000.0);
             std::thread::sleep(Duration::from_nanos(to_wait as u64));
         }
     }

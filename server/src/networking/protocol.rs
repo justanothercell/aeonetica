@@ -18,12 +18,15 @@ use crate::networking::ClientHandle;
 impl Engine {
     pub(crate) fn handle_queued(&mut self) -> ErrorResult<()> {
         let packets = self.runtime.ns.borrow_mut().queued_packets();
-        packets.into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
+        let mut i = 0;
+        let r = packets.into_iter().map(|(addr, packet)| self.handle_packet(&addr, &packet))
         .reduce(|acc, r| {
             acc?;
             r?;
+            i += 1;
             Ok(())
-        }).unwrap_or(Ok(()))
+        }).unwrap_or(Ok(()));
+        r
     }
 
     pub(crate) fn timeout_inactive(&mut self) {

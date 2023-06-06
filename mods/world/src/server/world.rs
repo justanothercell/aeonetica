@@ -197,7 +197,6 @@ impl World {
     }
 
     pub(crate) fn request_world_chunk(id: &EntityId, engine: &mut Engine, client: &ClientId, chunk_pos: Vector2<i32>) {
-        log!(DEBUG, "client requested chunk {chunk_pos}");
         let chunk = engine.mut_module_of::<Self>(id).get_chunk_at(chunk_pos).clone();
         engine.mut_module_of::<Messenger>(id).call_client_fn_for(WorldHandle::receive_chunk_data, client, chunk, SendMode::Safe);
     }

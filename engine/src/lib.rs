@@ -8,6 +8,8 @@
 #![feature(const_replace)]
 #![feature(const_refs_to_cell)]
 #![feature(const_option_ext)]
+#![feature(macro_metavar_expr)]
+#![feature(generic_const_exprs)]
 
 #![feature(test)]
 #![feature(try_trait_v2_residual)]

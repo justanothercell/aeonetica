@@ -5,9 +5,9 @@ use std::ops::Deref;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub enum Nullable<T> {
-    Value(T),
     #[default]
-    Null
+    Null,
+    Value(T)
 }
 
 #[allow(unused)]

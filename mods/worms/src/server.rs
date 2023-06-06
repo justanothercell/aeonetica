@@ -1,4 +1,4 @@
-use aeonetica_engine::{time::Time, math::vector::Vector2, EntityId, networking::SendMode};
+use aeonetica_engine::{time::Time, math::vector::Vector2, EntityId, networking::SendMode, util::nullable::Nullable};
 use aeonetica_server::{ServerMod, ecs::{module::Module, Engine, messaging::Messenger}};
 use player_mod::server::{PLAYER_HANDLER, PlayerHandler, Player};
 use world_mod::{server::world::{WORLD, World}, common::WorldView};
@@ -91,7 +91,7 @@ impl Module for Worm {
         }
 
         let wid = **engine.get_entity_id_by_tag(WORLD);
-        let (mut worm, mut world) = engine.two_mut_modules_of_entities::<Worm, World>(id, &wid);
+        let (mut worm, world): (Nullable<&mut Worm>, Nullable<&mut World>) = engine.many_mut_modules_of_entities::<2, (Worm, World)>([*id, wid]);
 
         if pdsq < 0.5 {
             worm.attack_cooldown = 0.3;
