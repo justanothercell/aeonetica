@@ -104,6 +104,10 @@ impl<M: Material> Quad<M> {
         }
     }
 
+    pub fn params(&self) -> &M::Data<4> {
+        &self.params
+    }
+
     pub fn set_dirty(&mut self) {
         self.vertices = None;
     }

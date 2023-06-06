@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, renderer::{Renderer, texture::{SpriteSheet, Texture}, builtin::{Quad, Line}, material::FlatTexture}, data_store::DataStore};
 use aeonetica_engine::{time::Time, networking::messaging::ClientEntity, util::{type_to_id, nullable::Nullable}, math::vector::Vector2};
 use debug_mod::Debug;
-use world_mod::client::WorldLayer;
+use world_mod::client::{WorldLayer, materials::terrain_material};
 use world_mod::client::materials::WithTerrain;
 
 use crate::server::{WORM_SPEED};
@@ -57,6 +57,7 @@ impl WormHandle {
 
     pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, (segments, looking_dir, teleporting): (Vec<Vector2<f32>>, Vector2<f32>, bool)) {
         if self.segments.is_empty() {
+            let material = terrain_material(store);
             let sheet = store.get_or_create(WormSheet::load);
             self.p_segments = segments.clone();
             self.segments = segments.clone();
@@ -67,6 +68,7 @@ impl WormHandle {
                     Vector2::new(1.0, 1.0),
                     100,
                     sheet.0.get(match i { 0 => 0, _ if i == self.segments.len() - 1 => 2, _ => 1 }).unwrap(),
+                    material.clone()
                 );
                 self.quads.push(quad);
             }
