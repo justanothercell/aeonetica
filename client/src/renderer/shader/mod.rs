@@ -1,19 +1,17 @@
 pub mod postprocessing;
 pub use postprocessing::*;
 
+pub mod uniform;
+pub use uniform::*;
+
+pub mod data_type;
+pub use data_type::*;
+
 use std::{collections::HashMap, fmt::Display};
 use super::*;
 
-use aeonetica_engine::{math::{matrix::Matrix4, vector::Vector2}, error::{ErrorValue, ErrorResult, Error, Fatality}};
+use aeonetica_engine::error::{ErrorValue, ErrorResult, Error, Fatality};
 use regex::Regex;
-
-#[macro_export]
-macro_rules! uniform_str {
-    ($value:literal) => {
-        UniformStr(concat!($value, '\0').as_ptr())
-    };
-}
-pub use uniform_str;
 
 #[derive(Debug)]
 pub struct ShaderError(pub String);
@@ -25,66 +23,6 @@ impl ErrorValue for ShaderError {
 impl Display for ShaderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "shader error: {}", self.0)
-    }
-}
-
-pub struct UniformStr(pub *const u8);
-
-pub trait Uniform {
-    fn upload(&self, location: i32);
-}
-
-impl Uniform for Matrix4<f32> {
-    fn upload(&self, location: i32) {
-        unsafe { gl::UniformMatrix4fv(location, 1, gl::FALSE, self.value_ptr()) }
-    }
-}
-
-impl Uniform for u32 {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform1ui(location, *self) }
-    }
-}
-
-impl Uniform for i32 {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform1i(location, *self) }
-    }
-}
-
-impl Uniform for f32 {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform1f(location, *self) }
-    }
-}
-
-impl Uniform for (f32, f32, f32, f32) {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform4f(location, self.0, self.1, self.2, self.3) }
-    }
-}
-
-impl Uniform for Texture {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform1i(location, self.id() as i32) }
-    }
-}
-
-impl Uniform for [f32; 3] {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform3f(location, self[0], self[1], self[2]) }
-    }
-}
-
-impl Uniform for Vector2<f32> {
-    fn upload(&self, location: i32) {
-        unsafe { gl::Uniform2f(location, self.x(), self.y()) }
-    }
-}
-
-impl<U: Uniform> Uniform for [U] {
-    fn upload(&self, location: i32) {
-        self.iter().enumerate().for_each(|(i, u)| u.upload(location + i as i32));
     }
 }
 
@@ -287,134 +225,4 @@ impl Program {
             Err(Error::new(ShaderError(out), Fatality::FATAL, true))
         }
     }
-}
-
-#[allow(unused)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ShaderDataType {
-    Float = gl::FLOAT as isize,
-    Float2 = gl::FLOAT_VEC2 as isize,
-    Float3 = gl::FLOAT_VEC3 as isize,
-    Float4 = gl::FLOAT_VEC4 as isize,
-    Mat3 = gl::FLOAT_MAT3 as isize,
-    Mat4 = gl::FLOAT_MAT4 as isize,
-    Int = gl::INT as isize,
-    Int2 = gl::INT_VEC2 as isize,
-    Int3 = gl::INT_VEC3 as isize,
-    Int4 = gl::INT_VEC4 as isize,
-    Bool = gl::BOOL as isize,
-    Sampler2D = gl::SAMPLER_2D as isize,
-}
-
-impl ShaderDataType {
-    pub(super) const fn size(&self) -> u32 {
-        use {std::mem::size_of, gl::types::*};
-        (match self {
-            Self::Float => size_of::<GLfloat>(),
-            Self::Float2 => size_of::<GLfloat>() * 2,
-            Self::Float3 => size_of::<GLfloat>() * 3,
-            Self::Float4 => size_of::<GLfloat>() * 4,
-            Self::Mat3 => size_of::<GLfloat>() * 9,
-            Self::Mat4 => size_of::<GLfloat>() * 16,
-            Self::Int => size_of::<GLint>(),
-            Self::Int2 => size_of::<GLint>() * 2,
-            Self::Int3 => size_of::<GLint>() * 3,
-            Self::Int4 => size_of::<GLint>() * 4,
-            Self::Bool => size_of::<GLboolean>(),
-            Self::Sampler2D => size_of::<GLint>(),
-        }) as u32
-    }
-
-    pub(super) const fn component_count(&self) -> i32 {
-        match self {
-            Self::Float | Self::Int | Self::Bool | Self::Sampler2D => 1,
-            Self::Float2 | Self::Int2 => 2,
-            Self::Float3 | Self::Int3 => 3,
-            Self::Float4 | Self::Int4 => 4,
-            Self::Mat3 => 9,
-            Self::Mat4 => 16
-        }
-    }
-
-    pub(super) const fn base_type(&self) -> gl::types::GLenum {
-        match self {
-            Self::Float | Self::Float2 | Self::Float3 | Self::Float4 | Self::Mat3 | Self::Mat4 => gl::FLOAT,
-            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 | Self::Sampler2D => gl::INT,
-            Self::Bool => gl::BOOL
-        }
-    }
-
-    pub(super) const fn base_is_fp(&self) -> bool {
-        match self {
-            Self::Float | Self::Float2 | Self::Float3 | Self::Float4 | Self::Mat3 | Self::Mat4 => true,
-            _ => false
-        }
-    }
-
-    pub(super) const fn base_is_int(&self) -> bool {
-        match self {
-            Self::Int | Self::Int2 | Self::Int3 | Self::Int4 | Self::Sampler2D | Self::Bool => true,
-            _ => false
-        }
-    }
-
-    pub(super) const fn base_is_long(&self) -> bool {
-        false
-    }
-}
-
-pub trait IntoShaderDataType {
-    const DATA_TYPE: ShaderDataType;
-}
-
-impl IntoShaderDataType for f32 {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Float;
-}
-
-impl IntoShaderDataType for [f32; 2] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Float2;
-}
-
-impl IntoShaderDataType for [f32; 3] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Float3;
-}
-
-impl IntoShaderDataType for [f32; 4] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Float4;
-}
-
-impl IntoShaderDataType for Matrix4<f32> {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Mat4;
-}
-
-impl IntoShaderDataType for i32 {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Int;
-}
-
-impl IntoShaderDataType for [i32; 2] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Int2;
-}
-
-impl IntoShaderDataType for [i32; 3] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Int3;
-}
-
-impl IntoShaderDataType for [i32; 4] {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Int4;
-}
-
-impl IntoShaderDataType for Vector2<f32> {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Float2;
-}
-
-impl IntoShaderDataType for bool {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Bool;
-}
-
-impl IntoShaderDataType for Sampler2D {
-    const DATA_TYPE: ShaderDataType = ShaderDataType::Sampler2D;
-}
-
-pub trait ShaderLayoutType {
-    type Type: IntoShaderDataType;
 }
