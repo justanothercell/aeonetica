@@ -3,12 +3,7 @@ use std::ops::*;
 use std::f64;
 
 use crate::nanoserde::{self, SerBin, DeBin};
-
-pub trait IntoVector<T> {
-    type Vector;
-
-    fn into_vector(self) -> Self::Vector;
-}
+use super::IntoVector;
 
 #[derive(SerBin, DeBin, Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Vector2<T> {
@@ -44,7 +39,7 @@ impl<T> Vector2<T> {
         self.x * self.y
     }
 
-    pub fn into_array(self) -> [T;2] {
+    pub fn into_array(self) -> [T; 2] {
         [self.x, self.y]
     }
 
@@ -75,6 +70,7 @@ impl Vector2<i32> {
     pub fn to_f32(&self) -> Vector2<f32> {
         Vector2::new(self.x as f32, self.y as f32)
     }
+
     pub fn to_f64(&self) -> Vector2<f64> {
         Vector2::new(self.x as f64, self.y as f64)
     }
@@ -83,6 +79,10 @@ impl Vector2<i32> {
 impl Vector2<u32> {
     pub fn to_f32(&self) -> Vector2<f32> {
         Vector2::new(self.x as f32, self.y as f32)
+    }
+
+    pub fn to_f64(&self) -> Vector2<f64> {
+        Vector2::new(self.x as f64, self.y as f64)
     }
 
     pub fn signed(&self) -> Vector2<i32> {
@@ -143,6 +143,7 @@ impl Vector2<f32> {
     pub fn to_i32(&self) -> Vector2<i32> {
         Vector2::new(self.x as i32, self.y as i32)
     }
+    
     pub fn to_f64(&self) -> Vector2<f64> {
         Vector2::new(self.x as f64, self.y as f64)
     }
