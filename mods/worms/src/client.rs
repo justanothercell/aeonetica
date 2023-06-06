@@ -121,4 +121,10 @@ impl ClientHandle for WormHandle {
         }
         self.interpolation_delta = (time.delta as f32 * WORM_SPEED * 20.0 + self.interpolation_delta).min(1.0);
     }
+
+    fn remove(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
+        for quad in &mut self.quads {
+            renderer.remove(quad)
+        }
+    }
 }

@@ -198,7 +198,7 @@ impl ClientHandle for PlayerHandle {
                     }
                     self.velocity.y = 0.0;
                     let world = store.get_store::<ClientWorld>();
-                    self.is_grounded = world.overlap_aabb(self.position + Vector2::new(0.0, 0.01), Vector2::new(PLAYER_SIZE, PLAYER_SIZE));
+                    self.is_grounded = world.overlap_aabb(self.position + Vector2::new(0.0, 0.02), Vector2::new(PLAYER_SIZE, PLAYER_SIZE));
                 } else {
                     self.is_grounded = false;
                 }
