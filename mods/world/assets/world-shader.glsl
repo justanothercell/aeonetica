@@ -25,5 +25,7 @@ uniform sampler2D u_LightMap;
 layout (location = 0) out vec4 r_Color;
 
 void main() {
-    r_Color = texture(u_Frame, v_FrameCoord);
+    vec4 glowing = texture(u_LightMap, v_FrameCoord);
+
+    r_Color = texture(u_Frame, v_FrameCoord) + glowing;
 }
