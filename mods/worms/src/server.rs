@@ -116,11 +116,11 @@ impl Module for Worm {
         if (before - self_pos).mag_sq() < 0.005 {
             if world.overlap_aabb(self_pos + Vector2::new(0.1, -0.05), Vector2::new(0.8, 1.1)) {
                 worm.looking_dir.y *= -1.0;
-                worm.attack_cooldown = 0.3;
+                worm.attack_cooldown = 0.4;
             }
             if world.overlap_aabb(self_pos + Vector2::new(-0.05, 0.1), Vector2::new(1.1, 0.8)) {
                 worm.looking_dir.x *= -1.0;
-                worm.attack_cooldown = 0.3;
+                worm.attack_cooldown = 0.4;
             }
         }
 
