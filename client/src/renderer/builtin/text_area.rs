@@ -1,31 +1,39 @@
-use aeonetica_engine::{math::vector::Vector2, log};
+use std::array;
 
-use crate::renderer::*;
+use aeonetica_engine::{math::vector::Vector2, util::generic_assert::{Assert, IsTrue}};
 
-pub struct TextArea {
+use crate::renderer::{*, material::{Material, FlatTexture}};
+
+pub struct TextArea<const N: usize, const L: usize>
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
+{
     position: Vector2<f32>,
     z_index: u8,
 
-    max_len: u32,
-    content: String,
-    
-    shader: Rc<shader::Program>,
+    content: [char; L],
     font: Rc<BitmapFont>,
     font_size: f32,
     spacing: f32,
+    
+    material: Rc<FlatTexture>,
+    vertices: Option<[<FlatTexture as Material>::VertexTuple; N]>,
+    params: <FlatTexture as Material>::Data<N>,
+    indices: Vec<u32>,
 
-    location: Option<VertexLocation>,
-    vertices: Vec<VertexTuple3<[f32; 2], [f32; 2], Sampler2D>>,
-    indices: Vec<u32>
+    location: Option<VertexLocation>
 }
 
-impl Renderable for TextArea {
+impl<const N: usize, const L: usize> Renderable for TextArea<N, L>
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
+{
     fn has_location(&self) -> bool {
         self.location.is_some()
     }
 
     fn is_dirty(&self) -> bool {
-        false
+        self.vertices.is_none()
     }
 
     fn location(&self) -> &Option<VertexLocation> {
@@ -37,156 +45,156 @@ impl Renderable for TextArea {
     }
 
     fn texture_id(&self) -> Option<RenderID> {
-        Some(self.font.sprite_sheet().texture().id())
+        FlatTexture::texture_id(&self.params)
     }
 
     fn vertex_data(&mut self) -> VertexData {
-        if self.vertices.is_empty() {
+        if self.is_dirty() {
             self.recalculate_vertex_data();
         }
 
-        log!("{:#?}", self.vertices);
-
-        VertexData::new_textured(
-            unsafe { std::mem::transmute::<_, &mut [u8]>(self.vertices.as_mut_slice()) }, 
+        let vertices  = self.vertices.as_ref().unwrap();
+        VertexData::from_material(
+            util::to_raw_byte_slice!(vertices), 
             self.indices.as_slice(), 
-            Self::layout(),
-            &self.shader,
-            self.z_index,
-            self.font.sprite_sheet().texture().id()
+            &self.material,
+            &self.params,
+            self.z_index
         )
     }
 }
 
-type TextAreaVertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
-thread_local! {
-    static TEXT_AREA_LAYOUT: Rc<BufferLayout> = Rc::new(TextAreaVertices::build());
-}
 
-impl TextArea {
-    fn layout<'a>() -> &'a Rc<BufferLayout> {
-        unsafe {
-            let x: *const Rc<BufferLayout> = TEXT_AREA_LAYOUT.with(|l| l as *const _);
-            x.as_ref().unwrap_unchecked()
+impl<const N: usize, const L: usize> TextArea<N, L>
+    where Assert<{L * 4 == N}>: IsTrue,
+          Assert<{L * 6 <= Batch::MAX_BATCH_INDEX_COUNT as usize}>: IsTrue
+{
+    pub fn with_string<S: Into<String>>(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, font: Rc<BitmapFont>, material: Rc<FlatTexture>, string: S) -> Self {
+        let string = string.into();
+        let mut chars = string.chars();
+        let content = array::from_fn(|_| chars.next().unwrap_or(' '));
+        
+        let mut params = material.default_data();
+        params.1 = font.sprite_sheet().texture().id();
+
+        let indices = Self::gen_indices();
+        Self {
+                position,
+                z_index,
+                content,
+                font,
+                font_size,
+                material,
+                params,
+                spacing,
+                location: None,
+                vertices: None,
+                indices
         }
     }
 
-    fn gen_indices(num_chars: usize) -> Vec<u32> {
-        let mut indices = Vec::with_capacity(num_chars * 6);
-        for i in 0 .. num_chars {
+    fn gen_indices() -> Vec<u32> {
+        let mut indices = Vec::with_capacity(N * 6);
+        for i in 0 .. L {
             let i = i as u32 * 4;
             indices.extend_from_slice(&[i, i + 1, i + 2, i + 2, i + 3, i])
         }
         indices
     }
 
-    pub fn with_max_len(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: usize, shader: Rc<shader::Program>, font: Rc<BitmapFont>) -> Self {
-        Self {
-            position,
-            z_index,
-            max_len: max_len as u32,
-            content: String::with_capacity(max_len),
-            shader,
-            font,
-            font_size,
-            spacing,
-            location: None,
-            vertices: Vec::with_capacity(4 * max_len),
-            indices: Self::gen_indices(max_len)
-        }
-    }
-
-    pub fn with_string(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
-        let len = content.len();
-        Self {
-            position,
-            z_index,
-            max_len: len as u32,
-            content,
-            shader,
-            font,
-            font_size,
-            spacing,
-            location: None,
-            vertices: Vec::with_capacity(4 * len),
-            indices: Self::gen_indices(len)
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn with_string_and_max_len(position: Vector2<f32>, z_index: u8, font_size: f32, spacing: f32, max_len: usize, shader: Rc<shader::Program>, font: Rc<BitmapFont>, content: String) -> Self {
-        let len = content.len().max(max_len);
-        Self {
-            position,
-            z_index,
-            max_len: len as u32,
-            content,
-            shader,
-            font,
-            font_size,
-            spacing,
-            location: None,
-            vertices: Vec::with_capacity(4 * len),
-            indices: Self::gen_indices(len)
-        }
-    }
-
-    pub fn content(&self) -> &str {
-        &self.content
-    }
-
     pub fn len(&self) -> usize {
-        self.content.len()
+        L
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.content.is_empty()
+    pub fn string(&self) -> String {
+        self.content.iter().collect::<String>()
     }
 
-    pub fn max_len(&self) -> usize {
-        self.max_len as usize
+    // Sets the content of the text area. Fails if string length exceeds max_len
+    pub fn set_string<S: Into<String>>(&mut self, string: S) {
+        let string = string.into();
+        let mut chars = string.chars();
+        self.content.iter_mut().for_each(|c| *c = chars.next().unwrap_or(' '));
+        self.set_dirty();
     }
 
-    /// Sets the content of the text area. Fails if string length exceeds max_len
-    pub fn set_content<S: Into<String>>(&mut self, content: S) -> Result<(), String> {
-        let content = content.into();
-        if content.len() >= self.max_len as usize { return Err(format!("string exceeded max length of {} (had length of {}]", self.max_len, content.len()))}
-        self.content = content;
-        Ok(())
+    pub fn position(&self) -> Vector2<f32> {
+        self.position
+    }
+
+    pub fn set_position(&mut self, position: Vector2<f32>) {
+        self.position = position;
+        self.set_dirty();
+    }
+
+    pub fn font_size(&self) -> f32 {
+        self.font_size
+    }
+
+    pub fn set_font_size(&mut self, font_size: f32) {
+        self.font_size = font_size;
+        self.set_dirty();
+    }
+
+    pub fn spacing(&self) -> f32 {
+        self.spacing
+    }
+
+    pub fn set_spacing(&mut self, spacing: f32) {
+        self.spacing = spacing;
+        self.set_dirty();
+    }
+
+    fn set_dirty(&mut self) {
+        self.vertices = None;
     }
 
     pub fn recalculate_vertex_data(&mut self) {
         let size = self.font_size / self.font.char_size().y;
-        let half_size = self.font.char_size() * size / 2.0;
+        let half_size = (self.font.char_size() * size).half();
 
-        let position = self.position;
-
-        let mut x_offset = 0.0;
-
-        for c in self.content.chars() {
-            let position = Vector2::new(x_offset, position.y());
+        let mut x_offset = self.position.x();
+        
+        let mut next_char = |i, c| {
+            let position = Vector2::new(x_offset, self.position.y());
 
             let char_idx = self.font.char_index(c);
             if char_idx.is_none() {
-                continue;
+                panic!(); // todo: error handling
             }
             let char_idx = *char_idx.unwrap();
 
             let width = self.font.index_width(char_idx) as f32;
-            x_offset += width * self.font_size + self.spacing;
+            x_offset += width * size + self.spacing;
 
             let char_sprite = self.font.sprite_sheet().get(char_idx);
             if char_sprite.is_none() {
-                continue;
+                panic!(); // todo: error
             }
             let char_sprite = char_sprite.unwrap();
+            let i = i * 4;
 
-            self.vertices.extend_from_slice(&TextAreaVertices::array([
-                vertex!([position.x() - half_size.x(), position.y() - half_size.y()], [char_sprite.left(),  char_sprite.top()   ], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() - half_size.y()], [char_sprite.right(), char_sprite.top()   ], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() + half_size.y()], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
-                vertex!([position.x() - half_size.x(), position.y() + half_size.y()], [char_sprite.left(),  char_sprite.bottom()], Sampler2D(0))
-            ]));
-        }
+            self.params.0[i]     = [char_sprite.left(),  char_sprite.top()   ];
+            self.params.0[i + 1] = [char_sprite.right(), char_sprite.top()   ];
+            self.params.0[i + 2] = [char_sprite.right(), char_sprite.bottom()];
+            self.params.0[i + 3] = [char_sprite.left(),  char_sprite.bottom()];
+
+            return self.material.vertices([
+                [position.x() - half_size.x(), position.y() - half_size.y()],
+                [position.x() + half_size.x(), position.y() - half_size.y()],
+                [position.x() + half_size.x(), position.y() + half_size.y()],
+                [position.x() - half_size.x(), position.y() + half_size.y()]
+            ], &self.material.data_slice(&self.params, i));
+        };
+
+        let mut current_char = next_char(0, self.content[0]);
+
+        self.vertices = Some(array::from_fn(|i| {
+            if i % 4 == 0 && i != 0 {
+                current_char = next_char(i / 4, self.content[i / 4]);
+            }
+
+            current_char[i % 4].clone()
+        }))
     }
 }

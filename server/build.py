@@ -37,9 +37,9 @@ if __name__ == '__main__':
     envs = {**os.environ.copy(), 'RUSTFLAGS': '-Awarnings'}
     
     mod_override = [i for i, arg in enumerate(sys.argv) if arg == '-m' or arg == '--mods']
-    mods = fetch_mods(f'{dname}/mods/mods.ron') if len(mod_override) == 0 else [sys.argv[mod_override[0] + 1]]
+    mods = fetch_mods(f'{dname}/mods/mods.ron') if len(mod_override) == 0 else [] if len(sys.argv) - mod_override[0] == 1 else [sys.argv[mod_override[0] + 1]]
 
-    print(f'{BOLD}{BLUE}=>> COMPILING EVERYTHING:{ENDC}')
+    print(f'{BOLD}{BLUE}=>> COMPILING SELECTED MODS:{ENDC}')
 
     processes = []
     for mod in mods:

@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use aeonetica_engine::{Id, TypeId, error::*, log, math::camera::Camera, util::{id_map::IdMap, type_to_id}, time::Time};
 
-use crate::client_runtime::ClientHandleBox;
+use crate::{client_runtime::ClientHandleBox, renderer::window::Window};
 use crate::{renderer::{window::events::Event, layer::Layer, Renderer}, client_runtime::ClientRuntime, data_store::DataStore};
 
 use super::{layer::LayerUpdater, shader::PostProcessingLayer, util::Target};
@@ -32,12 +32,12 @@ pub(crate) struct LayerBox {
 }
 
 impl LayerBox {
-    fn attach(&mut self) {
-        self.layer.attach(&mut self.renderer)
+    fn attach(&mut self, store: &mut DataStore) {
+        self.layer.attach(&mut self.renderer, store)
     }
 
-    fn quit(&mut self) {
-        self.layer.quit(&mut self.renderer)
+    fn quit(&mut self, store: &mut DataStore) {
+        self.layer.quit(&mut self.renderer, store)
     }
 
     fn on_render(&mut self, id: &mut Id, handles: &mut IdMap<ClientHandleBox>, target: &Target, store: &mut DataStore, time: Time) {
@@ -61,7 +61,7 @@ impl LayerStack {
         }
     }
 
-    fn push<L: Layer + 'static>(&mut self, layer: L) {
+    fn push<L: Layer + 'static>(&mut self, layer: L, store: &mut DataStore) {
 
         let mut l = LayerBox {
             camera: layer.instantiate_camera(),
@@ -69,7 +69,7 @@ impl LayerStack {
             renderer: Renderer::new(),
         };
         
-        l.attach();
+        l.attach(store);
 
         let l: Rc<RefCell<_>> = Rc::new(RefCell::new(l));
 
@@ -78,14 +78,14 @@ impl LayerStack {
         self.insert_index += 1;
     }
 
-    fn push_overlay<L: Layer + 'static>(&mut self, layer: L) {
+    fn push_overlay<L: Layer + 'static>(&mut self, layer: L, store: &mut DataStore) {
         let mut l = LayerBox {
             camera: layer.instantiate_camera(),
             layer: Box::new(layer),
             renderer: Renderer::new(),
         };
 
-        l.attach();
+        l.attach(store);
 
         let l: Rc<RefCell<_>> = Rc::new(RefCell::new(l));
 
@@ -108,15 +108,15 @@ impl RenderContext {
     }
 
     /// Fails if the layer already exists.
-    pub fn push<L: Layer + 'static>(&mut self, layer: L) -> ErrorResult<()> {
+    pub fn push<L: Layer + 'static>(&mut self, layer: L, store: &mut DataStore) -> ErrorResult<()> {
         if self.layer_stack.layer_map.contains_key(&type_to_id::<L>()) {
             return Err(LayerAlreadyExists(layer.name()).into_error());
         }
         if layer.is_overlay() {
-            self.layer_stack.push_overlay(layer);
+            self.layer_stack.push_overlay(layer, store);
         }
         else {
-            self.layer_stack.push(layer);
+            self.layer_stack.push(layer, store);
         }
         Ok(())
     }
@@ -124,10 +124,23 @@ impl RenderContext {
     pub(crate) fn on_event(&mut self, client: &mut ClientRuntime, event: Event, store: &mut DataStore) {
         for (layer_box, id) in self.layer_stack.layer_stack.iter()
             .filter(|(layer_box, _)| layer_box.borrow().layer.active()).rev() {
-            if layer_box.borrow_mut().layer.event(&event) { return; }
+            let mut layer_box = layer_box.borrow_mut();
+            let mut event = event.clone();
+
+            if let Event::MouseMoved(position) = &mut event {
+                // translate the event's position to world coordinates
+                *position = layer_box.camera.to_world(*position, Window::FRAMEBUFFER_SIZE.to_f32())
+            }
+            
+            if layer_box.layer.event(&event) { 
+                return;
+            }
+
             if client.handles.iter_mut()
                 .filter(|(_, h_box)| h_box.handle.owning_layer() == *id)
-                .any(|(_, h_box)| h_box.handle.event(&event, &mut h_box.messenger, &mut layer_box.borrow_mut().renderer, store)) { return; }
+                .any(|(_, h_box)| h_box.handle.event(&event, &mut h_box.messenger, &mut layer_box.renderer, store)) { 
+                    return;
+            }
         }
 
         log!(PACK, "Unhandled Event: {event:?}");
@@ -154,9 +167,9 @@ impl RenderContext {
         &self.post_processing_layer
     }
 
-    pub(crate) fn finish(self) {
+    pub(crate) fn finish(self, store: &mut DataStore) {
         for (layer_box, _) in self.layer_stack.layer_stack.iter() {
-            layer_box.borrow_mut().quit();
+            layer_box.borrow_mut().quit(store);
         }
         if let Some(layer) = self.post_processing_layer { layer.detach() }
     }

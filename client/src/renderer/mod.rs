@@ -212,58 +212,6 @@ impl Renderer {
         let ref_mut_ptr = self as *mut _;
         self.pipeline.pipeline(unsafe { &mut *ref_mut_ptr }, camera, target, updater, time);
     }
-
-    pub fn static_string(&mut self, string: &str, position: &Vector2<f32>, size: f32, spacing: f32, font: &BitmapFont, shader: &Rc<Program>, z_index: u8) {
-        type Vertices = BufferLayoutBuilder<(Vertex, TexCoord, TextureID)>;
-        let layout = Rc::new(Vertices::build());
-
-        let size = size / font.char_size().y;
-
-        let half_size = font.char_size() * size / 2.0;
-
-        let texture_id = font.sprite_sheet().texture().id();
-
-        const INDICES: [u32; 6] = [0, 1, 2, 2, 3, 0];
-
-        let mut x_offset = 0.0;
-
-        for c in string.chars() {
-            let position = Vector2::new(x_offset, position.y());
-
-            let char_idx = font.char_index(c);
-            if char_idx.is_none() {
-                continue;
-            }
-            let char_idx = *char_idx.unwrap();
-
-            let width = font.index_width(char_idx) as f32;
-            x_offset += width * size + spacing;
-
-            let char_sprite = font.sprite_sheet().get(char_idx);
-            if char_sprite.is_none() {
-                continue;
-            }
-            let char_sprite = char_sprite.unwrap();
-
-            let vertices = Vertices::array([
-                vertex!([position.x() - half_size.x(), position.y() - half_size.y()], [char_sprite.left(), char_sprite.top()], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() - half_size.y()], [char_sprite.right(), char_sprite.top()], Sampler2D(0)),
-                vertex!([position.x() + half_size.x(), position.y() + half_size.y()], [char_sprite.right(), char_sprite.bottom()], Sampler2D(0)),
-                vertex!([position.x() - half_size.x(), position.y() + half_size.y()], [char_sprite.left(), char_sprite.bottom()], Sampler2D(0))
-            ]);
-
-            self.add_vertices(
-                &mut VertexData::new_textured(
-                    util::to_raw_byte_slice!(&vertices),
-                    INDICES.as_slice(),
-                    &layout,
-                    shader,
-                    z_index,
-                    texture_id
-                )
-            );
-        }
-    }
 } 
 
 #[cfg(feature = "gpu_debug")]

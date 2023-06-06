@@ -1,8 +1,7 @@
 
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
+use std::net::{SocketAddr, TcpListener, UdpSocket};
 
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -15,7 +14,6 @@ use aeonetica_engine::networking::{MAX_PACKET_SIZE, SendMode};
 use aeonetica_engine::networking::client_packets::ClientPacket;
 use aeonetica_engine::networking::server_packets::ServerPacket;
 use aeonetica_engine::util::id_map::IdMap;
-use crate::server_runtime::ServerRuntime;
 
 mod protocol;
 
@@ -25,8 +23,6 @@ pub(crate) struct NetworkServer {
     pub(crate) clients: IdMap<ClientHandle>,
     pub(crate) tcp: Arc<Mutex<HashMap<SocketAddr, Arc<Mutex<Vec<Vec<u8>>>>>>>
 }
-
-pub(crate) type ReplyFn = Box<dyn Fn(&mut ServerRuntime, &ClientPacket)>;
 
 pub(crate) struct ClientHandle {
     pub(crate) last_seen: Instant,

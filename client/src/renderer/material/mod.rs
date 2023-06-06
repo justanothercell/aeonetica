@@ -7,12 +7,14 @@ use super::{shader::{self, UniformStr}, buffer::{Vertex, Color, TexCoord, Textur
 pub trait Material {
     type Layout;
     type Data<const N: usize>;
-    type VertexTuple;
+    type VertexTuple: Clone;
 
     fn shader(&self) -> &Rc<shader::Program>;
     fn texture_id<const N: usize>(data: &Self::Data<N>) -> Option<RenderID>;
     fn layout<'a>() -> &'a Rc<BufferLayout>;
     fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N];
+    fn data_slice<const N: usize, const NN: usize>(&self, data: &Self::Data<N>, offset: usize) -> Self::Data<NN>;
+    fn default_data<const N: usize>(&self) -> Self::Data<N>;
 }
 
 pub struct FlatColor {
@@ -68,6 +70,14 @@ impl Material for FlatColor {
     fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], *data)))
     }
+
+    fn data_slice<const N: usize, const NN: usize>(&self, data: &Self::Data<N>, offset: usize) -> Self::Data<NN> {
+        std::array::from_fn(|i| data[i + offset])
+    }
+
+    fn default_data<const N: usize>(&self) -> Self::Data<N> {
+        [0.0; 4]
+    }
 }
 
 pub struct FlatTexture {
@@ -120,5 +130,13 @@ impl Material for FlatTexture {
 
     fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], data.0[i], Sampler2D(0))))
+    }
+
+    fn data_slice<const N: usize, const NN: usize>(&self, data: &Self::Data<N>, offset: usize) -> Self::Data<NN> {
+        (std::array::from_fn(|i| data.0[i + offset]), data.1)
+    }
+
+    fn default_data<const N: usize>(&self) -> Self::Data<N> {
+        (std::array::from_fn(|_| [0.0; 2]), 0)
     }
 }

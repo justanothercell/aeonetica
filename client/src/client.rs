@@ -60,7 +60,7 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     }
 
     log!("shutting down client after {}s", time.time);
-    context.finish();
+    context.finish(store);
     window.finish();
     client.nc.borrow().send(&ClientPacket {
         client_id: client.client_id,

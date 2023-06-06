@@ -15,7 +15,7 @@ impl DefaultPipeline {
 }
 
 impl Pipeline for DefaultPipeline {
-    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, updater: LayerUpdater, time: Time) {
+    fn pipeline(&mut self, renderer: &mut Renderer, camera: &Camera, target: &Target, mut updater: LayerUpdater, time: Time) {
         renderer.begin_scene(camera);
         updater.update(renderer, time);
         renderer.draw_vertices(target);

@@ -1,5 +1,5 @@
 
-use std::cell::{RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Cursor, Write};
@@ -11,15 +11,12 @@ use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::nanoserde::SerBin;
-use aeonetica_engine::time::Time;
 use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
 use aeonetica_engine::util::id_map::IdMap;
 use crate::networking::messaging::{ClientHandle, ClientMessenger};
-use crate::renderer::Renderer;
-use crate::renderer::window::events::Event;
 use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
@@ -82,21 +79,9 @@ pub(crate) struct LoadingMod{
     available: bool
 }
 
-pub struct ClientHandleBox {
+pub(crate) struct ClientHandleBox {
     pub(crate) handle: Box<dyn ClientHandle>,
     pub(crate) messenger: ClientMessenger
-}
-
-impl ClientHandleBox {
-    #[inline(always)]
-    pub fn update(&mut self, renderer: &mut RefMut<Renderer>, store: &mut DataStore, time: Time) {
-        self.handle.update(&mut self.messenger, renderer, store, time);
-    }
-
-    #[inline(always)]
-    pub fn on_event(&mut self, event: &Event, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore) -> bool {
-        self.handle.event(event, messenger, renderer, store)
-    }
 }
 
 type LoadingModList = Rc<RefCell<HashMap<String, Rc<RefCell<LoadingMod>>>>>;

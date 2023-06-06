@@ -2,6 +2,7 @@
 #![feature(result_flattening)]
 #![feature(addr_parse_ascii)]
 #![feature(local_key_cell_methods)]
+#![feature(generic_const_exprs)]
 
 use std::net::SocketAddr;
 
@@ -14,7 +15,7 @@ mod defaults {
 }
 
 fn main() {
-	aeonetica_engine::enable_ansi_support::enable_ansi_support().unwrap_or_else(|e| eprintln!("ansi not supported in this console"));
+	aeonetica_engine::enable_ansi_support::enable_ansi_support().unwrap_or_else(|_| eprintln!("ansi not supported in this console"));
     // nc -u 127.0.01 6090
     // cargo run -- 127.0.0.1:9000 127.0.0.1:6090
     let args: Vec<_> = std::env::args().skip(1).collect();

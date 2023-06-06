@@ -1,5 +1,6 @@
 pub mod id_map;
 pub mod nullable;
+pub mod generic_assert;
 
 use std::any::{type_name};
 

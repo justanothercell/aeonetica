@@ -40,8 +40,8 @@ pub(super) struct Batch {
 }
 
 impl Batch {
-    const MAX_BATCH_VERTEX_COUNT: u32 = 6000;
-    const MAX_BATCH_INDEX_COUNT: u32 = 6000;
+    pub(super) const MAX_BATCH_VERTEX_COUNT: u32 = 6000;
+    pub(super) const MAX_BATCH_INDEX_COUNT: u32 = 6000;
 
     const TEXTURE_SLOTS: [i32; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]; // 16 is the minimum amount per stage required by OpenGL
     const NUM_TEXTURE_SLOTS: usize = Self::TEXTURE_SLOTS.len();
@@ -224,7 +224,7 @@ impl Batch {
 
         if !self.textures.is_empty() {
             const TEXTURES_UNIFORM: UniformStr = uniform_str!("u_Textures");
-            self.shader.upload_uniform(&TEXTURES_UNIFORM, &Self::TEXTURE_SLOTS.as_slice())
+            self.shader.upload_uniform(&TEXTURES_UNIFORM, Self::TEXTURE_SLOTS.as_slice())
         }
 
         self.vertex_array.bind();
@@ -327,7 +327,7 @@ impl<'a> VertexData<'a> {
         }
     }
 
-    pub fn from_material<M: Material, const N: usize>(vertices: &'a mut [u8], indices: &'a[u32], material: &'a Rc<M>, data: &M::Data<N>, z_index: u8) -> Self {
+    pub fn from_material<M: Material, const N: usize>(vertices: &'a mut [u8], indices: &'a[u32], material: &'a Rc<M>, data: &<M as Material>::Data<N>, z_index: u8) -> Self {
         Self {
             vertices,
             indices,

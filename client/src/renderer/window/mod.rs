@@ -97,7 +97,7 @@ impl Window {
     const DEFAULT_WINDOW_WIDTH: u32 = 1280;
     const DEFAULT_WINDOW_HEIGHT: u32 = 720;
     const DEFAULT_WINDOW_TITLE: &'static str = "Aeonetica Game Engine";
-    const FRAMEBUFFER_SIZE: Vector2<u32> = Vector2 { x: 1920, y: 1080 };
+    pub(super) const FRAMEBUFFER_SIZE: Vector2<u32> = Vector2 { x: 1920, y: 1080 };
 
     pub(crate) fn new(full_screen: bool) -> ErrorResult<Self> {
         let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).expect("error creating window");
@@ -224,7 +224,7 @@ impl Window {
     
         const FRAME_UNIFORM_NAME: UniformStr = uniform_str!("u_Frame");
 
-        self.framebuffer.render(0, &Target::Raw, post_processing_shader, &FRAME_UNIFORM_NAME);
+        self.framebuffer.render([(0, &FRAME_UNIFORM_NAME)], &Target::Raw, post_processing_shader);
 
         self.glfw_window.swap_buffers();
     }

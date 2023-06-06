@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::rc::Rc;
+use aeonetica_client::renderer::builtin::TextArea;
+use aeonetica_client::renderer::texture::font::BitmapFont;
 use noise::{Fbm, NoiseFn, Perlin};
 use aeonetica_client::renderer::material::FlatTexture;
 use aeonetica_client::{ClientMod, networking::messaging::{ClientHandle, ClientMessenger}, data_store::DataStore, renderer::{layer::Layer, context::RenderContext, Renderer, texture::{SpriteSheet, Texture}, builtin::Quad}};
@@ -12,7 +15,7 @@ use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::type_to_id;
-use aeonetica_engine::error::ExpectLog;
+use aeonetica_engine::error::{ExpectLog, ErrorResult};
 use aeonetica_engine::time::Time;
 
 use crate::client::pipeline::WorldRenderPipeline;
@@ -25,6 +28,7 @@ use crate::tiles::Tile;
 use debug_mod::Debug;
 
 use self::materials::GlowTexture;
+use self::pipeline::LightPositions;
 
 mod pipeline;
 pub mod materials;
@@ -53,9 +57,7 @@ impl CameraData {
 }
 
 
-pub struct WorldModClient {
-
-}
+pub struct WorldModClient;
 
 impl ClientMod for WorldModClient {
     fn init(&mut self, _flags: &Vec<String>) {
@@ -74,7 +76,8 @@ impl ClientMod for WorldModClient {
             chunks: Default::default(),
         });
 
-        context.push(WorldLayer::new()).expect("duplicate layer");
+        context.push(WorldLayer::new(), store).expect("duplicate layer");
+        context.push(UILayer::new().expect("error instanciating layer"), store).expect("duplicate layer");
         store.add_default::<Debug<WorldLayer>>();
         store.add_store(CameraData {
             position: Vector2::new(0.0, 0.0),
@@ -117,7 +120,6 @@ impl WorldHandle {
 
     pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
         let mut quads = vec![];
-        let chunks = &mut store.mut_store::<ClientWorld>().chunks;
         for (i, tile) in chunk.tiles().iter().enumerate() {
             let index = tile.sprite_sheet_index();
             if index == 0 {
@@ -128,15 +130,14 @@ impl WorldHandle {
             let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
 
             if index == Tile::Lamp as u16 {
-                let mut quad = Quad::with_glow_sprite(
+                let quad = Quad::with_glow_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
                     1, 
                     self.tile_sprites.get(index as u32 - 1).unwrap(),
                 [0.9, 0.8, 0.5, 1.0]
                 );
-                renderer.add(&mut quad);
-                quads.push(Block::Glowing(quad));
+                quads.push(Block::add_glowing(quad, *renderer, store));
             }
             else {
                 let mut quad = Quad::with_terrain_sprite(
@@ -149,7 +150,7 @@ impl WorldHandle {
                 quads.push(Block::Default(quad));
             }
         }
-        chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
+        store.mut_store::<ClientWorld>().chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
     }
 }
 
@@ -159,14 +160,24 @@ impl ClientEntity for WorldHandle {
 
 pub enum Block {
     Default(Quad<FlatTexture>),
-    Glowing(Quad<GlowTexture>)
+    Glowing(Quad<GlowTexture>, Vector2<f32>)
 }
 
 impl Block {
-    fn remove_from(&mut self, renderer: &mut Renderer) {
+    fn add_glowing(mut quad: Quad<GlowTexture>, renderer: &mut Renderer, store: &mut DataStore) -> Self {
+        renderer.add(&mut quad);
+        let light_pos = *quad.position() + quad.size().half();
+        store.mut_store::<LightPositions>().add(light_pos);
+        Self::Glowing(quad, light_pos)
+    }
+
+    fn remove_from(&mut self, renderer: &mut Renderer, store: &mut DataStore) {
         match self {
             Self::Default(quad) => renderer.remove(quad),
-            Self::Glowing(quad) => renderer.remove(quad)
+            Self::Glowing(quad, light_pos) => {
+                renderer.remove(quad);
+                store.mut_store::<LightPositions>().remove(light_pos);
+            }
         }
     }
 }
@@ -182,6 +193,7 @@ impl ClientHandle for WorldHandle {
 
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _time: Time) {
         let cam = store.get_store::<CameraData>().position;
+        let mut_ref_ptr = store as *mut _;
         let chunks = &mut store.mut_store::<ClientWorld>().chunks;
         let center_chunk: Vector2<_> = (cam / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
         for x in (center_chunk.x-2)..=(center_chunk.x+2) {
@@ -199,7 +211,7 @@ impl ClientHandle for WorldHandle {
             if d.x.abs() > 2 || d.y.abs() > 2 {
                 if let ClientChunk::Chunk(_, quads) = v {
                     for quad in quads {
-                        quad.remove_from(renderer);
+                        quad.remove_from(renderer, unsafe { &mut *mut_ref_ptr });
                     }
                 }
                 false
@@ -210,21 +222,21 @@ impl ClientHandle for WorldHandle {
 
 pub struct WorldLayer {
     shake_noise: Box<dyn NoiseFn<f64, 2>>,
-    manual_shake_queued: bool,
+    manual_shake_queued: bool
 }
 
 impl WorldLayer {
     fn new() -> Self {
         Self {
             shake_noise: Box::new(Fbm::<Perlin>::new(0)),
-            manual_shake_queued: false,
+            manual_shake_queued: false
         }
     }
 }
 
 impl Layer for WorldLayer {
-    fn attach(&mut self, renderer: &mut Renderer) {
-        renderer.set_pipeline(WorldRenderPipeline::new().expect_log());
+    fn attach(&mut self, renderer: &mut Renderer, store: &mut DataStore) {
+        renderer.set_pipeline(WorldRenderPipeline::new(store).expect_log());
     }
 
     fn instantiate_camera(&self) -> Camera {
@@ -261,7 +273,45 @@ impl Layer for WorldLayer {
                 self.manual_shake_queued = true;
                 true
             }
+            Event::MouseMoved(position) => {
+                log!(PACK, "mouse moved to: {position}");
+                true
+            }
             _ => false
         }
+    }
+}
+
+struct UILayer {
+    font: Rc<BitmapFont>, 
+    fps_display: Nullable<TextArea<48, 12>>
+}
+
+impl Layer for UILayer {
+    fn instantiate_camera(&self) -> Camera {
+        Camera::new(0.0, 160.0, 90.0, 0.0, 1.0, -1.0)
+    }
+
+    fn attach(&mut self, renderer: &mut Renderer, _store: &mut DataStore) {
+        self.fps_display = Nullable::Value(TextArea::<48, 12>::with_string(Vector2::new(2.0, 2.0), 3, 3.0, 0.5, self.font.clone(), FlatTexture::get(), "FPS: "));
+        renderer.add(&mut *self.fps_display);
+    }
+
+    fn post_handles_update(&mut self, _store: &mut DataStore, renderer: &mut Renderer, time: Time) {
+        let fps = 1.0 / time.delta;
+        (*self.fps_display).set_string(format!("FPS: {}", fps as i32));
+        let _ = renderer.modify(&mut *self.fps_display);
+    }
+}
+
+impl UILayer {
+    fn new() -> ErrorResult<Self> {
+        Ok(Self {
+            font: Rc::new(BitmapFont::from_texture_and_fontdata(
+                Texture::from_bytes(include_bytes!("../../assets/fonts/default/default.png"))?, 
+                include_str!("../../assets/fonts/default/default.bmf")
+            )?),
+            fps_display: Nullable::Null
+        })
     }
 }

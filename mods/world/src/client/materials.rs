@@ -21,6 +21,10 @@ pub(super) fn terrain_material() -> Rc<FlatTexture> {
     TERRAIN_MATERIAL_INSTANCE.with(|material| material.clone())
 }
 
+pub(super) fn terrain_shader() -> Rc<shader::Program> {
+    TERRAIN_SHADER.with(|shader| shader.clone())
+}
+
 pub trait WithTerrain {
     fn with_terrain_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID) -> Self;
     fn with_terrain_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite) -> Self;
@@ -77,6 +81,14 @@ impl Material for GlowTexture {
 
     fn vertices<const N: usize>(&self, vertices: [[f32; 2]; N], data: &Self::Data<N>) -> [Self::VertexTuple; N] {
         Self::Layout::array(std::array::from_fn(|i| vertex!(vertices[i], data.0[i], Sampler2D(0), data.2)))
+    }
+
+    fn data_slice<const N: usize, const NN: usize>(&self, data: &Self::Data<N>, offset: usize) -> Self::Data<NN> {
+        (std::array::from_fn(|i| data.0[offset + i]), data.1, data.2)
+    }
+
+    fn default_data<const N: usize>(&self) -> Self::Data<N> {
+        (std::array::from_fn(|_| [0.0; 2]), 0, [0.0; 4])
     }
 }
 
