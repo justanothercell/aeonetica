@@ -50,8 +50,9 @@ layout (location = 1) out vec4 r_LightMap;
 void main() {
     vec3 total_diffuse = vec3(u_AmbientLightStrength);
 
+    float intensity;
     for(uint i = 0; i < u_NumLights; i++) {
-        float intensity = u_LightIntensities[i];
+        intensity = u_LightIntensities[i];
         total_diffuse += u_LightColors[i] * (intensity - min(v_LightDistances[i], intensity)) / intensity;
     }
 
