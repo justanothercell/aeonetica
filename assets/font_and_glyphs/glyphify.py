@@ -88,7 +88,7 @@ for item in re.findall(r'\[[^\]]*\]|.', out):
                         mdx = dx
                     outimg[y + dy + 1,x + dx + 1,:] = glyphs[p[1] * 9  + dy,p[0] * 9  + dx,:]
         else:
-            mdx = 5
+            mdx = 3
         x += mdx + 1
 
 mx = max(x, mx)
