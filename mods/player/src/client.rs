@@ -25,7 +25,7 @@ use debug_mod::Debug;
 use world_mod::common::{GRAVITY, WorldView};
 use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraData;
-use world_mod::client::materials::WithTerrain;
+use world_mod::client::materials::{WithTerrain, terrain_material};
 use crate::server::Player;
 
 pub struct PlayerModClient {
@@ -147,6 +147,7 @@ impl ClientHandle for PlayerHandle {
             Vector2::new(PLAYER_SIZE, PLAYER_SIZE),
             10,
             store.get_or_create(PlayerTexture::load).get().id(),
+            terrain_material(store)
         ))
     }
 

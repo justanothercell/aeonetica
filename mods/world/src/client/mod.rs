@@ -9,7 +9,7 @@ use aeonetica_client::renderer::window::events::{Event, KeyCode};
 use aeonetica_client::renderer::window::OpenGlRenderContextProvider;
 use aeonetica_engine::{log, TypeId};
 use aeonetica_engine::math::camera::Camera;
-use aeonetica_engine::math::vector::Vector2;
+use aeonetica_engine::math::vector::*;
 use aeonetica_engine::networking::messaging::ClientEntity;
 use aeonetica_engine::networking::SendMode;
 use aeonetica_engine::util::id_map::IdMap;
@@ -27,10 +27,11 @@ use crate::tiles::Tile;
 
 use debug_mod::Debug;
 
-use self::materials::GlowTexture;
-use self::pipeline::LightPositions;
+use self::materials::{GlowTexture, terrain_material};
+use self::light::{LightStore, Light};
 
 mod pipeline;
+mod light;
 pub mod materials;
 
 #[allow(clippy::large_enum_variant)]
@@ -135,7 +136,7 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     1, 
                     self.tile_sprites.get(index as u32 - 1).unwrap(),
-                [0.9, 0.8, 0.5, 1.0]
+                [0.9, 0.9, 0.7, 1.0]
                 );
                 quads.push(Block::add_glowing(quad, *renderer, store));
             }
@@ -145,6 +146,7 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     0, 
                     self.tile_sprites.get(index as u32 - 1).unwrap(),
+                    terrain_material(store)
                 );
                 renderer.add(&mut quad);
                 quads.push(Block::Default(quad));
@@ -160,15 +162,17 @@ impl ClientEntity for WorldHandle {
 
 pub enum Block {
     Default(Quad<FlatTexture>),
-    Glowing(Quad<GlowTexture>, Vector2<f32>)
+    Glowing(Quad<GlowTexture>, Light)
 }
 
 impl Block {
     fn add_glowing(mut quad: Quad<GlowTexture>, renderer: &mut Renderer, store: &mut DataStore) -> Self {
         renderer.add(&mut quad);
+        let light_color = quad.light_color();
         let light_pos = *quad.position() + quad.size().half();
-        store.mut_store::<LightPositions>().add(light_pos);
-        Self::Glowing(quad, light_pos)
+        let light = Light::new(light_pos, 7.5, Vector3::new(light_color[0], light_color[1], light_color[2]));
+        store.mut_store::<LightStore>().add(&light);
+        Self::Glowing(quad, light)
     }
 
     fn remove_from(&mut self, renderer: &mut Renderer, store: &mut DataStore) {
@@ -176,7 +180,7 @@ impl Block {
             Self::Default(quad) => renderer.remove(quad),
             Self::Glowing(quad, light_pos) => {
                 renderer.remove(quad);
-                store.mut_store::<LightPositions>().remove(light_pos);
+                store.mut_store::<LightStore>().remove(light_pos);
             }
         }
     }
