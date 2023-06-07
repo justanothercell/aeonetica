@@ -57,5 +57,5 @@ void main() {
     }
 
     r_Color = texture(u_Textures[v_TexIdx], v_TexCoord) * vec4(total_diffuse, 1.0);
-    r_LightMap = vec4(0.0, 0.0, 0.0, 1.0);
+    r_LightMap = vec4(0.0, 0.0, 0.0, r_Color.a);
 }
