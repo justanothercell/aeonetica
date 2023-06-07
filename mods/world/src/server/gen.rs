@@ -34,7 +34,6 @@ impl World {
     pub(crate) fn mut_init_chunk_at(&mut self, chunk_pos: Vector2<i32>, stage: Population) -> &mut Chunk{
         let mut p = self.mut_chunk_at_raw(chunk_pos).population;
         while (p as u8) < stage as u8 {
-            println!("{} {:?} {:?}", chunk_pos, p, stage);
             match p {
                 Population::Uninit => self.populate_terrain(chunk_pos),
                 Population::TerrainRaw => self.post_process_terrain(chunk_pos),

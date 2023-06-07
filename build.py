@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import subprocess
-import platform
 import zipfile
 import sys
 import os
@@ -10,7 +9,7 @@ import server.build as server
 
 osname = platform.system().lower()
 binary_ext = '.exe' if osname == 'windows' else ''
-target_platform = f'{platform.machine()}-{osname}'
+target_platform = subprocess.check_output(['rustc', '-vV']).decode('utf-8').split('\n')[4][6:]
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -77,8 +76,8 @@ if __name__ == '__main__':
         with zipfile.ZipFile(server_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(f'server/target/{mode}/{server_bin}', server_bin)
             
-            for file in os.listdir(os.fsencode('server/mods')):
-                filename = 'mods/' + os.fsdecode(file)
+            for file in os.listdir('server/mods'):
+                filename = 'mods/' + file
                 if filename.endswith('.zip') or filename.endswith('.ron'):
                     zipf.write('server/' + filename, filename)
         
