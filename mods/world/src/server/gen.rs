@@ -1,7 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
-use std::hash::{SipHasher, Hasher};
+use std::hash::Hasher;
 
-use aeonetica_engine::log;
 use noise::{Fbm, NoiseFn, OpenSimplex, RidgedMulti, Terrace, Worley};
 use aeonetica_engine::math::vector::Vector2;
 use rand::{SeedableRng, Rng};
