@@ -1,10 +1,16 @@
 #!/usr/bin/python3
 
 import subprocess
+import platform
+import zipfile
 import sys
 import os
 
 import server.build as server
+
+osname = platform.system().lower()
+binary_ext = '.exe' if osname == 'windows' else ''
+target_platform = f'{platform.machine()}-{osname}'
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -49,4 +55,31 @@ if __name__ == '__main__':
 
     while len(processes) > 0:
         processes[:] = [x for x in processes if not finished(*x)]
-
+        
+    if '-p' in sys.argv[1:] or '--package' in sys.argv[1:]:
+        mode = 'release' if '--release' in mode else 'debug'
+        
+        print(f'{BOLD}{BLUE}=>> PACKAGING FOR PLATFORM {target_platform}{ENDC}')
+        
+        # package client
+        client_bin = 'client' + binary_ext
+        client_package = f'client-{target_platform}-{mode}.zip'
+        print(f'{GREEN} -> generating `{client_package}`{ENDC}')
+        
+        with zipfile.ZipFile(client_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(f'client/target/{mode}/{client_bin}', client_bin)
+        
+        # package server and mods
+        server_bin = 'server' + binary_ext
+        server_package = f'server-{target_platform}-{mode}.zip'
+        print(f'{GREEN} -> generating `{server_package}`{ENDC}')
+        
+        with zipfile.ZipFile(server_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(f'server/target/{mode}/{server_bin}', server_bin)
+            
+            for file in os.listdir(os.fsencode('server/mods')):
+                filename = 'mods/' + os.fsdecode(file)
+                if filename.endswith('.zip') or filename.endswith('.ron'):
+                    zipf.write('server/' + filename, filename)
+        
+    print(f'{BOLD}done.{ENDC}')
