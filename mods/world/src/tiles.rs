@@ -55,4 +55,5 @@ pub enum ForegroundTile {
     MetalFrameFloorM,
     MetalFrameFloorR,
     MetalFrameFloorMSupport,
+    Water
 }
