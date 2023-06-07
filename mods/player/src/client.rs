@@ -111,20 +111,20 @@ impl PlayerHandle {
         self.is_controlling = is_controlling
     }
 
-    pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) {
-        if !self.is_controlling {
-            if teleporting {
-                self.p_position = position;
-                self.interpolation_delta = 1.0;
-                self.position = position;
-                let quad = &mut *self.quad;
-                quad.set_position(self.position);
-            } else {
-                self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
-                self.interpolation_delta = 0.0;
-                self.position = position;
-            }
-        }
+    pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) { 
+		if teleporting {
+			self.p_position = position;
+			self.interpolation_delta = 1.0;
+			self.position = position;
+			let quad = &mut *self.quad;
+			quad.set_position(self.position);
+		} else {
+			if !self.is_controlling {
+				self.p_position = self.p_position + (self.position - self.p_position) * self.interpolation_delta;
+				self.interpolation_delta = 0.0;
+				self.position = position;
+			}
+		}
     }
 }
 

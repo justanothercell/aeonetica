@@ -7,9 +7,13 @@ use crate::tiles::Tile;
 pub const CHUNK_SIZE: usize = 16;
 pub const GRAVITY: f32 = -20.0;
 
-#[derive(SerBin, DeBin, Debug, Clone)]
+#[derive(SerBin, DeBin, Debug, Copy, Clone)]
+#[repr(u8)]
 pub enum Population {
     Uninit,
+    TerrainRaw,
+    TerrainPostProcess,
+    Structures,
     Finished
 }
 

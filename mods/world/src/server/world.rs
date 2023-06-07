@@ -18,7 +18,7 @@ use crate::tiles::Tile;
 
 pub const WORLD: &str = "WORLD";
 
-struct ChunkHolder {
+pub(crate) struct ChunkHolder {
     further_x: Option<Box<ChunkHolder>>,
     further_y: Option<Box<ChunkHolder>>,
     chunk: Chunk,
@@ -81,65 +81,12 @@ impl World {
         self.get_chunk_at(World::chunk(pos)).get_tile(World::pos_in_chunk(pos))
     }
 
-    pub fn try_get_tile_no_gen(&self, pos: Vector2<i32>) -> Nullable<Tile> {
-        Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_tile(World::pos_in_chunk(pos)))
-    }
-
     pub fn set_tile_at(&mut self, pos: Vector2<i32>, t: Tile) {
         self.mut_chunk_at(World::chunk(pos)).set_tile(World::pos_in_chunk(pos), t)
     }
 
     pub fn mut_chunk_at(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
-        if let Population::Finished = self.mut_chunk_at_raw(chunk_pos).population {
-            self.mut_chunk_at_raw(chunk_pos)
-        } else {
-            self.populate(chunk_pos);
-            self.mut_chunk_at_raw(chunk_pos)
-        }
-    }
-
-    pub fn try_get_chunk_no_gen(&self, chunk_pos: Vector2<i32>) -> Nullable<&Chunk> {
-        if self.cached_chunk_pos == chunk_pos {
-            return Nullable::Value(unsafe { &*(self.cached_chunk_raw_ptr as *const Chunk) })
-        }
-
-        let mut cp = chunk_pos;
-        let mut chunk_ref = match (chunk_pos.x >= 0, chunk_pos.y >= 0) {
-            (true, true) => {
-                &self.origin_ne
-            },
-            (true, false) => {
-                cp.y = -cp.y - 1;
-                &self.origin_se
-            },
-            (false, true) => {
-                cp.x = -cp.x - 1;
-                &self.origin_nw
-            },
-            (false, false) => {
-                cp.x = -cp.x - 1;
-                cp.y = -cp.y - 1;
-                &self.origin_sw
-            },
-        };
-        while cp.x > 0 {
-            cp.x -= 1;
-            if chunk_ref.further_x.is_none() {
-                return Nullable::Null
-            }
-            chunk_ref = chunk_ref.further_x.as_ref().unwrap();
-        }
-        while cp.y > 0 {
-            cp.y -= 1;
-            if chunk_ref.further_y.is_none() {
-                return Nullable::Null
-            }
-            chunk_ref = chunk_ref.further_y.as_ref().unwrap();
-        }
-        let mut_self = unsafe { &mut *(self as *const Self as usize as *mut Self)};
-        mut_self.cached_chunk_pos = chunk_pos;
-        mut_self.cached_chunk_raw_ptr = &chunk_ref.chunk as *const Chunk as usize;
-        Nullable::Value(&chunk_ref.chunk)
+        self.mut_init_chunk_at(chunk_pos, Population::Finished)
     }
 
 
@@ -199,6 +146,54 @@ impl World {
     pub(crate) fn request_world_chunk(id: &EntityId, engine: &mut Engine, client: &ClientId, chunk_pos: Vector2<i32>) {
         let chunk = engine.mut_module_of::<Self>(id).get_chunk_at(chunk_pos).clone();
         engine.mut_module_of::<Messenger>(id).call_client_fn_for(WorldHandle::receive_chunk_data, client, chunk, SendMode::Safe);
+    }
+
+    pub fn try_get_tile_no_gen(&self, pos: Vector2<i32>) -> Nullable<Tile> {
+        Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_tile(World::pos_in_chunk(pos)))
+    }
+
+    pub fn try_get_chunk_no_gen(&self, chunk_pos: Vector2<i32>) -> Nullable<&Chunk> {
+        if self.cached_chunk_pos == chunk_pos {
+            return Nullable::Value(unsafe { &*(self.cached_chunk_raw_ptr as *const Chunk) })
+        }
+
+        let mut cp = chunk_pos;
+        let mut chunk_ref = match (chunk_pos.x >= 0, chunk_pos.y >= 0) {
+            (true, true) => {
+                &self.origin_ne
+            },
+            (true, false) => {
+                cp.y = -cp.y - 1;
+                &self.origin_se
+            },
+            (false, true) => {
+                cp.x = -cp.x - 1;
+                &self.origin_nw
+            },
+            (false, false) => {
+                cp.x = -cp.x - 1;
+                cp.y = -cp.y - 1;
+                &self.origin_sw
+            },
+        };
+        while cp.x > 0 {
+            cp.x -= 1;
+            if chunk_ref.further_x.is_none() {
+                return Nullable::Null
+            }
+            chunk_ref = chunk_ref.further_x.as_ref().unwrap();
+        }
+        while cp.y > 0 {
+            cp.y -= 1;
+            if chunk_ref.further_y.is_none() {
+                return Nullable::Null
+            }
+            chunk_ref = chunk_ref.further_y.as_ref().unwrap();
+        }
+        let mut_self = unsafe { &mut *(self as *const Self as usize as *mut Self)};
+        mut_self.cached_chunk_pos = chunk_pos;
+        mut_self.cached_chunk_raw_ptr = &chunk_ref.chunk as *const Chunk as usize;
+        Nullable::Value(&chunk_ref.chunk)
     }
 }
 

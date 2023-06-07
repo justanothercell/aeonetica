@@ -1,13 +1,17 @@
 use aeonetica_engine::nanoserde::{self, DeBin, SerBin};
 
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, SerBin, DeBin)]
+#[derive(Debug, Copy, Clone, SerBin, DeBin, PartialEq)]
 pub enum Tile {
     Wall,
-    FloorStoneBrick,
-    FloorStone,
-    FloorHardStone,
-    Lamp
+    StoneBrick,
+    MossyStoneBrick,
+    Stone,
+    HardStone,
+    Lamp,
+    QuarteredLamp,
+    LabWall,
+    LabBrickWall
 }
 
 impl Tile {
@@ -17,5 +21,9 @@ impl Tile {
 
     pub fn is_solid(&self) -> bool {
         (*self as u16) == 0
+    }
+
+    pub fn is_natural(&self) -> bool {
+        matches!(self, Tile::Wall | Tile::StoneBrick | Tile::Stone | Tile::HardStone)
     }
 }

@@ -1,7 +1,11 @@
-use noise::{Fbm, NoiseFn, OpenSimplex, RidgedMulti, Terrace, Worley};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{SipHasher, Hasher};
+
 use aeonetica_engine::log;
+use noise::{Fbm, NoiseFn, OpenSimplex, RidgedMulti, Terrace, Worley};
 use aeonetica_engine::math::vector::Vector2;
-use crate::common::{CHUNK_SIZE, Population};
+use rand::{SeedableRng, Rng};
+use crate::common::{CHUNK_SIZE, Population, Chunk, WorldView};
 use crate::server::world::World;
 use crate::tiles::Tile;
 
@@ -27,8 +31,31 @@ impl GenProvider {
 }
 
 impl World {
-    pub(crate) fn populate(&mut self, chunk_pos: Vector2<i32>) {
-        log!(WARN, "populated {chunk_pos}");
+    pub(crate) fn mut_init_chunk_at(&mut self, chunk_pos: Vector2<i32>, stage: Population) -> &mut Chunk{
+        let mut p = self.mut_chunk_at_raw(chunk_pos).population;
+        while (p as u8) < stage as u8 {
+            println!("{} {:?} {:?}", chunk_pos, p, stage);
+            match p {
+                Population::Uninit => self.populate_terrain(chunk_pos),
+                Population::TerrainRaw => self.post_process_terrain(chunk_pos),
+                Population::TerrainPostProcess => self.structurize_chunk(chunk_pos),
+                Population::Structures => self.mut_chunk_at_raw(chunk_pos).population = Population::Finished,
+                Population::Finished => unreachable!("finished should always be last population stage"),
+            }
+            p = self.mut_chunk_at_raw(chunk_pos).population;
+        }
+        self.mut_chunk_at_raw(chunk_pos)
+    }
+
+    pub fn get_init_tile_at(&mut self, pos: Vector2<i32>, stage: Population) -> Tile {
+        self.mut_init_chunk_at(World::chunk(pos), stage).get_tile(World::pos_in_chunk(pos))
+    }
+
+    pub fn set_init_tile_at(&mut self, pos: Vector2<i32>, stage: Population, t: Tile) {
+        self.mut_init_chunk_at(World::chunk(pos), stage).set_tile(World::pos_in_chunk(pos), t)
+    }
+
+    fn populate_terrain(&mut self, chunk_pos: Vector2<i32>) {
         let gen = self.generator.clone();
         let chunk = self.mut_chunk_at_raw(chunk_pos);
         let scale = 0.75;
@@ -52,16 +79,16 @@ impl World {
                         (gen.cave_noise.get((p + Vector2::new(0.0, -scale)).into_array()) > 0.0) as i32;
                 if accent_2 {
                     chunk.set_tile((x, y).into(), if accent > 1 {
-                        Tile::FloorHardStone
+                        Tile::HardStone
                     } else {
-                        Tile::FloorStoneBrick
+                        Tile::StoneBrick
                     })
                 }
                 else if (current && around > 1) || around > 2 {
                     chunk.set_tile((x, y).into(), if accent > 1 {
-                        Tile::FloorStone
+                        Tile::Stone
                     } else {
-                        Tile::FloorStoneBrick
+                        Tile::StoneBrick
                     })
                 }
             }
@@ -70,6 +97,56 @@ impl World {
         // TEMPORARY:
         chunk.set_tile(Vector2::default(), Tile::Lamp);
         
-        chunk.population = Population::Finished;
+        chunk.population = Population::TerrainRaw;
+    }
+
+    fn post_process_terrain(&mut self, chunk_pos: Vector2<i32>) {
+        let pos = chunk_pos * 16;
+        for x in 0..CHUNK_SIZE as i32 {
+            for y in 0..CHUNK_SIZE as i32 {
+                if self.get_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw) != Tile::Wall {
+                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), Population::TerrainRaw) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), Population::TerrainRaw) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), Population::TerrainRaw) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), Population::TerrainRaw) == Tile::Wall) as u8;
+                    if s == 4 {
+                        self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw, Tile::Wall)
+                    }
+                } else {
+                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), Population::TerrainRaw) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), Population::TerrainRaw) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), Population::TerrainRaw) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), Population::TerrainRaw) != Tile::Wall) as u8;
+                    if s == 4 {
+                        self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw, Tile::StoneBrick)
+                    }
+                }
+            }
+        }
+        self.mut_chunk_at_raw(chunk_pos).population = Population::TerrainPostProcess;
+    }
+
+    fn structurize_chunk(&mut self, chunk_pos: Vector2<i32>) {
+        self.mut_chunk_at_raw(chunk_pos).population = Population::Structures;
+        if chunk_pos.mag_sq() <= 2 { return }
+        let pos = chunk_pos * 16;
+        let mut rng = rand::rngs::StdRng::seed_from_u64(self.chunk_hash_with_seed_and_salt(pos, 0));
+        if rng.gen_ratio(1, 10) {
+            for x in 3..(CHUNK_SIZE-3) as i32 {
+                for y in 3..(CHUNK_SIZE-3) as i32 {
+                    self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainPostProcess, 
+                    if (x == 3) as u8 + (y == 3) as u8 + (x == CHUNK_SIZE as i32 - 4) as u8 + (y == CHUNK_SIZE as i32 - 4) as u8 > 1 { Tile::Lamp } else { Tile::LabWall })
+                }
+            }
+        }
+    }
+
+    fn chunk_hash_with_seed_and_salt(&self, pos: Vector2<i32>, salt: u64) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(self.generator.seed);
+        hasher.write_i32(pos.x);
+        hasher.write_i32(pos.y);
+        hasher.write_u64(salt);
+        hasher.finish()
     }
 }

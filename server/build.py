@@ -50,15 +50,22 @@ if __name__ == '__main__':
     total = len(processes)
     print(f'Queued {total} builds: {[x[0] for x in processes]}')
 
+    finished_msgs = []
+
     def finished(n, p):
         status = p.poll()
         if status is None:
             return False
         print(f'completed build {BOLD}{n}{ENDC} with exit status: {status} ({total - len(processes) + 1} of {total})')
+        finished_msgs.append(f'{BOLD}{n}{ENDC} with exit status {status}')
         return True
         
     while len(processes) > 0:
         processes[:] = [x for x in processes if not finished(*x)]
+    
+    print(f'{BOLD} ALL MODS BUILT: {ENDC}')
+    for msg in finished_msgs:
+        print(f'    {msg}')
     
     os.chdir(dname)
     print(f'{BLUE}{BOLD}=>> COMPILING SERVER: {ENDC}')

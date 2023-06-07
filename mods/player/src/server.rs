@@ -31,7 +31,7 @@ impl ServerMod for PlayerModServer {
                     // creating self player
                     let mut player = engine.mut_entity(&pid);
                     player.add_module(Messenger::new::<PlayerHandle>());
-                    player.add_module(Player { position: Default::default() });
+                    player.add_module(Player { position: Vector2::new(3.0, 0.0) });
                 }
                 let prcrc = engine.get_module_of::<PlayerHandler>(id).players.clone();
                 let mut players = prcrc.borrow_mut();
