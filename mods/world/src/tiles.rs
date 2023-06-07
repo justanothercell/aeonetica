@@ -27,3 +27,31 @@ impl Tile {
         matches!(self, Tile::Wall | Tile::StoneBrick | Tile::Stone | Tile::HardStone)
     }
 }
+
+pub enum ForegroundTile {
+    Empty,
+    PipeEndL,
+    PipeLR,
+    PipeLRU,
+    PipeLRD,
+    PipeEndR,
+    PipeEndD,
+    PipeUD,
+    PipeEndU,
+    PipeRUD,
+    PipeLUD,
+    PipeLD,
+    PipeRD,
+    PipeLU,
+    PipeRU,
+    PipeLRUD,
+    ChainV,
+    ChainH,
+    FlourecentLampL,
+    FlourecentLampM,
+    FlourecentLampR,
+    MetalFrameBlock,
+    MetalFrameCeilingL,
+    MetalFrameCeilingM,
+    MetalFrameCeilingR
+}
