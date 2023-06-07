@@ -51,7 +51,8 @@ pub enum ForegroundTile {
     FlourecentLampM,
     FlourecentLampR,
     MetalFrameBlock,
-    MetalFrameCeilingL,
-    MetalFrameCeilingM,
-    MetalFrameCeilingR
+    MetalFrameFloorL,
+    MetalFrameFloorM,
+    MetalFrameFloorR,
+    MetalFrameFloorMSupport,
 }
