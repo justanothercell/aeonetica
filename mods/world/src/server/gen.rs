@@ -1,4 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
 
 use noise::{Fbm, NoiseFn, OpenSimplex, RidgedMulti, Terrace, Worley};
 use aeonetica_engine::math::vector::Vector2;
