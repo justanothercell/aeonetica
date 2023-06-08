@@ -39,14 +39,20 @@ pub(crate) struct TaskQueue {
 
 pub type EventId = TypeId;
 
+struct PrivateWaiter;
+
 pub enum WaitFor {
-    Ticks(usize),
-    Event(EventId)
+    Ticks(usize, PrivateWaiter),
+    Event(EventId, PrivateWaiter)
 }
 
 impl WaitFor {
+    pub fn ticks(ticks: usize) -> Self {
+        WaitFor::Ticks(ticks, PrivateWaiter)
+    }
+    
     pub fn event::<T: Event>() -> Self {
-        WaitFor::Event(type_to_id::<T>())
+        WaitFor::Event(type_to_id::<T>(), PrivateWaiter)
     }
 }
 
@@ -101,11 +107,11 @@ impl Engine {
         let mut fnpin = Box::into_pin(f);
         match fnpin.as_mut().resume(self) {
             GeneratorState::Yielded(yielder) => match yielder.2 {
-                WaitFor::Ticks(t) => self.tasks.heap.push(Task {
+                WaitFor::Ticks(t, _) => self.tasks.heap.push(Task {
                     timestamp: { self.tick + t },
                     func: Box::from(fnpin),
                 }),
-                WaitFor::Event(event) => {
+                WaitFor::Event(event, _) => {
                     if let Entry::Vacant(e) = self.tasks.event_queue.entry(event) {
                         e.insert(vec![Box::from(fnpin)]);
                     } else {
