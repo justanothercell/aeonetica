@@ -141,14 +141,15 @@ impl WorldHandle {
 
             let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
             let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
+            let sprite = self.tile_sprites.get(index as u32 - 1).unwrap();
 
-            if index == Tile::Lamp as u16 {
+            if let Some(glow_color) = tile.glow_color() {
                 let quad = Quad::with_glow_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
                     1, 
-                    self.tile_sprites.get(index as u32 - 1).unwrap(),
-                [0.9, 0.9, 0.7, 1.0]
+                    sprite,
+                    glow_color
                 );
                 quads.push(Block::add_glowing(quad, *renderer, store));
             }
@@ -157,7 +158,7 @@ impl WorldHandle {
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
                     0, 
-                    self.tile_sprites.get(index as u32 - 1).unwrap(),
+                    sprite,
                     terrain_material(store)
                 );
                 renderer.add(&mut quad);
@@ -172,14 +173,15 @@ impl WorldHandle {
 
             let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
             let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
+            let sprite = self.fg_tile_sprites.get(index as u32 - 1).unwrap();
 
-            if index == Tile::Lamp as u16 {
+            if let Some(glow_color) = tile.glow_color() {
                 let quad = Quad::with_glow_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
-                    2, 
-                    self.tile_sprites.get(index as u32 - 1).unwrap(),
-                [0.9, 0.9, 0.7, 1.0]
+                    3, 
+                    sprite,
+                    glow_color
                 );
                 quads.push(Block::add_glowing(quad, *renderer, store));
             }
@@ -187,8 +189,8 @@ impl WorldHandle {
                 let mut quad = Quad::with_terrain_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
-                    0, 
-                    self.fg_tile_sprites.get(index as u32 - 1).unwrap(),
+                    2, 
+                    sprite,
                     terrain_material(store)
                 );
                 renderer.add(&mut quad);
