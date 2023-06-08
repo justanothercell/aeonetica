@@ -138,8 +138,9 @@ impl World {
         if chunk_pos.mag_sq() <= 2 { return }
         let mut pos = chunk_pos * 16;
         let mut rng = rand::rngs::StdRng::seed_from_u64(self.chunk_hash_with_seed_and_salt(pos, 0));
+        let both = rng.gen_ratio(1, 12);
         // pipes
-        if rng.gen_ratio(1, 8) {
+        if rng.gen_ratio(1, 12) || both {
             pos += Vector2::new(rng.gen_range(0..CHUNK_SIZE as i32), rng.gen_range(0..CHUNK_SIZE as i32));
             let mut pipes = HashSet::new();
             fn gen_pipe(rng: &mut rand::rngs::StdRng, pipes: &mut HashSet<Vector2<i32>>, world: &mut World, mut pos: Vector2<i32>, dir: Vector2<i32>, len: i32) {
@@ -204,7 +205,7 @@ impl World {
                 });
             }
         }
-        if rng.gen_ratio(1, 8) {
+        if rng.gen_ratio(1, 12) || both {
             pos += Vector2::new(rng.gen_range(0..CHUNK_SIZE as i32), rng.gen_range(0..CHUNK_SIZE as i32));
             let mut platforms = HashSet::new();
             fn gen_support(rng: &mut rand::rngs::StdRng, platforms: &mut HashSet<Vector2<i32>>, world: &mut World, pos: Vector2<i32>, is_up_chain: bool) {
@@ -213,13 +214,19 @@ impl World {
                     if is_up_chain {
                         let mut pos = pos;
                         pos.y -= i;
+                        let current = world.get_init_fg_tile_at(pos, Population::TerrainPostProcess);
                         use FgTile::*;
                         if world.get_init_tile_at(pos, Population::TerrainPostProcess) == Tile::Wall || 
-                            matches!(world.get_init_fg_tile_at(pos, Population::TerrainPostProcess), 
+                            matches!(current, 
                             FramedPipeJunction | FramedPipeLR | FramedPipeUD | MetalFrameBlock | MetalFrameFloorL | MetalFrameFloorM | MetalFrameFloorR | MetalFrameFloorMSupport | MetalFrameFloorMItemSupport ) { 
                                 break; 
                             } else {
-                                world.set_init_fg_tile_at(pos, Population::TerrainPostProcess, FgTile::ChainV);
+                                world.set_init_fg_tile_at(pos, Population::TerrainPostProcess, match current {
+                                    PipeEndL | PipeLR | PipeEndR => FgTile::FramedPipeLR,
+                                    PipeEndU | PipeUD | PipeEndD => FgTile::FramedPipeUD,
+                                    PipeLRU | PipeLRD | PipeRUD | PipeLUD | PipeLD | PipeRD | PipeLU | PipeRU | PipeLRUD => FgTile::FramedPipeJunction,
+                                    _ => FgTile::ChainV
+                                });
                             }
                     } else {
                         let mut pos = pos;

@@ -66,8 +66,8 @@ pub enum FgTile {
     MetalFrameFloorR,
     MetalFrameFloorMSupport,
     MetalFrameFloorMItemSupport,
-    FramedPipeLR,
     FramedPipeUD,
+    FramedPipeLR,
     FramedPipeJunction,
     Water
 }
