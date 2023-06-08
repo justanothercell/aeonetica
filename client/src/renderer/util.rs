@@ -44,7 +44,28 @@ pub fn enable_blend_mode(enabled: bool) {
 #[inline]
 pub fn viewport(position: Vector2<i32>, size: Vector2<i32>) {
     unsafe {
-        gl::Viewport(position.x(), position.y, size.x(), size.y());
+        gl::Viewport(position.x(), position.y, size.x(), size.y())
+    }
+}
+
+#[inline]
+pub fn enable_scissor_test() {
+    unsafe {
+        gl::Enable(gl::SCISSOR_TEST);
+    }
+}
+
+#[inline]
+pub fn disable_scissor_test() {
+    unsafe {
+        gl::Disable(gl::SCISSOR_TEST);
+    }
+}
+
+#[inline]
+pub fn scissor(position: Vector2<i32>, size: Vector2<i32>) {
+    unsafe {
+        gl::Scissor(position.x(), position.y(), size.x(), size.y())
     }
 }
 

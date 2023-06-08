@@ -38,6 +38,10 @@ impl Camera {
         Vector2::new(self.left.abs() + self.right.abs(), self.bottom.abs() + self.top.abs())
     }
 
+    pub fn bottom_left(&self) -> Vector2<f32> {
+        Vector2::new(self.left, self.bottom)
+    }
+
     pub fn projection_matrix(&self) -> &Matrix4<f32> {
         &self.projection_matrix
     }

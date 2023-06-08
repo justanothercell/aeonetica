@@ -3,7 +3,7 @@ use std::collections::{BinaryHeap};
 use std::collections::hash_map::Entry;
 use std::marker::PhantomData;
 use std::ops::{Generator, GeneratorState};
-use aeonetica_engine::Id;
+use aeonetica_engine::TypeId;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
@@ -37,11 +37,23 @@ pub(crate) struct TaskQueue {
     pub(crate) event_queue: IdMap<Vec<Box<dyn TaskFunc>>>
 }
 
-pub type EventId = Id;
+pub type EventId = TypeId;
+
+pub struct PrivateWaiter;
 
 pub enum WaitFor {
-    Ticks(usize),
-    Event(EventId)
+    Ticks(usize, PrivateWaiter),
+    Event(EventId, PrivateWaiter)
+}
+
+impl WaitFor {
+    pub fn ticks(ticks: usize) -> Self {
+        WaitFor::Ticks(ticks, PrivateWaiter)
+    }
+    
+    pub fn event<T: Event>() -> Self {
+        WaitFor::Event(type_to_id::<T>(), PrivateWaiter)
+    }
 }
 
 pub struct Yielder<'a>(PrivateYielder, PhantomData<&'a ()>, WaitFor);
@@ -95,11 +107,11 @@ impl Engine {
         let mut fnpin = Box::into_pin(f);
         match fnpin.as_mut().resume(self) {
             GeneratorState::Yielded(yielder) => match yielder.2 {
-                WaitFor::Ticks(t) => self.tasks.heap.push(Task {
+                WaitFor::Ticks(t, _) => self.tasks.heap.push(Task {
                     timestamp: { self.tick + t },
                     func: Box::from(fnpin),
                 }),
-                WaitFor::Event(event) => {
+                WaitFor::Event(event, _) => {
                     if let Entry::Vacant(e) = self.tasks.event_queue.entry(event) {
                         e.insert(vec![Box::from(fnpin)]);
                     } else {

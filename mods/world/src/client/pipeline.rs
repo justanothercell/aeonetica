@@ -1,4 +1,4 @@
-use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::framebuffer::*, texture::*, util::Target, shader::{self, UniformStr}}, uniform_str, data_store::DataStore};
+use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::framebuffer::*, texture::*, util::*, shader::{self, UniformStr}}, uniform_str, data_store::DataStore};
 use aeonetica_engine::{time::Time, math::{camera::Camera, vector::Vector2}, error::ErrorResult};
 
 use super::{light::LightStore, materials::terrain_shader};
@@ -17,6 +17,9 @@ impl WorldRenderPipeline {
 
     pub fn new(store: &mut DataStore) -> ErrorResult<Self> {
         LightStore::init(store);
+        
+        scissor(Vector2::new(0, 0), Vector2::new(1920, 1080));
+
         Ok(Self {
             intermediate_fb: FrameBuffer::new([
                     Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)), // main scene colors
@@ -33,6 +36,8 @@ impl Pipeline for WorldRenderPipeline {
         self.intermediate_fb.clear(Self::FRAME_CCOL);
         renderer.begin_scene(camera);
 
+        enable_scissor_test();
+
         let shader = terrain_shader(updater.store());
         let lights = updater.store().mut_store::<LightStore>();
         lights.upload_uniforms(&shader);
@@ -40,12 +45,15 @@ impl Pipeline for WorldRenderPipeline {
         updater.update(renderer, time);
         renderer.draw_vertices(target);
         renderer.end_scene();
-
+        
+        disable_scissor_test();
+        
         self.intermediate_fb.render([
                 (0, &Self::FRAME_USTR),
                 (1, &Self::LIGHTMAP_USTR),
             ],
             target, &self.shader
         );
+
     }
 }
