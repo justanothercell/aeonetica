@@ -2,7 +2,7 @@ use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::nanoserde;
 use aeonetica_engine::math::vector::Vector2;
 use aeonetica_engine::util::nullable::Nullable;
-use crate::tiles::Tile;
+use crate::tiles::{Tile, FgTile};
 
 pub const CHUNK_SIZE: usize = 16;
 pub const GRAVITY: f32 = -20.0;
@@ -21,7 +21,8 @@ pub enum Population {
 pub struct Chunk {
     pub population: Population,
     pub chunk_pos: Vector2<i32>,
-    pub tiles: [Tile; CHUNK_SIZE*CHUNK_SIZE]
+    pub tiles: [Tile; CHUNK_SIZE*CHUNK_SIZE],
+    pub fg_tiles: [FgTile; CHUNK_SIZE*CHUNK_SIZE]
 }
 
 impl Chunk {
@@ -29,12 +30,9 @@ impl Chunk {
         Self {
             population: Population::Uninit,
             chunk_pos,
-            tiles: [Tile::Wall; CHUNK_SIZE*CHUNK_SIZE]
+            tiles: [Tile::Wall; CHUNK_SIZE*CHUNK_SIZE],
+            fg_tiles: [FgTile::Empty; CHUNK_SIZE*CHUNK_SIZE]
         }
-    }
-
-    pub(crate) fn tiles(&self) -> &[Tile; CHUNK_SIZE * CHUNK_SIZE] {
-        &self.tiles
     }
 
     pub fn get_tile(&self, pos: Vector2<i32>) -> Tile {
@@ -47,6 +45,18 @@ impl Chunk {
 
     pub fn set_tile(&mut self, pos: Vector2<i32>, tile: Tile) {
         self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
+    }
+
+    pub fn get_fg_tile(&self, pos: Vector2<i32>) -> FgTile {
+        self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
+    }
+
+    pub fn mut_fg_tile(&mut self, pos: Vector2<i32>) -> &mut FgTile {
+        &mut self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
+    }
+
+    pub fn set_fg_tile(&mut self, pos: Vector2<i32>, tile: FgTile) {
+        self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
     }
 }
 
@@ -71,6 +81,12 @@ pub trait WorldView {
     fn get_tile(&self, pos: Vector2<i32>) -> Tile {
         self.get_tile_or_null(pos).unwrap_or(Tile::Wall)
     }
+    fn get_fg_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<FgTile>;
+    /// Returns [`FgTile::Empty`] if not loaded
+    fn get_fg_tile(&self, pos: Vector2<i32>) -> FgTile {
+        self.get_fg_tile_or_null(pos).unwrap_or(FgTile::Empty)
+    }
+
     fn is_loaded(&self, pos: Vector2<i32>) -> bool;
 
     /// Returns [`true`] if the aabb bounding box collides with a tile.

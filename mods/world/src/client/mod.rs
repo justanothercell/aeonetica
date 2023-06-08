@@ -23,7 +23,7 @@ use crate::client::materials::{WithGlow, WithTerrain};
 
 use crate::common::{Chunk, CHUNK_SIZE, WorldView};
 use crate::server::world::World;
-use crate::tiles::Tile;
+use crate::tiles::{Tile, FgTile};
 
 use debug_mod::Debug;
 
@@ -103,10 +103,18 @@ impl WorldView for ClientWorld {
         }
         Nullable::Null
     }
+
+    fn get_fg_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<FgTile> {
+        if let ClientChunk::Chunk(chunk, _) = self.chunks.get(&Self::chunk(pos))? {
+            return Nullable::Value(chunk.get_fg_tile(Self::pos_in_chunk(pos)))
+        }
+        Nullable::Null
+    }
 }
 
 pub(crate) struct WorldHandle {
     tile_sprites: SpriteSheet,
+    fg_tile_sprites: SpriteSheet,
 }
 
 impl WorldHandle {
@@ -116,12 +124,16 @@ impl WorldHandle {
                 Texture::from_bytes(include_bytes!("../../assets/include/tilemap.png")).unwrap(),
                 Vector2::new(16, 16)
             ).expect("error loading world spritesheet"),
+            fg_tile_sprites: SpriteSheet::from_texture(
+                Texture::from_bytes(include_bytes!("../../assets/include/overlaymap.png")).unwrap(),
+                Vector2::new(16, 16)
+            ).expect("error loading world spritesheet"),
         }
     }
 
     pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
         let mut quads = vec![];
-        for (i, tile) in chunk.tiles().iter().enumerate() {
+        for (i, tile) in chunk.tiles.iter().enumerate() {
             let index = tile.sprite_sheet_index();
             if index == 0 {
                 continue;
@@ -146,6 +158,37 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     0, 
                     self.tile_sprites.get(index as u32 - 1).unwrap(),
+                    terrain_material(store)
+                );
+                renderer.add(&mut quad);
+                quads.push(Block::Default(quad));
+            }
+        }
+        for (i, tile) in chunk.fg_tiles.iter().enumerate() {
+            let index = tile.sprite_sheet_index();
+            if index == 0 {
+                continue;
+            }
+
+            let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
+            let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
+
+            if index == Tile::Lamp as u16 {
+                let quad = Quad::with_glow_sprite(
+                    Vector2::new(x as f32, y as f32), 
+                    Vector2::new(1.0, 1.0), 
+                    2, 
+                    self.tile_sprites.get(index as u32 - 1).unwrap(),
+                [0.9, 0.9, 0.7, 1.0]
+                );
+                quads.push(Block::add_glowing(quad, *renderer, store));
+            }
+            else {
+                let mut quad = Quad::with_terrain_sprite(
+                    Vector2::new(x as f32, y as f32), 
+                    Vector2::new(1.0, 1.0), 
+                    0, 
+                    self.fg_tile_sprites.get(index as u32 - 1).unwrap(),
                     terrain_material(store)
                 );
                 renderer.add(&mut quad);

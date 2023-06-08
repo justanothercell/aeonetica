@@ -6,7 +6,7 @@ use aeonetica_engine::math::vector::Vector2;
 use rand::{SeedableRng, Rng};
 use crate::common::{CHUNK_SIZE, Population, Chunk, WorldView};
 use crate::server::world::World;
-use crate::tiles::Tile;
+use crate::tiles::{Tile, FgTile};
 
 pub(crate) struct GenProvider {
     pub(crate) seed: u64,
@@ -51,6 +51,14 @@ impl World {
 
     pub fn set_init_tile_at(&mut self, pos: Vector2<i32>, stage: Population, t: Tile) {
         self.mut_init_chunk_at(World::chunk(pos), stage).set_tile(World::pos_in_chunk(pos), t)
+    }
+
+    pub fn get_init_fg_tile_at(&mut self, pos: Vector2<i32>, stage: Population) -> FgTile {
+        self.mut_init_chunk_at(World::chunk(pos), stage).get_fg_tile(World::pos_in_chunk(pos))
+    }
+
+    pub fn set_init_fg_tile_at(&mut self, pos: Vector2<i32>, stage: Population, t: FgTile) {
+        self.mut_init_chunk_at(World::chunk(pos), stage).set_fg_tile(World::pos_in_chunk(pos), t)
     }
 
     fn populate_terrain(&mut self, chunk_pos: Vector2<i32>) {
@@ -133,7 +141,16 @@ impl World {
             for x in 3..(CHUNK_SIZE-3) as i32 {
                 for y in 3..(CHUNK_SIZE-3) as i32 {
                     self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainPostProcess, 
-                    if (x == 3) as u8 + (y == 3) as u8 + (x == CHUNK_SIZE as i32 - 4) as u8 + (y == CHUNK_SIZE as i32 - 4) as u8 > 1 { Tile::Lamp } else { Tile::LabWall })
+                    if (x == 3) as u8 + (y == 3) as u8 + (x == CHUNK_SIZE as i32 - 4) as u8 + (y == CHUNK_SIZE as i32 - 4) as u8 > 1 { Tile::QuarteredLamp } else { Tile::LabWall });
+                    self.set_init_fg_tile_at(pos + Vector2::new(x, y), Population::TerrainPostProcess, match (x, y) {
+                        (3, 3) => FgTile::PipeRD,
+                        (3, 12) => FgTile::PipeRU,
+                        (12, 3) => FgTile::PipeLD,
+                        (12, 12) => FgTile::PipeLU,
+                        (3|12, _) => FgTile::PipeUD,
+                        (_, 3|12) => FgTile::PipeLR,
+                        _ => FgTile::Empty
+                    });
                 }
             }
         }

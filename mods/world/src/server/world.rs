@@ -14,7 +14,7 @@ use aeonetica_server::ecs::module::Module;
 use crate::client::WorldHandle;
 use crate::common::{Chunk, Population, WorldView};
 use crate::server::gen::GenProvider;
-use crate::tiles::Tile;
+use crate::tiles::{Tile, FgTile};
 
 pub const WORLD: &str = "WORLD";
 
@@ -85,6 +85,14 @@ impl World {
         self.mut_chunk_at(World::chunk(pos)).set_tile(World::pos_in_chunk(pos), t)
     }
 
+    pub fn get_fg_tile_at(&mut self, pos: Vector2<i32>) -> FgTile {
+        self.get_chunk_at(World::chunk(pos)).get_fg_tile(World::pos_in_chunk(pos))
+    }
+
+    pub fn set_fg_tile_at(&mut self, pos: Vector2<i32>, t: FgTile) {
+        self.mut_chunk_at(World::chunk(pos)).set_fg_tile(World::pos_in_chunk(pos), t)
+    }
+
     pub fn mut_chunk_at(&mut self, chunk_pos: Vector2<i32>) -> &mut Chunk {
         self.mut_init_chunk_at(chunk_pos, Population::Finished)
     }
@@ -152,6 +160,10 @@ impl World {
         Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_tile(World::pos_in_chunk(pos)))
     }
 
+    pub fn try_get_fg_tile_no_gen(&self, pos: Vector2<i32>) -> Nullable<FgTile> {
+        Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_fg_tile(World::pos_in_chunk(pos)))
+    }
+
     pub fn try_get_chunk_no_gen(&self, chunk_pos: Vector2<i32>) -> Nullable<&Chunk> {
         if self.cached_chunk_pos == chunk_pos {
             return Nullable::Value(unsafe { &*(self.cached_chunk_raw_ptr as *const Chunk) })
@@ -204,6 +216,10 @@ impl WorldView for World {
 
     fn get_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<Tile> {
         self.try_get_tile_no_gen(pos)
+    }
+
+    fn get_fg_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<FgTile> {
+        self.try_get_fg_tile_no_gen(pos)
     }
 }
 

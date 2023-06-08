@@ -28,7 +28,9 @@ impl Tile {
     }
 }
 
-pub enum ForegroundTile {
+#[repr(u16)]
+#[derive(Debug, Copy, Clone, SerBin, DeBin, PartialEq)]
+pub enum FgTile {
     Empty,
     PipeEndL,
     PipeLR,
@@ -56,4 +58,10 @@ pub enum ForegroundTile {
     MetalFrameFloorR,
     MetalFrameFloorMSupport,
     Water
+}
+
+impl FgTile {
+    pub fn sprite_sheet_index(&self) -> u16 {
+        *self as u16
+    }
 }
