@@ -53,7 +53,8 @@ pub fn run(ip: &str) {
 
         let delta_time_nanos = t.elapsed().as_nanos();
         time_nanos += delta_time_nanos;
-        time.delta = delta_time_nanos as f32 / FULL_SEC as f32;
+        time.raw_delta = delta_time_nanos as f32 / FULL_SEC as f32;
+		time.delta = time.raw_delta.min(0.2);
         time.time = time_nanos as f32 / FULL_SEC as f32;
         //println!("time.delta = {}  percentage = {}", time.delta, time.delta / (1.0 / TPS as f32) * 100.0);
     }
