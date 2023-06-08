@@ -16,3 +16,6 @@ lazy_static = "1.4.0"
 [features]
 # default = ["gpu_debug"]
 gpu_debug = []
+
+[build-dependencies]
+rerun_except = "1.0.0"

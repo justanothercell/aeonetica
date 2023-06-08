@@ -8,3 +8,6 @@ opt-level = 3
 
 [dependencies]
 aeonetica_engine = { package="engine", path="../engine" }
+
+[build-dependencies]
+rerun_except = "1.0.0"

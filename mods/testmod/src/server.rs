@@ -43,7 +43,7 @@ impl Module for MyModule {
         log!("registered client loginout listener");
         engine.queue_task( |mut e: &mut Engine| {
             for i in 1..11 {
-                yield_task!(e, WaitFor::Ticks(20));
+                yield_task!(e, WaitFor::ticks(20));
                 log!("waited {i} seconds...")
             }
         });
