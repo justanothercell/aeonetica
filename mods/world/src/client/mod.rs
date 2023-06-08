@@ -136,21 +136,21 @@ impl WorldHandle {
     }
 
     pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
-        //if chunk.chunk_pos == Vector2::new(1, 1) {
-        //    for i in 0i32..8 {
-        //        for j in 1..3 {
-        //            let position = Vector2::new(i, j).to_f32();
-        //            Block::add_water(Quad::with_water_texture(
-        //                position, 
-        //                Vector2::new(1.0, 1.0), 
-        //                20, 
-        //                self.water_texture.id(), 
-        //                water_material(store)
-        //            ), *renderer);
-        //            store.mut_store::<WaterStore>().add(position);
-        //        }
-        //    }
-        //}
+        if chunk.chunk_pos == Vector2::new(1, 1) {
+            for i in 0i32..8 {
+                for j in 1..3 {
+                    let position = Vector2::new(i, j).to_f32();
+                    Block::add_water(Quad::with_water_texture(
+                        position, 
+                        Vector2::new(1.0, 1.0), 
+                        20, 
+                        self.water_texture.id(), 
+                        water_material(store)
+                    ), *renderer);
+                    store.mut_store::<WaterStore>().add(position);
+                }
+            }
+        }
 
         let mut quads = vec![];
         for (i, tile) in chunk.tiles.iter().enumerate() {
