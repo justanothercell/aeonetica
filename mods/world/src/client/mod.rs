@@ -348,7 +348,7 @@ impl Layer for WorldLayer {
         store.mut_store::<Debug<WorldLayer>>().renderer().finish_render(renderer);
     }
 
-    fn event(&mut self, event: &Event) -> bool {
+    fn event(&mut self, event: &Event, _store: &mut DataStore) -> bool {
         match event {
             Event::KeyPressed(KeyCode::Enter) => {
                 self.manual_shake_queued = true;
@@ -382,6 +382,24 @@ impl Layer for UILayer {
         let fps = 1.0 / time.delta;
         (*self.fps_display).set_string(format!("FPS: {}", fps as i32));
         let _ = renderer.modify(&mut *self.fps_display);
+    }
+
+    fn event(&mut self, event: &Event, store: &mut DataStore) -> bool {
+        match event {
+            Event::KeyPressed(KeyCode::M) => {
+                let mut light_store = store.mut_store::<LightStore>();
+                let ambient = light_store.ambient_light();
+                (*light_store).set_ambient_light((ambient + 0.05).min(1.0));
+                true
+            },
+            Event::KeyPressed(KeyCode::N) => {
+                let mut light_store = store.mut_store::<LightStore>();
+                let ambient = light_store.ambient_light();
+                (*light_store).set_ambient_light((ambient - 0.05).max(0.0));
+                true
+            }
+            _ => false
+        }
     }
 }
 

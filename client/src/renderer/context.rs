@@ -132,7 +132,7 @@ impl RenderContext {
                 *position = layer_box.camera.to_world(*position, Window::FRAMEBUFFER_SIZE.to_f32())
             }
             
-            if layer_box.layer.event(&event) { 
+            if layer_box.layer.event(&event, store) { 
                 return;
             }
 

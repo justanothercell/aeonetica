@@ -25,7 +25,7 @@ impl LightStore {
     pub fn init(store: &mut DataStore) {
         store.add_store(LightStore {
             lights: BTreeMap::new(),
-            ambient_light: 0.1,
+            ambient_light: 0.2,
             is_dirty: true,
             light_id: 0
         });
@@ -55,7 +55,10 @@ impl LightStore {
     }
 
     pub fn set_ambient_light(&mut self, ambient_light: f32) {
-        self.ambient_light = ambient_light
+        if self.ambient_light != ambient_light {
+            self.ambient_light = ambient_light;
+            self.is_dirty = true;
+        }
     }
 
     pub fn upload_uniforms(&self, shader: &shader::Program) {
