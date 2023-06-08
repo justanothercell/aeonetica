@@ -47,7 +47,8 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
         
         let delta_time_nanos = t.elapsed().as_nanos();
         time_nanos += delta_time_nanos;
-        time.delta = delta_time_nanos as f32 / FULL_SEC as f32;
+        time.raw_delta = delta_time_nanos as f32 / FULL_SEC as f32;
+		time.delta = time.raw_delta.min(0.05);
         time.time = time_nanos as f32 / FULL_SEC as f32;
         
         frames += 1;

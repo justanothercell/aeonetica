@@ -177,6 +177,7 @@ impl World {
                     pipes.contains(&(*pipe + Vector2::new(0, -1))) || wu, 
                     pipes.contains(&(*pipe + Vector2::new(0, 1))) || wd
                 ) {
+                    (_, _, _, _) if wl && wr && wu && wd => FgTile::Empty,
                     (true, true, true, true) => FgTile::PipeLRUD,
 
                     (true, true, true, false) if !wu => FgTile::PipeLRU,
