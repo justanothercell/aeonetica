@@ -39,7 +39,7 @@ pub(crate) struct TaskQueue {
 
 pub type EventId = TypeId;
 
-struct PrivateWaiter;
+pub struct PrivateWaiter;
 
 pub enum WaitFor {
     Ticks(usize, PrivateWaiter),
@@ -51,7 +51,7 @@ impl WaitFor {
         WaitFor::Ticks(ticks, PrivateWaiter)
     }
     
-    pub fn event::<T: Event>() -> Self {
+    pub fn event<T: Event>() -> Self {
         WaitFor::Event(type_to_id::<T>(), PrivateWaiter)
     }
 }
