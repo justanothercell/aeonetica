@@ -66,7 +66,7 @@ impl WormHandle {
                 let quad = Quad::with_terrain_sprite(
                     *segment,
                     Vector2::new(1.0, 1.0),
-                    100,
+                    11,
                     sheet.0.get(match i { 0 => 0, _ if i == self.segments.len() - 1 => 2, _ => 1 }).unwrap(),
                     material.clone()
                 );

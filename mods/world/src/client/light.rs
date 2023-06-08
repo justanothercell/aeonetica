@@ -16,7 +16,7 @@ pub struct LightStore {
 const MAX_LIGHT_SOURCE_COUNT: usize = 30;
 
 const LIGHT_POSITIONS_USTR: UniformStr = uniform_str!("u_LightPositions");
-const AMBIENT_LIGHT_STRENGTH_USTR: UniformStr = uniform_str!("u_AmbientLightStrength");
+pub(super) const AMBIENT_LIGHT_STRENGTH_USTR: UniformStr = uniform_str!("u_AmbientLightStrength");
 const INTENSITIES_USTR: UniformStr = uniform_str!("u_LightIntensities");
 const LIGHT_COLORS_USTR: UniformStr = uniform_str!("u_LightColors");
 const NUM_LIGHTS_USTR: UniformStr = uniform_str!("u_NumLights");
