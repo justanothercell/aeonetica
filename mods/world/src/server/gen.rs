@@ -102,7 +102,7 @@ impl World {
         }
 
         // TEMPORARY:
-        chunk.set_tile(Vector2::default(), Tile::Lamp);
+        chunk.set_tile(Vector2::default(), Tile::QuarteredLamp);
         
         chunk.population = Population::TerrainRaw;
     }
