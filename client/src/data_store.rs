@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::any::{Any, type_name};
 use aeonetica_engine::TypeId;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
@@ -49,6 +49,14 @@ impl DataStore {
     #[inline]
     pub fn mut_store<T: Sized + 'static>(&mut self) -> Nullable<&mut T> {
         self.stores.get_mut(&type_to_id::<T>()).map(|m| unsafe { &mut*std::mem::transmute::<&Box<_>, &(*mut T, usize)>(m).0 }).into()
+    }
+    #[inline]
+    pub fn two_mut_stores<T1: Sized + 'static, T2: Sized + 'static>(&mut self) -> (Nullable<&mut T1>, Nullable<&mut T2>) {
+        if type_to_id::<T1>() == type_to_id::<T2>() {
+            panic!("cannot borrow the same two types from store: {}", type_name::<T1>())
+        }
+        let mut_store = unsafe { &mut *(self as *mut Self) };
+        (self.mut_store::<T1>(), mut_store.mut_store::<T2>())
     }
     #[inline]
     pub fn get_or_create<T: Sized + 'static, F: FnOnce() -> T>(&mut self, creator: F) -> &T {

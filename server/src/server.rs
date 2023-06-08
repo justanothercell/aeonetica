@@ -23,7 +23,8 @@ pub fn run(ip: &str) {
     let mut time_nanos = 0;
     let mut time = Time {
         time: 0.0,
-        delta: 0.0
+        delta: 0.0,
+		raw_delta: 0.0
     };
 
     println!("\x1b[38;5;200mServer successfully set up and ready for clients to connect\x1b[0m");

@@ -164,6 +164,10 @@ impl World {
         Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_fg_tile(World::pos_in_chunk(pos)))
     }
 
+    pub fn try_get_water_tile_no_gen(&self, pos: Vector2<i32>) -> Nullable<u8> {
+        Nullable::Value(self.try_get_chunk_no_gen(World::chunk(pos))?.get_water_tile(World::pos_in_chunk(pos)))
+    }
+
     pub fn try_get_chunk_no_gen(&self, chunk_pos: Vector2<i32>) -> Nullable<&Chunk> {
         if self.cached_chunk_pos == chunk_pos {
             return Nullable::Value(unsafe { &*(self.cached_chunk_raw_ptr as *const Chunk) })
@@ -220,6 +224,10 @@ impl WorldView for World {
 
     fn get_fg_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<FgTile> {
         self.try_get_fg_tile_no_gen(pos)
+    }
+
+    fn get_water_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<u8> {
+        self.try_get_water_tile_no_gen(pos)
     }
 }
 

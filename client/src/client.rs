@@ -26,7 +26,8 @@ pub fn run(mut client: ClientRuntime, client_id: ClientId, store: &mut DataStore
     let mut last_full_sec = 0;
     let mut time = Time {
         time: 0.0,
-        delta: 0.0
+        delta: 0.0,
+		raw_delta: 0.0
     };
 
     let mut context = RenderContext::new();

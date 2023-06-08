@@ -35,9 +35,10 @@ impl World {
         let mut p = self.mut_chunk_at_raw(chunk_pos).population;
         while (p as u8) < stage as u8 {
             match p {
-                Population::Uninit => self.populate_terrain(chunk_pos),
-                Population::TerrainRaw => self.post_process_terrain(chunk_pos),
-                Population::TerrainPostProcess => self.structurize_chunk(chunk_pos),
+                Population::Uninit => self.populate_terrain(chunk_pos, p),
+                Population::TerrainRaw => self.post_process_terrain(chunk_pos, p),
+                Population::TerrainPostProcess => self.lakeify_chunk(chunk_pos, p),
+                Population::TerrainWatered => self.structurize_chunk(chunk_pos, p),
                 Population::Structures => self.mut_chunk_at_raw(chunk_pos).population = Population::Finished,
                 Population::Finished => unreachable!("finished should always be last population stage"),
             }
@@ -62,70 +63,104 @@ impl World {
         self.mut_init_chunk_at(World::chunk(pos), stage).set_fg_tile(World::pos_in_chunk(pos), t)
     }
 
-    fn populate_terrain(&mut self, chunk_pos: Vector2<i32>) {
+    pub fn get_init_water_tile_at(&mut self, pos: Vector2<i32>, stage: Population) -> u8 {
+        self.mut_init_chunk_at(World::chunk(pos), stage).get_water_tile(World::pos_in_chunk(pos))
+    }
+
+    pub fn set_init_water_tile_at(&mut self, pos: Vector2<i32>, stage: Population, t: u8) {
+        self.mut_init_chunk_at(World::chunk(pos), stage).set_water_tile(World::pos_in_chunk(pos), t)
+    }
+
+    fn get_initial_terrain_tile(&self, pos: Vector2<i32>, can_be_wall: bool) -> Tile{
+        let chunk_pos = Self::chunk(pos);
+        let (x, y) = Self::pos_in_chunk(pos).into();
         let gen = self.generator.clone();
-        let chunk = self.mut_chunk_at_raw(chunk_pos);
         let scale = 0.75;
         let scale2 = 1.6;
-        for x in 0..CHUNK_SIZE as i32 {
-            for y in 0..CHUNK_SIZE as i32 {
-                let p = Vector2::new(x, y).to_f64() / 16.0 * scale + chunk_pos.to_f64() * scale;
-                let ps2 = Vector2::new(x, y).to_f64() / 16.0 * scale2 + chunk_pos.to_f64() * scale2;
-                let accent_2 = gen.space_cave_noise.get(ps2.into_array()) < -0.865;
-                let current = gen.cave_noise.get(p.into_array()) > 0.0 || accent_2;
-                let around =
-                    (gen.cave_noise.get((p + Vector2::new(1.0/16.0 * scale, 0.0/16.0 * scale)).into_array()) > 0.0) as i32 +
-                    (gen.cave_noise.get((p + Vector2::new(-1.0/16.0 * scale, 0.0/16.0 * scale)).into_array()) > 0.0) as i32 +
-                    (gen.cave_noise.get((p + Vector2::new(0.0/16.0 * scale, 1.0/16.0 * scale)).into_array()) > 0.0) as i32 +
-                    (gen.cave_noise.get((p + Vector2::new(0.0/16.0 * scale, -1.0/16.0 * scale)).into_array()) > 0.0) as i32;
-                // a bit of a random approach - found accidentally
-                let accent =
-                    (gen.cave_noise.get((p + Vector2::new(scale, 0.0)).into_array()) > 0.0) as i32 +
-                        (gen.cave_noise.get((p + Vector2::new(-scale, 0.0)).into_array()) > 0.0) as i32 +
-                        (gen.cave_noise.get((p + Vector2::new(0.0, scale)).into_array()) > 0.0) as i32 +
-                        (gen.cave_noise.get((p + Vector2::new(0.0, -scale)).into_array()) > 0.0) as i32;
-                if accent_2 {
-                    chunk.set_tile((x, y).into(), if accent > 1 {
-                        Tile::HardStone
-                    } else {
-                        Tile::StoneBrick
-                    })
-                }
-                else if (current && around > 1) || around > 2 {
-                    chunk.set_tile((x, y).into(), if accent > 1 {
+        let p = Vector2::new(x, y).to_f64() / 16.0 * scale + chunk_pos.to_f64() * scale;
+        let ps2 = Vector2::new(x, y).to_f64() / 16.0 * scale2 + chunk_pos.to_f64() * scale2;
+        let accent_2 = gen.space_cave_noise.get(ps2.into_array()) < -0.865;
+        let current = gen.cave_noise.get(p.into_array()) > 0.0 || accent_2;
+        let around =
+            (gen.cave_noise.get((p + Vector2::new(1.0/16.0 * scale, 0.0/16.0 * scale)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(-1.0/16.0 * scale, 0.0/16.0 * scale)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(0.0/16.0 * scale, 1.0/16.0 * scale)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(0.0/16.0 * scale, -1.0/16.0 * scale)).into_array()) > 0.0) as i32;
+        // a bit of a random approach - found accidentally
+        let accent =
+            (gen.cave_noise.get((p + Vector2::new(scale, 0.0)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(-scale, 0.0)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(0.0, scale)).into_array()) > 0.0) as i32 +
+            (gen.cave_noise.get((p + Vector2::new(0.0, -scale)).into_array()) > 0.0) as i32;
+        if accent_2 {
+            if accent > 1 {
+                Tile::HardStone
+            } else {
+                Tile::StoneBrick
+            }
+        }
+        else if (current && around > 1) || around > 2 {
+            if accent > 1 {
+                Tile::Stone
+            } else {
+                Tile::StoneBrick
+            }
+        } else {
+            if can_be_wall {
+                Tile::Wall
+            } else {
+                if around > 1 {
+                    if accent > 1 {
                         Tile::Stone
                     } else {
                         Tile::StoneBrick
-                    })
+                    }
+                } else {
+                    if accent > 1 {
+                        Tile::HardStone
+                    } else {
+                        Tile::StoneBrick
+                    }
                 }
+            }
+        }
+    }
+
+    fn populate_terrain(&mut self, chunk_pos: Vector2<i32>, population: Population) {
+        let base_pos = chunk_pos * 16;
+        for x in 0..CHUNK_SIZE as i32 {
+            for y in 0..CHUNK_SIZE as i32 {
+                let pos = base_pos + Vector2::new(x, y);
+                let t = self.get_initial_terrain_tile(pos, true);
+                self.set_init_tile_at(pos, population, t);
             }
         }
 
         // TEMPORARY:
-        chunk.set_tile(Vector2::default(), Tile::Lamp);
+        self.mut_chunk_at_raw(chunk_pos).set_tile(Vector2::default(), Tile::Lamp);
         
-        chunk.population = Population::TerrainRaw;
+        self.mut_chunk_at_raw(chunk_pos).population = Population::TerrainRaw;
     }
 
-    fn post_process_terrain(&mut self, chunk_pos: Vector2<i32>) {
+    fn post_process_terrain(&mut self, chunk_pos: Vector2<i32>, population: Population) {
         let pos = chunk_pos * 16;
         for x in 0..CHUNK_SIZE as i32 {
             for y in 0..CHUNK_SIZE as i32 {
-                if self.get_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw) != Tile::Wall {
-                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), Population::TerrainRaw) == Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), Population::TerrainRaw) == Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), Population::TerrainRaw) == Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), Population::TerrainRaw) == Tile::Wall) as u8;
+                if self.get_init_tile_at(pos + Vector2::new(x, y), population) != Tile::Wall {
+                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), population) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), population) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), population) == Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), population) == Tile::Wall) as u8;
                     if s == 4 {
-                        self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw, Tile::Wall)
+                        self.set_init_tile_at(pos + Vector2::new(x, y), population, Tile::Wall)
                     }
                 } else {
-                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), Population::TerrainRaw) != Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), Population::TerrainRaw) != Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), Population::TerrainRaw) != Tile::Wall) as u8
-                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), Population::TerrainRaw) != Tile::Wall) as u8;
+                    let s = (self.get_init_tile_at(pos + Vector2::new(x + 1, y + 0), population) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x - 1, y + 0), population) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y + 1), population) != Tile::Wall) as u8
+                              + (self.get_init_tile_at(pos + Vector2::new(x + 0, y - 1), population) != Tile::Wall) as u8;
                     if s == 4 {
-                        self.set_init_tile_at(pos + Vector2::new(x, y), Population::TerrainRaw, Tile::StoneBrick)
+                        self.set_init_tile_at(pos + Vector2::new(x, y), population, Tile::StoneBrick)
                     }
                 }
             }
@@ -133,7 +168,59 @@ impl World {
         self.mut_chunk_at_raw(chunk_pos).population = Population::TerrainPostProcess;
     }
 
-    fn structurize_chunk(&mut self, chunk_pos: Vector2<i32>) {
+    fn lakeify_chunk(&mut self, chunk_pos: Vector2<i32>, population: Population) {
+        self.mut_chunk_at_raw(chunk_pos).population = Population::TerrainWatered;
+        let mut pos = chunk_pos * 16;
+        let mut rng = rand::rngs::StdRng::seed_from_u64(self.chunk_hash_with_seed_and_salt(pos, 2134));
+        pos += Vector2::new(rng.gen_range(0..CHUNK_SIZE as i32), rng.gen_range(0..CHUNK_SIZE as i32));
+        let mut l = 0;
+        while self.get_init_tile_at(pos + Vector2::new(-l, 0), population) == Tile::Wall && l < 7 {
+            l += 1;
+        }
+        l -= 1;
+        let mut r = 0;
+        while self.get_init_tile_at(pos + Vector2::new(r, 0), population) == Tile::Wall && r < 7 {
+            r += 1;
+        }
+        r -= 1;
+        let size = l + r;
+        let start = pos.x - l;
+        if size < 7 { return }
+        let mut h = 0;
+        let mut k = 0;
+        'a: while k < 16 { 
+            let mut c = 0;
+            for i in start..start+size {
+                if self.get_init_tile_at(Vector2::new(i, pos.y - k), population) != Tile::Wall {
+                    if c == 0 {
+                        h = k;
+                    }
+                    c += 1;
+                }
+                if c > 4 {
+                    break 'a
+                }
+            }
+            k += 1;
+        }
+        h = h.min(k-2);
+        if h < 3 || k == 12 { return }
+        for i in start+1..start+size-2 {
+            for j in h-3..h {
+                let p = Vector2::new(i, pos.y - j);
+                self.set_init_water_tile_at(p, population, (h - j) as u8);
+                let t = self.get_initial_terrain_tile(p, false);
+                self.set_init_tile_at(p, population, t);
+            }
+            for j in h-1..k {
+                let p = Vector2::new(i, pos.y - j);
+                let t = self.get_initial_terrain_tile(p, false);
+                self.set_init_tile_at(p, population, t);
+            }
+        }
+    }
+
+    fn structurize_chunk(&mut self, chunk_pos: Vector2<i32>, population: Population) {
         self.mut_chunk_at_raw(chunk_pos).population = Population::Structures;
         if chunk_pos.mag_sq() <= 2 { return }
         let mut pos = chunk_pos * 16;
@@ -165,12 +252,12 @@ impl World {
 
             for pipe in &pipes {
                 let (wl, wr, wu, wd) = (
-                    self.get_init_tile_at(*pipe + Vector2::new(-1, 0), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*pipe + Vector2::new(1, 0), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*pipe + Vector2::new(0, -1), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*pipe + Vector2::new( 0, 1), Population::TerrainPostProcess) == Tile::Wall
+                    self.get_init_tile_at(*pipe + Vector2::new(-1, 0), population) == Tile::Wall,
+                    self.get_init_tile_at(*pipe + Vector2::new(1, 0), population) == Tile::Wall,
+                    self.get_init_tile_at(*pipe + Vector2::new(0, -1), population) == Tile::Wall,
+                    self.get_init_tile_at(*pipe + Vector2::new( 0, 1), population) == Tile::Wall
                 );
-                self.set_init_fg_tile_at(*pipe, Population::TerrainPostProcess, 
+                self.set_init_fg_tile_at(*pipe, population, 
                 match (
                     pipes.contains(&(*pipe + Vector2::new(-1, 0))) || wl, 
                     pipes.contains(&(*pipe + Vector2::new(1, 0))) || wr, 
@@ -291,16 +378,16 @@ impl World {
             gen_platform(&mut rng, &mut platforms, self, pos);
 
             for platform in &platforms {
-                if matches!(self.get_init_fg_tile_at(*platform + Vector2::new(1, 0), Population::TerrainPostProcess), 
+                if matches!(self.get_init_fg_tile_at(*platform + Vector2::new(1, 0), population), 
                 FgTile::FluorecentLampL | FgTile::FluorecentLampR | FgTile::ChainV) {
-                    self.set_init_fg_tile_at(*platform, Population::TerrainPostProcess, FgTile::MetalFrameFloorMItemSupport);
+                    self.set_init_fg_tile_at(*platform, population, FgTile::MetalFrameFloorMItemSupport);
                     continue;
                 }
                 let (wl, wr, wu, wd) = (
-                    self.get_init_tile_at(*platform + Vector2::new(-1, 0), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*platform + Vector2::new(1, 0), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*platform + Vector2::new(0, -1), Population::TerrainPostProcess) == Tile::Wall,
-                    self.get_init_tile_at(*platform + Vector2::new( 0, 1), Population::TerrainPostProcess) == Tile::Wall
+                    self.get_init_tile_at(*platform + Vector2::new(-1, 0), population) == Tile::Wall,
+                    self.get_init_tile_at(*platform + Vector2::new(1, 0), population) == Tile::Wall,
+                    self.get_init_tile_at(*platform + Vector2::new(0, -1), population) == Tile::Wall,
+                    self.get_init_tile_at(*platform + Vector2::new( 0, 1), population) == Tile::Wall
                 );
                 let t = 
                 match (
@@ -316,7 +403,7 @@ impl World {
 
                     (_, _, _, _) => FgTile::MetalFrameBlock,
                 };
-                let current = self.get_init_fg_tile_at(*platform, Population::TerrainPostProcess);
+                let current = self.get_init_fg_tile_at(*platform, population);
                 use FgTile::*;
                 let t = match current {
                     PipeEndL | PipeLR | PipeEndR => FgTile::FramedPipeLR,
@@ -324,7 +411,7 @@ impl World {
                     PipeLRU | PipeLRD | PipeRUD | PipeLUD | PipeLD | PipeRD | PipeLU | PipeRU | PipeLRUD => FgTile::FramedPipeJunction,
                     _ => t
                 };
-                self.set_init_fg_tile_at(*platform, Population::TerrainPostProcess, t);
+                self.set_init_fg_tile_at(*platform, population, t);
             }
         }
     }

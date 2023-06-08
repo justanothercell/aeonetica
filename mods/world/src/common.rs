@@ -13,6 +13,7 @@ pub enum Population {
     Uninit,
     TerrainRaw,
     TerrainPostProcess,
+    TerrainWatered,
     Structures,
     Finished
 }
@@ -22,7 +23,9 @@ pub struct Chunk {
     pub population: Population,
     pub chunk_pos: Vector2<i32>,
     pub tiles: [Tile; CHUNK_SIZE*CHUNK_SIZE],
-    pub fg_tiles: [FgTile; CHUNK_SIZE*CHUNK_SIZE]
+    pub fg_tiles: [FgTile; CHUNK_SIZE*CHUNK_SIZE],
+    /// Depth of water. 0 is air, 1 is surface block
+    pub water_mask: [u8; CHUNK_SIZE*CHUNK_SIZE],
 }
 
 impl Chunk {
@@ -31,16 +34,13 @@ impl Chunk {
             population: Population::Uninit,
             chunk_pos,
             tiles: [Tile::Wall; CHUNK_SIZE*CHUNK_SIZE],
-            fg_tiles: [FgTile::Empty; CHUNK_SIZE*CHUNK_SIZE]
+            fg_tiles: [FgTile::Empty; CHUNK_SIZE*CHUNK_SIZE],
+            water_mask: [0; CHUNK_SIZE*CHUNK_SIZE],
         }
     }
 
     pub fn get_tile(&self, pos: Vector2<i32>) -> Tile {
         self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
-    }
-
-    pub fn mut_tile(&mut self, pos: Vector2<i32>) -> &mut Tile {
-        &mut self.tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
     }
 
     pub fn set_tile(&mut self, pos: Vector2<i32>, tile: Tile) {
@@ -51,12 +51,16 @@ impl Chunk {
         self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
     }
 
-    pub fn mut_fg_tile(&mut self, pos: Vector2<i32>) -> &mut FgTile {
-        &mut self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize]
-    }
-
     pub fn set_fg_tile(&mut self, pos: Vector2<i32>, tile: FgTile) {
         self.fg_tiles[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
+    }
+
+    pub fn get_water_tile(&self, pos: Vector2<i32>) -> u8 {
+        self.water_mask[pos.y as usize * CHUNK_SIZE + pos.x as usize]
+    }
+
+    pub fn set_water_tile(&mut self, pos: Vector2<i32>, tile: u8) {
+        self.water_mask[pos.y as usize * CHUNK_SIZE + pos.x as usize] = tile
     }
 }
 
@@ -85,6 +89,11 @@ pub trait WorldView {
     /// Returns [`FgTile::Empty`] if not loaded
     fn get_fg_tile(&self, pos: Vector2<i32>) -> FgTile {
         self.get_fg_tile_or_null(pos).unwrap_or(FgTile::Empty)
+    }
+    fn get_water_tile_or_null(&self, pos: Vector2<i32>) -> Nullable<u8>;
+    /// Returns [`0u8`] if not loaded
+    fn get_water_tile(&self, pos: Vector2<i32>) -> u8 {
+        self.get_water_tile_or_null(pos).unwrap_or(0)
     }
 
     fn is_loaded(&self, pos: Vector2<i32>) -> bool;
