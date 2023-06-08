@@ -23,7 +23,7 @@
 
 ---
 
-<img src="img/img_worm.png" alt="" style="width: 510px; image-rendering: pixelated">
+<img src="img/gen_pipes_metal.png" alt="" style="width: 510px; image-rendering: pixelated">
 
 ---
 

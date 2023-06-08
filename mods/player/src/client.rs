@@ -115,6 +115,7 @@ impl PlayerHandle {
 
     pub(crate) fn receive_position(&mut self, _messenger: &mut ClientMessenger, _renderer: Nullable<&mut Renderer>, _store: &mut DataStore, (position, teleporting): (Vector2<f32>, bool)) { 
 		if teleporting {
+            log!("got teleported");
 			self.p_position = position;
 			self.interpolation_delta = 1.0;
 			self.position = position;
