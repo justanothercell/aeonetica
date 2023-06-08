@@ -117,3 +117,41 @@ impl WithGlow for Quad<GlowTexture> {
         self.params().2
     }
 }
+
+pub type WaterTexture = FlatTexture;
+
+struct WaterShader(Rc<shader::Program>);
+struct WaterMaterial(Rc<WaterTexture>);
+
+fn create_water_shader() -> WaterShader {
+    WaterShader(Rc::new(shader::Program::from_source(include_str!("../../assets/water-shader.glsl")).expect_log()))
+}
+
+pub fn water_material(store: &mut DataStore) -> Rc<WaterTexture> {
+    let shader = store.get_or_create(create_water_shader).0.clone();
+    store.get_or_create(|| WaterMaterial(Rc::new(WaterTexture::with_shader(shader)))).0.clone()
+}
+
+pub fn water_shader(store: &mut DataStore) -> Rc<shader::Program> {
+    store.get_or_create(create_water_shader).0.clone()
+}
+
+pub trait WithWater {
+    fn with_water_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, material: Rc<WaterTexture>) -> Self;
+    fn with_water_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, material: Rc<WaterTexture>) -> Self;
+}
+
+impl WithWater for Quad<WaterTexture> {
+    fn with_water_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, material: Rc<WaterTexture>) -> Self {
+        Self::new(position, size, z_index, material, ([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], texture))
+    }
+
+    fn with_water_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, material: Rc<WaterTexture>) -> Self {
+        Self::new(position, size, z_index, material, ([
+            [sprite.left(),  sprite.top()   ],
+            [sprite.right(), sprite.top()   ],
+            [sprite.right(), sprite.bottom()],
+            [sprite.left(),  sprite.bottom()]
+        ], sprite.texture()))
+    }
+}

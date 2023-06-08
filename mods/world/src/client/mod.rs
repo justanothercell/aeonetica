@@ -27,10 +27,12 @@ use crate::tiles::{Tile, FgTile};
 
 use debug_mod::Debug;
 
-use self::materials::{GlowTexture, terrain_material};
+use self::materials::{GlowTexture, terrain_material, WaterTexture, WithWater, water_material};
 use self::light::{LightStore, Light, LightId};
+use self::water::WaterStore;
 
 mod pipeline;
+mod water;
 pub mod light;
 pub mod materials;
 
@@ -115,6 +117,7 @@ impl WorldView for ClientWorld {
 pub(crate) struct WorldHandle {
     tile_sprites: SpriteSheet,
     fg_tile_sprites: SpriteSheet,
+    water_texture: Texture
 }
 
 impl WorldHandle {
@@ -128,10 +131,27 @@ impl WorldHandle {
                 Texture::from_bytes(include_bytes!("../../assets/include/overlaymap.png")).unwrap(),
                 Vector2::new(16, 16)
             ).expect("error loading world spritesheet"),
+            water_texture: Texture::from_bytes(include_bytes!("../../assets/include/water.png")).unwrap()
         }
     }
 
     pub(crate) fn receive_chunk_data(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, store: &mut DataStore, chunk: Chunk) {
+        if chunk.chunk_pos == Vector2::new(1, 1) {
+            for i in 0i32..8 {
+                for j in 1..3 {
+                    let position = Vector2::new(i, j).to_f32();
+                    Block::add_water(Quad::with_water_texture(
+                        position, 
+                        Vector2::new(1.0, 1.0), 
+                        20, 
+                        self.water_texture.id(), 
+                        water_material(store)
+                    ), *renderer);
+                    store.mut_store::<WaterStore>().add(position);
+                }
+            }
+        }
+
         let mut quads = vec![];
         for (i, tile) in chunk.tiles.iter().enumerate() {
             let index = tile.sprite_sheet_index();
@@ -180,7 +200,7 @@ impl WorldHandle {
                 let quad = Quad::with_glow_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
-                    3, 
+                    4, 
                     sprite,
                     glow_color,
                     GlowTexture::get(store)
@@ -191,7 +211,7 @@ impl WorldHandle {
                 let mut quad = Quad::with_terrain_sprite(
                     Vector2::new(x as f32, y as f32), 
                     Vector2::new(1.0, 1.0), 
-                    2, 
+                    3, 
                     sprite,
                     terrain_material(store)
                 );
@@ -209,7 +229,8 @@ impl ClientEntity for WorldHandle {
 
 pub enum Block {
     Default(Quad<FlatTexture>),
-    Glowing(Quad<GlowTexture>, LightId)
+    Glowing(Quad<GlowTexture>, LightId),
+    Water(Quad<WaterTexture>)
 }
 
 impl Block {
@@ -222,12 +243,21 @@ impl Block {
         Self::Glowing(quad, light_id)
     }
 
+    fn add_water(mut quad: Quad<WaterTexture>, renderer: &mut Renderer) -> Self {
+        renderer.add(&mut quad);
+        Self::Water(quad)
+    }
+
     fn remove_from(&mut self, renderer: &mut Renderer, store: &mut DataStore) {
         match self {
             Self::Default(quad) => renderer.remove(quad),
             Self::Glowing(quad, light_pos) => {
                 renderer.remove(quad);
                 store.mut_store::<LightStore>().remove(light_pos);
+            },
+            Self::Water(quad) => {
+                // todo
+                renderer.remove(quad)
             }
         }
     }

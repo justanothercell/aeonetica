@@ -1,7 +1,7 @@
 use aeonetica_client::{renderer::{pipeline::Pipeline, Renderer, layer::LayerUpdater, buffer::framebuffer::*, texture::*, util::*, shader::{self, UniformStr}}, uniform_str, data_store::DataStore};
 use aeonetica_engine::{time::Time, math::{camera::Camera, vector::Vector2}, error::ErrorResult};
 
-use super::{light::LightStore, materials::terrain_shader};
+use super::{light::LightStore, materials::{terrain_shader, water_shader}, water::WaterStore};
 
 pub(super) struct WorldRenderPipeline {
     intermediate_fb: FrameBuffer,
@@ -17,6 +17,7 @@ impl WorldRenderPipeline {
 
     pub fn new(store: &mut DataStore) -> ErrorResult<Self> {
         LightStore::init(store);
+        WaterStore::init(store);
         
         scissor(Vector2::new(0, 0), Vector2::new(1920, 1080));
 
@@ -41,6 +42,11 @@ impl Pipeline for WorldRenderPipeline {
         let shader = terrain_shader(updater.store());
         let lights = updater.store().mut_store::<LightStore>();
         lights.upload_uniforms(&shader);
+        let ambient_light = lights.ambient_light();
+
+        let shader = water_shader(updater.store());
+        let water = updater.store().mut_store::<WaterStore>();
+        water.upload_uniforms(&shader, ambient_light, &time);
 
         updater.update(renderer, time);
         renderer.draw_vertices(target);
