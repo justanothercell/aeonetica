@@ -3,7 +3,7 @@ use std::collections::{BinaryHeap};
 use std::collections::hash_map::Entry;
 use std::marker::PhantomData;
 use std::ops::{Generator, GeneratorState};
-use aeonetica_engine::Id;
+use aeonetica_engine::TypeId;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
@@ -37,11 +37,17 @@ pub(crate) struct TaskQueue {
     pub(crate) event_queue: IdMap<Vec<Box<dyn TaskFunc>>>
 }
 
-pub type EventId = Id;
+pub type EventId = TypeId;
 
 pub enum WaitFor {
     Ticks(usize),
     Event(EventId)
+}
+
+impl WaitFor {
+    pub fn event::<T: Event>() -> Self {
+        WaitFor::Event(type_to_id::<T>())
+    }
 }
 
 pub struct Yielder<'a>(PrivateYielder, PhantomData<&'a ()>, WaitFor);
