@@ -176,6 +176,12 @@ impl Program {
         }
     }
 
+    pub fn uniform_location(&self, name: &UniformStr) -> i32 {
+        unsafe {
+            gl::GetUniformLocation(self.0, name.0 as *const i8)
+        }
+    }
+
     fn preprocess_sources(src: &str) -> ErrorResult<(String, String)> {
         // remove all block comments /* */
         let comment_re = Regex::new(r"(?m)/\*[\s\S]*?\*/").unwrap();

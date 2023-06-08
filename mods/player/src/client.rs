@@ -20,12 +20,12 @@ use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::nullable::Nullable;
 use aeonetica_engine::util::nullable::Nullable::{Null, Value};
 use aeonetica_engine::util::type_to_id;
-use aeonetica_engine::math::vector::Vector2;
+use aeonetica_engine::math::vector::{Vector2, Vector3};
 use debug_mod::Debug;
 use world_mod::common::{GRAVITY, WorldView};
 use world_mod::client::{ClientWorld, WorldLayer};
 use world_mod::client::CameraData;
-use world_mod::client::materials::{WithTerrain, terrain_material};
+use world_mod::client::{materials::{WithGlow, terrain_material, GlowTexture}, light::*};
 use crate::server::Player;
 
 pub struct PlayerModClient {
@@ -73,7 +73,8 @@ pub struct PlayerHandle {
     position: Vector2<f32>,
 
     // rendering stuff
-    quad: Nullable<Quad<FlatTexture>>,
+    quad: Nullable<Quad<GlowTexture>>,
+    light_id: LightId,
 
     // movement stuff
     key_left: bool,
@@ -94,6 +95,7 @@ impl PlayerHandle {
             p_position: Default::default(),
             position: Default::default(),
             quad: Null,
+            light_id: 0,
 
             key_left: false,
             key_right: false,
@@ -141,14 +143,19 @@ impl ClientHandle for PlayerHandle {
         messenger.register_receiver(Self::set_controlling);
         messenger.register_receiver(Self::receive_position);
 
+        let size = Vector2::new(PLAYER_SIZE, PLAYER_SIZE);
         self.quad = Value(
-            Quad::with_terrain_texture(
-            self.position,
-            Vector2::new(PLAYER_SIZE, PLAYER_SIZE),
-            10,
-            store.get_or_create(PlayerTexture::load).get().id(),
-            terrain_material(store)
-        ))
+            Quad::with_glow_texture(
+                self.position,
+                size,
+                10,
+                store.get_or_create(PlayerTexture::load).get().id(),
+                [0.3, 0.8, 0.3, 1.0],
+                GlowTexture::get(store)
+            )
+        );
+
+        self.light_id = store.mut_store::<LightStore>().add(Light::new(self.position + size.half(), 4.0, Vector3::new(0.3, 1.0, 0.3)));
     }
 
     fn remove(&mut self, _messenger: &mut ClientMessenger, mut renderer: Nullable<&mut Renderer>, _store: &mut DataStore) {
@@ -215,7 +222,8 @@ impl ClientHandle for PlayerHandle {
             quad.set_position(self.p_position + delta * self.interpolation_delta);
             self.interpolation_delta = (time.delta as f32 * self.speed + self.interpolation_delta).min(1.0);
         }
-
+        
+        (*store.mut_store::<LightStore>()).update(&self.light_id, Light::new(self.position + Vector2::new(PLAYER_SIZE / 2.0, PLAYER_SIZE / 2.0), 4.0, Vector3::new(0.3, 1.0, 0.3)));
         let _ = renderer.draw(quad);
     }
 

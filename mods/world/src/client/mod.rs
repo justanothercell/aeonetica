@@ -28,10 +28,10 @@ use crate::tiles::{Tile, FgTile};
 use debug_mod::Debug;
 
 use self::materials::{GlowTexture, terrain_material};
-use self::light::{LightStore, Light};
+use self::light::{LightStore, Light, LightId};
 
 mod pipeline;
-mod light;
+pub mod light;
 pub mod materials;
 
 #[allow(clippy::large_enum_variant)]
@@ -149,7 +149,8 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     1, 
                     sprite,
-                    glow_color
+                    glow_color,
+                    GlowTexture::get(store)
                 );
                 quads.push(Block::add_glowing(quad, *renderer, store));
             }
@@ -181,7 +182,8 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     3, 
                     sprite,
-                    glow_color
+                    glow_color,
+                    GlowTexture::get(store)
                 );
                 quads.push(Block::add_glowing(quad, *renderer, store));
             }
@@ -207,7 +209,7 @@ impl ClientEntity for WorldHandle {
 
 pub enum Block {
     Default(Quad<FlatTexture>),
-    Glowing(Quad<GlowTexture>, Light)
+    Glowing(Quad<GlowTexture>, LightId)
 }
 
 impl Block {
@@ -216,8 +218,8 @@ impl Block {
         let light_color = quad.light_color();
         let light_pos = *quad.position() + quad.size().half();
         let light = Light::new(light_pos, 7.5, Vector3::new(light_color[0], light_color[1], light_color[2]));
-        store.mut_store::<LightStore>().add(&light);
-        Self::Glowing(quad, light)
+        let light_id = store.mut_store::<LightStore>().add(light);
+        Self::Glowing(quad, light_id)
     }
 
     fn remove_from(&mut self, renderer: &mut Renderer, store: &mut DataStore) {

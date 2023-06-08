@@ -4,7 +4,7 @@ Shader for normal world terrain
 #[vertex]
 #version 450 core
 
-const uint MAX_LIGHT_SOURCE_COUNT = 20;
+#define MAX_LIGHT_SOURCE_COUNT 30
 
 layout (location = 0) in vec2 a_Position;
 layout (location = 1) in vec2 a_TexCoord;
@@ -31,7 +31,7 @@ void main() {
 #[fragment]
 #version 450 core
 
-const uint MAX_LIGHT_SOURCE_COUNT = 20;
+#define MAX_LIGHT_SOURCE_COUNT 30
 
 in vec2 v_TexCoord;
 in float v_LightDistances[MAX_LIGHT_SOURCE_COUNT];

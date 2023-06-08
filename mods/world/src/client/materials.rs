@@ -4,17 +4,11 @@ use aeonetica_client::{renderer::{buffer::{BufferLayout, BufferLayoutBuilder, Ve
 use aeonetica_engine::math::vector::Vector2;
 use aeonetica_engine::error::ExpectLog;
 
-pub struct GlowTexture {
-    shader: Rc<shader::Program>
-}
-
 struct TerrainMaterial(Rc<FlatTexture>);
 struct TerrainShader(Rc<shader::Program>);
 
 thread_local! {
     static GLOW_TEXTURE_LAYOUT: Rc<BufferLayout> = Rc::new(<GlowTexture as Material>::Layout::build());
-    static GLOW_TEXTURE_SHADER: Rc<shader::Program> = Rc::new(shader::Program::from_source(include_str!("../../assets/glow-shader.glsl")).expect_log());
-    static GLOW_TEXTURE_INSTANCE: Rc<GlowTexture> = Rc::new(GlowTexture::new());
 }
 
 fn create_terrain_shader() -> TerrainShader {
@@ -50,15 +44,16 @@ impl WithTerrain for Quad<FlatTexture> {
     }
 }
 
-impl GlowTexture {
-    fn new() -> Self {
-        Self {
-            shader: GLOW_TEXTURE_SHADER.with(|shader| shader.clone())
-        }
-    }
+struct GlowTextureShader(Rc<shader::Program>);
 
-    pub fn get() -> Rc<Self> {
-        GLOW_TEXTURE_INSTANCE.with(|instance| instance.clone())
+pub struct GlowTexture {
+    shader: Rc<shader::Program>
+}
+
+impl GlowTexture {
+    pub fn get(store: &mut DataStore) -> Rc<Self> {
+        let shader = store.get_or_create(|| GlowTextureShader(Rc::new(shader::Program::from_source(include_str!("../../assets/glow-shader.glsl")).expect_log()))).0.clone();
+        store.get_or_create(|| Rc::new(Self { shader })).clone()
     }
 }
 
@@ -97,20 +92,20 @@ impl Material for GlowTexture {
     }
 }
 
-pub(super) trait WithGlow {
-    fn with_glow_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, glow_color: [f32; 4]) -> Self;
-    fn with_glow_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, glow_color: [f32; 4]) -> Self;
+pub trait WithGlow {
+    fn with_glow_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, glow_color: [f32; 4], material: Rc<GlowTexture>) -> Self;
+    fn with_glow_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, glow_color: [f32; 4], material: Rc<GlowTexture>) -> Self;
 
     fn light_color(&self) -> [f32; 4];
 }
 
 impl WithGlow for Quad<GlowTexture> {
-    fn with_glow_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, glow_color: [f32; 4]) -> Self {
-        Self::new(position, size, z_index, GlowTexture::get(), ([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], texture, glow_color))
+    fn with_glow_texture(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, texture: RenderID, glow_color: [f32; 4], material: Rc<GlowTexture>) -> Self {
+        Self::new(position, size, z_index, material, ([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]], texture, glow_color))
     }
 
-    fn with_glow_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, glow_color: [f32; 4]) -> Self {
-        Self::new(position, size, z_index, GlowTexture::get(), ([
+    fn with_glow_sprite(position: Vector2<f32>, size: Vector2<f32>, z_index: u8, sprite: Sprite, glow_color: [f32; 4], material: Rc<GlowTexture>) -> Self {
+        Self::new(position, size, z_index, material, ([
             [sprite.left(),  sprite.top()   ],
             [sprite.right(), sprite.top()   ],
             [sprite.right(), sprite.bottom()],

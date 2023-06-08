@@ -1,17 +1,19 @@
+use std::collections::BTreeMap;
+
 use aeonetica_client::{data_store::DataStore, renderer::shader};
 use aeonetica_engine::math::vector::*;
 use crate::client::light::shader::*;
 
-#[derive(Debug)]
-pub(super) struct LightStore {
-    positions: Vec<Vector2<f32>>,
-    intensities: Vec<f32>,
-    light_colors: Vec<Vector3<f32>>,
+pub type LightId = u32;
+
+pub struct LightStore {
+    lights: BTreeMap<LightId, Light>,
     ambient_light: f32,
-    is_dirty: bool
+    is_dirty: bool,
+    light_id: u32
 }
 
-const MAX_LIGHT_SOURCE_COUNT: usize = 20;
+const MAX_LIGHT_SOURCE_COUNT: usize = 30;
 
 const LIGHT_POSITIONS_USTR: UniformStr = uniform_str!("u_LightPositions");
 const AMBIENT_LIGHT_STRENGTH_USTR: UniformStr = uniform_str!("u_AmbientLightStrength");
@@ -22,30 +24,38 @@ const NUM_LIGHTS_USTR: UniformStr = uniform_str!("u_NumLights");
 impl LightStore {
     pub fn init(store: &mut DataStore) {
         store.add_store(LightStore {
-            positions: vec![],
-            intensities: vec![],
-            light_colors: vec!{},
-            ambient_light: 0.3,
-            is_dirty: true
+            lights: BTreeMap::new(),
+            ambient_light: 0.1,
+            is_dirty: true,
+            light_id: 0
         });
     }
 
-    pub fn add(&mut self, light: &Light) {
-        if !self.positions.contains(&light.position) {
-            self.positions.push(light.position);
-            self.intensities.push(light.intensity);
-            self.light_colors.push(light.color);
-            self.is_dirty = true;
-        }
+    pub fn add(&mut self, light: Light) -> LightId {
+        let id = self.light_id;
+        self.light_id += 1;
+
+        self.lights.insert(id, light);
+        self.is_dirty = true;
+
+        id
     }
 
-    pub fn remove(&mut self, light: &Light) {
-        if let Some(i) = self.positions.iter().position(|p| p == &light.position) {
-            self.positions.remove(i);
-            self.intensities.remove(i);
-            self.light_colors.remove(i);
-            self.is_dirty = true;
-        }
+    pub fn remove(&mut self, light: &LightId) {
+        self.lights.remove(light);
+        self.is_dirty = true;
+    }
+
+    pub fn update(&mut self, id: &LightId, light: Light) {
+        *self.lights.get_mut(id).unwrap() = light;
+    }
+
+    pub fn ambient_light(&self) -> f32 {
+        self.ambient_light
+    }
+
+    pub fn set_ambient_light(&mut self, ambient_light: f32) {
+        self.ambient_light = ambient_light
     }
 
     pub fn upload_uniforms(&self, shader: &shader::Program) {
@@ -53,14 +63,24 @@ impl LightStore {
             return;
         }
         
-        let num_lights = self.positions.len().min(MAX_LIGHT_SOURCE_COUNT);
-
         shader.bind();
+
+        let light_positions_location = shader.uniform_location(&LIGHT_POSITIONS_USTR);
+        let light_intensities_location = shader.uniform_location(&INTENSITIES_USTR);
+        let light_colors_location = shader.uniform_location(&LIGHT_COLORS_USTR);
+        
+        shader.upload_uniform(&NUM_LIGHTS_USTR, &(self.lights.len().min(MAX_LIGHT_SOURCE_COUNT) as u32));
         shader.upload_uniform(&AMBIENT_LIGHT_STRENGTH_USTR, &self.ambient_light);
-        shader.upload_uniform(&NUM_LIGHTS_USTR, &(num_lights as u32));
-        shader.upload_uniform(&LIGHT_POSITIONS_USTR, &self.positions[..num_lights]);
-        shader.upload_uniform(&INTENSITIES_USTR, &self.intensities[..num_lights]);
-        shader.upload_uniform(&LIGHT_COLORS_USTR, &self.light_colors[..num_lights]);
+
+        for (i, light) in self.lights.values().enumerate() {
+            if i >= MAX_LIGHT_SOURCE_COUNT {
+                break;
+            }
+
+            light.position.upload(light_positions_location + i as i32);
+            light.intensity.upload(light_intensities_location + i as i32);
+            light.color.upload(light_colors_location + i as i32);
+        }
     }
 }
 

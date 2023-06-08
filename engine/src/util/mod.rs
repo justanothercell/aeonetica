@@ -2,7 +2,7 @@ pub mod id_map;
 pub mod nullable;
 pub mod generic_assert;
 
-use std::any::{type_name, Any};
+use std::any::type_name;
 
 use std::fmt::Display;
 use std::path::Path;
@@ -13,8 +13,6 @@ use std::hash::SipHasher;
 use crate::error::*;
 use crate::error::builtin::IOError;
 use crate::{Id, TypeId};
-
-use self::nullable::Nullable;
 
 pub fn unzip_archive<R: std::io::Read + std::io::Seek, P: AsRef<Path> + Display>(zip: R, dest_dir: P) -> ErrorResult<()> {
     let mut archive = zip::read::ZipArchive::new(zip)
