@@ -126,7 +126,7 @@ impl Window {
         let mut context_provider = OpenGlContextProvider::new();
 
         gl::load_with(|s| context_provider.insert(s, glfw.get_proc_address_raw(s)));
-        glfw.set_swap_interval(glfw::SwapInterval::None);
+        glfw.set_swap_interval(if use_vsync() { glfw::SwapInterval::Adaptive } else { glfw::SwapInterval::None });
         window.set_all_polling(true);
 
         log!(r#"
@@ -275,4 +275,12 @@ fn load_window_icons() -> ErrorResult<Vec<glfw::PixelImage>> {
         pixels_from_bytes(include_bytes!("../../../assets/logo-60.png"))?,
         pixels_from_bytes(include_bytes!("../../../assets/logo-120.png"))?
     ])
+}
+
+const VSYNC_ENVIRONMENT_VAR: &'static str = "AEONETICA_VSYNC";
+fn use_vsync() -> bool {
+    match std::env::var(VSYNC_ENVIRONMENT_VAR) {
+        Ok(value) => matches!(value.to_uppercase().as_str(), "1" | "TRUE"),
+        _ => false
+    }
 }
