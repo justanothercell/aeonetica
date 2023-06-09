@@ -43,9 +43,16 @@ impl RenderBuffer {
         unsafe { gl::BindRenderbuffer(gl::RENDERBUFFER, 0); }
     }
 
-    pub fn delete(self) {
-        unsafe {
-            gl::DeleteRenderbuffers(1, &self.id);
+    pub fn delete(&mut self) {
+        if self.id != 0 {
+            unsafe { gl::DeleteRenderbuffers(1, &self.id) }
+            self.id = 0;
         }
+    }
+}
+
+impl Drop for RenderBuffer {
+    fn drop(&mut self) {
+        self.delete();
     }
 }

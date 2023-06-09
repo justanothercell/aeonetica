@@ -237,7 +237,7 @@ impl Window {
         &self.context_provider
     }
 
-    pub(crate) fn finish(self) {
+    pub(crate) fn finish(mut self) {
         self.glfw_window.close();
         self.default_post_processing_shader.delete();
         self.framebuffer.delete();

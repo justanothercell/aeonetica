@@ -1,5 +1,3 @@
-use std::collections::{hash_map, HashMap};
-
 use aeonetica_engine::math::{vector::{Vector2, Vector3}, matrix::Matrix4};
 
 use crate::renderer::texture::Texture;

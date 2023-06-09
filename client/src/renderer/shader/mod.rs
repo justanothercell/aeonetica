@@ -156,8 +156,11 @@ impl Program {
         unsafe { gl::UseProgram(0) }
     }
 
-    pub fn delete(self) {
-        unsafe { gl::DeleteProgram(self.0) }
+    pub fn delete(&mut self) {
+        if self.0 != 0 {
+            unsafe { gl::DeleteProgram(self.0) }
+            self.0 = 0;
+        }
     }
 
     pub fn upload_uniforms<U: Uniform + ?Sized>(&self, uniforms: &[(&UniformStr, &U)]) {
@@ -212,7 +215,7 @@ impl Program {
     pub fn from_source(src: &str) -> ErrorResult<Self> {
         // find first `#type`
         let (vertex_src, fragment_src) = Self::preprocess_sources(src)?;
-        let p = Self::new().ok_or_else(||  Error::new(ShaderError(format!("could not allocate program")), Fatality::FATAL, true))?;
+        let mut p = Self::new().ok_or_else(||  Error::new(ShaderError(format!("could not allocate program")), Fatality::FATAL, true))?;
         let v = Shader::from_source(ShaderType::Vertex, &vertex_src)
             .map_err(|e| Error::new(ShaderError(format!("vertex shader compile error: {e}")), Fatality::FATAL, true))?;
         let f = Shader::from_source(ShaderType::Fragment, &fragment_src)
@@ -230,5 +233,11 @@ impl Program {
             p.delete();
             Err(Error::new(ShaderError(out), Fatality::FATAL, true))
         }
+    }
+}
+
+impl Drop for Program {
+    fn drop(&mut self) {
+        self.delete();
     }
 }

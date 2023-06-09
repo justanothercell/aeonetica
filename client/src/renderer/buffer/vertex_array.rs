@@ -92,9 +92,12 @@ impl VertexArray {
         unsafe { gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, std::ptr::null()); }
     }
 
-    pub fn delete(self) {
-        unsafe { gl::DeleteVertexArrays(1, &self.id); }
-        if let Some(ibo) = self.index_buffer { ibo.delete() }
-        if let Some(vbo) = self.vertex_buffer { vbo.delete() }
+    pub fn delete(&mut self) {
+        if self.id != 0 {
+            unsafe { gl::DeleteVertexArrays(1, &self.id) }
+            self.id = 0;
+        }
+        self.index_buffer = None;
+        self.vertex_buffer = None;
     }
 }

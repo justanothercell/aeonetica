@@ -87,7 +87,7 @@ impl Batch {
         })
     }
 
-    pub fn delete(self) {
+    pub fn delete(mut self) {
         self.vertex_array.delete();
     }
 

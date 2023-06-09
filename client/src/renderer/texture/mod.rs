@@ -205,8 +205,11 @@ impl Texture {
         self.id
     }
 
-    pub fn delete(self) {
-        unsafe { gl::DeleteTextures(1, &self.id); }
+    pub fn delete(&mut self) {
+        if self.id != 0 {
+            unsafe { gl::DeleteTextures(1, &self.id); }
+            self.id = 0;
+        }
     }
 
     pub fn size(&self) -> &Vector2<u32> {
@@ -219,5 +222,11 @@ impl Texture {
             gl::RGB => 3,
             _ => panic!("unsupported pixel layout")
         }
+    }
+}
+
+impl Drop for Texture {
+    fn drop(&mut self) {
+        self.delete();
     }
 }

@@ -130,8 +130,11 @@ impl Buffer {
         }
     }
 
-    pub(super) fn delete(self) {
-        unsafe { gl::DeleteBuffers(1, &self.id) }
+    pub(super) fn delete(&mut self) {
+        if self.id != 0 {
+            unsafe { gl::DeleteBuffers(1, &self.id) }
+            self.id = 0;
+        }
     }
 
     pub(super) fn bind(&self) {
@@ -148,6 +151,12 @@ impl Buffer {
     
     pub(super) fn gl_typ(&self) -> gl::types::GLenum {
         self.typ.into()
+    }
+}
+
+impl Drop for Buffer {
+    fn drop(&mut self) {
+        self.delete();
     }
 }
 

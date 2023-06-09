@@ -121,21 +121,12 @@ impl FrameBuffer {
         &self.textures
     }
 
-    pub fn delete(self) {
-        unsafe { 
-            gl::DeleteFramebuffers(1, &self.id);
-        }
-        
-        if let Some(rb) = self.renderbuffer {
-            rb.delete();
-        }
-
-        if let Some(vao) = self.vao {
-            vao.delete();
-        }
-
-        for texture in self.textures {
-            texture.delete();
+    pub fn delete(&mut self) {
+        if self.id != 0 {
+            unsafe { 
+                gl::DeleteFramebuffers(1, &self.id);
+            }
+            self.id = 0;
         }
     }
 
@@ -170,5 +161,11 @@ impl FrameBuffer {
             gl::ClearColor(color[0], color[1], color[2], color[3]);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
+    }
+}
+
+impl Drop for FrameBuffer {
+    fn drop(&mut self) {
+        self.delete();
     }
 }
