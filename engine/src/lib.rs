@@ -99,6 +99,7 @@ impl Display for Id {
 
 pub const ENGINE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_CLIENT_TIMEOUT: u128 = 10000; // 10s
+pub static MOD_TARGET: &str = const_format::concatcp!(std::env::consts::ARCH, "-", std::env::consts::FAMILY);
 
 #[macro_export]
 macro_rules! log_format {
