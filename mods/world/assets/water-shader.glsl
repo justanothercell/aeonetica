@@ -12,40 +12,33 @@ layout (location = 3) in float a_ReflectionY;
 uniform mat4 u_ViewProjection;
 
 out vec2 v_TexCoord;
-out float v_ReflectionY;
+out vec2 v_Reflection;
 flat out int v_TexIdx;
-flat out float v_WaveOffset;
 
 void main() {
     v_TexCoord = a_TexCoord;
     v_TexIdx = a_TexIdx;
-    v_WaveOffset = (a_TexCoord.x * 2.0 - 1.0) * 0.1;
-    v_ReflectionY = (u_ViewProjection * vec4(vec2(a_Position.x, a_ReflectionY), 0.0, 1.0)).y * 0.5 + 0.5;
+    v_Reflection = vec2(a_Position.x, (u_ViewProjection * vec4(a_Position.x, a_ReflectionY, 0.0, 1.0)).y * 0.5 + 0.5);
     gl_Position = u_ViewProjection * vec4(a_Position, 0.0, 1.0);
 }
 
 #[fragment]
 #version 450 core
 
-#define ALPHA_BLEND 0.5
+#define ALPHA_BLEND 0.7
 #define PI 3.1415926538
 
 in vec2 v_TexCoord;
-in float v_ReflectionY;
+in vec2 v_Reflection;
 flat in int v_TexIdx;
-flat in float v_WaveOffset;
 
 uniform sampler2D u_Textures[16];
-uniform float u_AmbientLightStrength = 0.1;
-uniform float u_Time;
+uniform float u_AmbientLightStrength;
 
 layout (location = 0) out vec4 r_Color;
 layout (location = 1) out vec4 r_WaterDepthMap;
 
 void main() {
-    vec4 tex_color = texture(u_Textures[v_TexIdx], v_TexCoord + vec2(0.0, v_WaveOffset * sin(u_Time + v_TexCoord.x * PI)));
-    float alpha = min(tex_color.a, ALPHA_BLEND);
-    r_Color = vec4(tex_color.xyz * u_AmbientLightStrength, alpha);
-    r_WaterDepthMap = vec4(1.0, 0.0, v_ReflectionY, 1.0);
+    r_Color = vec4(texture(u_Textures[v_TexIdx], v_TexCoord).xyz * u_AmbientLightStrength, ALPHA_BLEND);
+    r_WaterDepthMap = vec4(1.0, v_Reflection, 1.0);
 }
-

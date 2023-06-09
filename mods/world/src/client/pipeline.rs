@@ -56,6 +56,9 @@ impl Pipeline for WorldRenderPipeline {
         renderer.end_scene();
         
         disable_scissor_test();
+
+        self.shader.bind();
+        self.shader.upload_uniform(&Self::TIME_USTR, &time.time);
         
         self.intermediate_fb.render([
                 (0, &Self::FRAME_USTR),
