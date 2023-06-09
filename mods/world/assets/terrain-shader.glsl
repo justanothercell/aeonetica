@@ -45,6 +45,7 @@ uniform float u_LightIntensities[MAX_LIGHT_SOURCE_COUNT];
 uniform float u_AmbientLightStrength;
 
 layout (location = 0) out vec4 r_Color;
+layout (location = 1) out vec4 r_WaterDepthMap;
 
 void main() {
     vec3 total_diffuse = vec3(u_AmbientLightStrength);
@@ -56,4 +57,5 @@ void main() {
     }
 
     r_Color = texture(u_Textures[v_TexIdx], v_TexCoord) * vec4(total_diffuse, 1.0);
+    r_WaterDepthMap = vec4(0.0, 0.0, 0.0, r_Color.a);
 }

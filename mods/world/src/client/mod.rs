@@ -27,12 +27,10 @@ use crate::tiles::{Tile, FgTile};
 
 use debug_mod::Debug;
 
-use self::materials::{GlowTexture, terrain_material, WaterTexture, WithWater, water_material};
+use self::materials::{GlowTexture, terrain_material, WaterMaterial, WithWater};
 use self::light::{LightStore, Light, LightId};
-use self::water::WaterStore;
 
 mod pipeline;
-mod water;
 pub mod light;
 pub mod materials;
 
@@ -220,9 +218,9 @@ impl WorldHandle {
                     Vector2::new(1.0, 1.0), 
                     20, 
                     self.water_texture.id(), 
-                    water_material(store)
+                    WaterMaterial::get(store),
+                    *tile as f32
                 ), *renderer);
-                store.mut_store::<WaterStore>().add(position);
             }
         }
         store.mut_store::<ClientWorld>().chunks.insert(chunk.chunk_pos, ClientChunk::Chunk(chunk, quads));
@@ -236,7 +234,7 @@ impl ClientEntity for WorldHandle {
 pub enum Block {
     Default(Quad<FlatTexture>),
     Glowing(Quad<GlowTexture>, LightId),
-    Water(Quad<WaterTexture>)
+    Water(Quad<WaterMaterial>)
 }
 
 impl Block {
@@ -249,7 +247,7 @@ impl Block {
         Self::Glowing(quad, light_id)
     }
 
-    fn add_water(mut quad: Quad<WaterTexture>, renderer: &mut Renderer) -> Self {
+    fn add_water(mut quad: Quad<WaterMaterial>, renderer: &mut Renderer) -> Self {
         renderer.add(&mut quad);
         Self::Water(quad)
     }
@@ -281,7 +279,7 @@ impl ClientHandle for WorldHandle {
     fn update(&mut self, messenger: &mut ClientMessenger, renderer: &mut Renderer, store: &mut DataStore, _time: Time) {
         let cam = store.get_store::<CameraData>().position;
         let mut_ref_ptr = store as *mut _;
-        let (mut client_world, mut water_store) = store.two_mut_stores::<ClientWorld, WaterStore>();
+        let mut client_world = store.mut_store::<ClientWorld>();
         let chunks = &mut client_world.chunks;
         let center_chunk: Vector2<_> = (cam / Vector2::from((CHUNK_SIZE as f32, CHUNK_SIZE as f32))).floor().to_i32();
         for x in (center_chunk.x-2)..=(center_chunk.x+2) {
@@ -297,16 +295,9 @@ impl ClientHandle for WorldHandle {
         chunks.retain(|k, v|{
             let d = *k - center_chunk;
             if d.x.abs() > 2 || d.y.abs() > 2 {
-                if let ClientChunk::Chunk(chunk, quads) = v {
+                if let ClientChunk::Chunk(_, quads) = v {
                     for quad in quads {
                         quad.remove_from(renderer, unsafe { &mut *mut_ref_ptr });
-                    }
-                    for (i, tile) in chunk.water_mask.iter().enumerate() {
-                        if *tile > 0 {
-                            let x = (i % CHUNK_SIZE) as i32 + chunk.chunk_pos.x() * CHUNK_SIZE as i32;
-                            let y = (i / CHUNK_SIZE) as i32 + chunk.chunk_pos.y() * CHUNK_SIZE as i32;
-                            water_store.remove(Vector2::new(x as f32, y as f32));
-                        }
                     }
                 }
                 false

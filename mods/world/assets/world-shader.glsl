@@ -20,9 +20,11 @@ void main() {
 in vec2 v_FrameCoord;
 
 uniform sampler2D u_Frame;
+uniform sampler2D u_WaterDepthMap;
 
 layout (location = 0) out vec4 r_Color;
 
 void main() {
-    r_Color = texture(u_Frame, v_FrameCoord);
+    vec4 water_info = texture(u_WaterDepthMap, v_FrameCoord);
+    r_Color = texture(u_Frame, v_FrameCoord) + texture(u_Frame, vec2(v_FrameCoord.x, water_info.b)) * water_info.r;
 }

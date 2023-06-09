@@ -42,6 +42,11 @@ impl ShaderLayoutType for TextureID {
     type Type = Sampler2D;
 }
 
+pub struct Float;
+impl ShaderLayoutType for Float {
+    type Type = f32;
+}
+
 pub trait Layout {
     type Type;
     fn layout() -> Vec<ShaderDataType>;
