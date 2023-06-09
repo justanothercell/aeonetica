@@ -36,12 +36,10 @@ uniform float u_AmbientLightStrength = 0.1;
 uniform float u_Time;
 
 layout (location = 0) out vec4 r_Color;
-layout (location = 1) out vec4 r_LightMap;
 
 void main() {
     vec4 tex_color = texture(u_Textures[v_TexIdx], v_TexCoord + vec2(0.0, v_WaveOffset * sin(u_Time + v_TexCoord.x * PI)));
     float alpha = min(tex_color.a, ALPHA_BLEND);
     r_Color = vec4(tex_color.xyz * u_AmbientLightStrength, alpha);
-    r_LightMap = vec4(0.0, 0.0, 0.0, alpha);
 }
 

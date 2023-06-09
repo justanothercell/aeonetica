@@ -32,9 +32,7 @@ flat in int v_TexIdx;
 uniform sampler2D u_Textures[16];
 
 layout (location = 0) out vec4 r_FragColor;
-layout (location = 1) out vec4 r_LightMap;
 
 void main() {
-    r_LightMap = texture(u_Textures[v_TexIdx], v_TexCoord);
-    r_FragColor = vec4(0.0);
+    r_FragColor = texture(u_Textures[v_TexIdx], v_TexCoord) * vec4(1.3, 1.3, 1.3, 1.0);
 }

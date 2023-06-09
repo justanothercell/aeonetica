@@ -24,7 +24,6 @@ impl WorldRenderPipeline {
         Ok(Self {
             intermediate_fb: FrameBuffer::new([
                     Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)), // main scene colors
-                    Attachment::Color(Texture::create(Self::FB_SIZE, Format::RgbaF16)), // light map
                 ], true)?,
             shader: shader::Program::from_source(include_str!("../../assets/world-shader.glsl"))?
         })
@@ -56,7 +55,6 @@ impl Pipeline for WorldRenderPipeline {
         
         self.intermediate_fb.render([
                 (0, &Self::FRAME_USTR),
-                (1, &Self::LIGHTMAP_USTR),
             ],
             target, &self.shader
         );

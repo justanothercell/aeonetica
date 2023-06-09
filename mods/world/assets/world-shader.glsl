@@ -17,34 +17,12 @@ void main() {
 #[fragment]
 #version 450 core
 
-//#define BLOOM_STRENGTH 5
-
 in vec2 v_FrameCoord;
 
 uniform sampler2D u_Frame;
-uniform sampler2D u_LightMap;
-
-#ifdef BLOOM_STRENGTH
-    uniform float u_BloomWeight[BLOOM_STRENGTH] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
-#endif
 
 layout (location = 0) out vec4 r_Color;
 
 void main() {
-    #ifdef BLOOM_STRENGTH
-        vec3 glowing = texture(u_LightMap, v_FrameCoord).rgb * u_BloomWeight[0];
-        vec2 tex_offset = 1.0 / vec2(1920, 1080);
-
-        for(int i = 1; i < BLOOM_STRENGTH; i++)
-        {
-            glowing += texture(u_LightMap, v_FrameCoord + vec2(tex_offset.x * i, 0.0)).rgb * u_BloomWeight[i];
-            glowing += texture(u_LightMap, v_FrameCoord - vec2(tex_offset.x * i, 0.0)).rgb * u_BloomWeight[i];
-            glowing += texture(u_LightMap, v_FrameCoord + vec2(0.0, tex_offset.y * i)).rgb * u_BloomWeight[i];
-            glowing += texture(u_LightMap, v_FrameCoord - vec2(0.0, tex_offset.y * i)).rgb * u_BloomWeight[i];
-        }
-    #else
-        vec3 glowing = texture(u_LightMap, v_FrameCoord).rgb * 1.3;
-    #endif
-
-    r_Color = texture(u_Frame, v_FrameCoord) + vec4(glowing, 0.0);
+    r_Color = texture(u_Frame, v_FrameCoord);
 }
