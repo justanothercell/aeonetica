@@ -117,7 +117,7 @@ impl ClientRuntime {
                     log!(ERROR, "{e}");
                     exit(1);
                 });
-                std::thread::sleep(Duration::from_millis((MAX_CLIENT_TIMEOUT - 2000) as u64))
+                std::thread::sleep(Duration::from_millis((MAX_CLIENT_TIMEOUT / 2) as u64))
             }
         });
         log!("started timeout preventer");

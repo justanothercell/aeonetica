@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
 use aeonetica_engine::nanoserde;
 use aeonetica_engine::math::vector::Vector2;
@@ -111,14 +113,17 @@ pub trait WorldView {
 
     /// Tries to slide along walls instead of stopping movement alltogether.
     fn calc_move(&self, pos: &mut Vector2<f32>, size: Vector2<f32>, delta: Vector2<f32>) {
-        let delta_x = (delta.x, 0.0).into();
-        let delta_y = (0.0, delta.y).into();
-        if !self.overlap_aabb(*pos + delta, size) {
-            *pos += delta;
-        } else if !self.overlap_aabb(*pos + delta_x, size) {
-            *pos += delta_x;
-        } else if !self.overlap_aabb(*pos + delta_y, size) {
-            *pos += delta_y;
+        let i = delta.mag().mul(25.0).ceil();
+        let delta_x = (delta.x / i, 0.0).into();
+        let delta_y = (0.0, delta.y / i).into();
+        for _ in 0..i as i32 {
+            if !self.overlap_aabb(*pos + delta, size) {
+                *pos += delta / i;
+            } else if !self.overlap_aabb(*pos + delta_x, size) {
+                *pos += delta_x;
+            } else if !self.overlap_aabb(*pos + delta_y, size) {
+                *pos += delta_y;
+            }
         }
     }
 }

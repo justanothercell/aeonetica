@@ -205,8 +205,9 @@ impl World {
         }
         h = h.min(k-2);
         if h < 3 || k == 12 { return }
-        for i in start+1..start+size-2 {
+        for i in start+1..start+size-1 {
             for j in h-3..h {
+                if j == h-3 && (i < start + 4 || i > start+size-4) { continue; }
                 let p = Vector2::new(i, pos.y - j);
                 self.set_init_water_tile_at(p, population, (h - j) as u8);
                 let t = self.get_initial_terrain_tile(p, false);
