@@ -14,6 +14,7 @@ use crate::ecs::Engine;
 use crate::ecs::events::ConnectionListener;
 use crate::ecs::messaging::Messenger;
 use crate::networking::ClientHandle;
+use crate::server_runtime::mod_client_zip;
 
 impl Engine {
     pub(crate) fn handle_queued(&mut self) -> ErrorResult<()> {
@@ -59,29 +60,38 @@ impl Engine {
         match &packet.message {
             ClientMessage::Register(client_info) => {
                 if client_info.client_version == ENGINE_VERSION {
-                    self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
-                        last_seen: std::time::Instant::now(),
-                        client_addr: *addr
-                    });
-                    self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
-                        conv_id: packet.conv_id,
-                        message: ServerMessage::RegisterResponse(NetResult::Ok(ServerInfo {
-                            server_version: ENGINE_VERSION.to_string(),
-                            mod_profile: self.runtime.mod_profile.profile.clone(),
-                            mod_version: self.runtime.mod_profile.version.clone(),
-                            mods: self.runtime.mod_profile.modstack.iter().map(|(name_path, flags)| {
-                                let (name, path) = name_path.split_once(':').unwrap();
-                                let client_path = format!("runtime/{path}/{name}_client.zip");
-                                let size = std::fs::metadata(&client_path).unwrap().len();
-                                let mut file = File::open(&client_path).unwrap();
-                                let mut hasher = sha2::Sha256::default();
-                                std::io::copy(&mut file, &mut hasher).unwrap();
-                                let digest = hasher.finalize();
-                                (name_path.clone(), flags.clone(), format!("{digest:X}"), size)
-                            }).collect(),
-                        }))
-                    }, SendMode::Safe)?;
-                    log!("registered client ip {addr} with id {}", packet.client_id);
+                    if !self.runtime.supported_mod_targets.contains(&client_info.mod_target) {
+                        self.runtime.ns.borrow().send_raw(*addr, &ServerPacket{
+                            conv_id: packet.conv_id,
+                            message: ServerMessage::RegisterResponse(NetResult::Err(
+                                format!("server does not support requested target {}\n(of {:?})", client_info.client_version, self.runtime.supported_mod_targets)
+                            ))
+                        }, SendMode::Safe)?;
+                    } else {
+                        self.runtime.ns.borrow_mut().clients.insert(packet.client_id, ClientHandle {
+                            last_seen: std::time::Instant::now(),
+                            client_addr: *addr
+                        });
+                        self.runtime.ns.borrow().send(&packet.client_id, &ServerPacket{
+                            conv_id: packet.conv_id,
+                            message: ServerMessage::RegisterResponse(NetResult::Ok(ServerInfo {
+                                server_version: ENGINE_VERSION.to_string(),
+                                mod_profile: self.runtime.mod_profile.profile.clone(),
+                                mod_version: self.runtime.mod_profile.version.clone(),
+                                mods: self.runtime.mod_profile.modstack.iter().map(|(name_path, flags)| {
+                                    let (name, path) = name_path.split_once(':').unwrap();
+                                    let client_path = mod_client_zip(path, name, &client_info.mod_target);
+                                    let size = std::fs::metadata(&client_path).unwrap().len();
+                                    let mut file = File::open(&client_path).unwrap();
+                                    let mut hasher = sha2::Sha256::default();
+                                    std::io::copy(&mut file, &mut hasher).unwrap();
+                                    let digest = hasher.finalize();
+                                    (name_path.clone(), flags.clone(), format!("{digest:X}"), size)
+                                }).collect(),
+                            }))
+                        }, SendMode::Safe)?;
+                        log!("registered client ip {addr} with id {}", packet.client_id);
+                    }
                 } else {
                     self.runtime.ns.borrow().send_raw(*addr, &ServerPacket{
                         conv_id: packet.conv_id,
@@ -95,9 +105,9 @@ impl Engine {
                 conv_id: packet.conv_id,
                 message: ServerMessage::Pong(msg.clone()),
             }, SendMode::Safe)?,
-            ClientMessage::DownloadMod(name_path, offset) => {
+            ClientMessage::DownloadMod(name_path, mod_target, offset) => {
                 let (name, path) = name_path.split_once(':').unwrap();
-                let client_path = format!("runtime/{path}/{name}_client.zip");
+                let client_path = mod_client_zip(path, name, mod_target);
                 let mut file = File::open(client_path)?;
                 let mut buffer = [0;MOD_DOWNLOAD_CHUNK_SIZE];
                 file.seek(SeekFrom::Start(*offset))?;

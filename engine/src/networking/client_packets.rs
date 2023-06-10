@@ -10,7 +10,7 @@ use crate::nanoserde::{SerBin, DeBin};
 pub struct ClientPacket {
     pub client_id: ClientId,
     pub conv_id: Id,
-    pub message: ClientMessage
+    pub message: ClientMessage,
 }
 
 #[derive(Debug, SerBin, DeBin)]
@@ -19,7 +19,8 @@ pub enum ClientMessage {
     Logout,
     KeepAlive,
     Register(ClientInfo),
-    DownloadMod(String, u64),
+    /// mod_name, mod_target, offset
+    DownloadMod(String, String, u64),
     Acknowlege(Id),
     Ping(String),
     Pong(String),
@@ -30,5 +31,6 @@ pub enum ClientMessage {
 #[derive(Debug, SerBin, DeBin)]
 pub struct ClientInfo {
     pub client_id: ClientId,
-    pub client_version: String
+    pub client_version: String,
+    pub mod_target: String
 }

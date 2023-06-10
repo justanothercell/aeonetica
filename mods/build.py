@@ -5,6 +5,7 @@ import sys
 import shutil
 import zipfile
 import contextlib
+import subprocess
 
 @contextlib.contextmanager
 def pushd(new_dir):
@@ -16,6 +17,8 @@ def pushd(new_dir):
         chdir(previous_dir)
 
 mod_name = None
+_a, _b, _c, _d = subprocess.check_output(['rustc', '-vV']).decode('utf-8').split('\n')[4][6:].split('-')
+mod_target = _a + '-' + _c
 build_mode = 'debug'
 deploy_path = ''
 output_file = ''
@@ -62,14 +65,18 @@ def zippify(prefix: str, feature: str):
         if not path.exists(output_file):
             raise Exception(f'Error retreiving \'{output_file}\': No such file or directory')
 
-        out_dir = f'out/{feature}'
+        feature_name = feature
+        if feature == 'client':
+            feature_name += f'-{mod_target}'
+
+        out_dir = f'out/{feature_name}'
         makedirs(out_dir, exist_ok=True)
 
         # package file
         target_bin = f'{mod_name}_{feature}.{get_mod_file_ext()}'
         shutil.copy(output_file, f'{out_dir}/{target_bin}')
 
-        archive = path.abspath(f'{mod_name}_{feature}.zip')
+        archive = path.abspath(f'{mod_name}_{feature_name}.zip')
         with pushd(out_dir):
             with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 zipf.write(target_bin)

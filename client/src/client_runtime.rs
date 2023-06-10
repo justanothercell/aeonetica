@@ -11,7 +11,7 @@ use aeonetica_engine::error::{Error, Fatality, ErrorResult};
 use aeonetica_engine::error::builtin::ModError;
 use aeonetica_engine::libloading::{Library, Symbol};
 use aeonetica_engine::nanoserde::SerBin;
-use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT};
+use aeonetica_engine::{ENGINE_VERSION, Id, log, MAX_CLIENT_TIMEOUT, MOD_TARGET};
 use aeonetica_engine::networking::client_packets::{ClientInfo, ClientMessage, ClientPacket};
 use aeonetica_engine::networking::server_packets::{ServerMessage, ServerPacket};
 use aeonetica_engine::networking::{MOD_DOWNLOAD_CHUNK_SIZE, NetResult, SendMode};
@@ -21,30 +21,20 @@ use aeonetica_engine::util::unzip_archive;
 use crate::{ClientMod, ClientModBox};
 use crate::networking::NetworkClient;
 
-#[cfg(target_os = "windows")]
-mod paths_util {
-    pub(crate) const MOD_FILE_EXTENSION: &str = ".dll";
-    pub(crate) fn client_lib(path: &str, name: &str) -> String {
-        format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
-    }
-}
 
-#[cfg(target_os = "linux")]
 mod paths_util {
-    pub(crate) const MOD_FILE_EXTENSION: &str = ".so";
+    #[cfg(target_os = "windows")]
+    pub(crate) const MOD_FILE_EXTENSION: &str = "dll";
+    #[cfg(target_os = "linux")]
+    pub(crate) const MOD_FILE_EXTENSION: &str = "so";
     pub(crate) fn client_lib(path: &str, name: &str) -> String {
-        format!("runtime/{path}/{name}_client{MOD_FILE_EXTENSION}")
+        format!("runtime/{path}/{name}_client.{MOD_FILE_EXTENSION}")
     }
-}
-
-mod paths_util_common {
     pub(crate) fn mod_hash(path: &str) -> String {
         format!("runtime/{path}.hash")
     }
 }
-
 pub(crate) use paths_util::*;
-use crate::client_runtime::paths_util_common::mod_hash;
 use crate::data_store::DataStore;
 use crate::renderer::context::RenderContext;
 
@@ -148,6 +138,7 @@ impl ClientRuntime {
             message: ClientMessage::Register(ClientInfo {
                 client_id: self.client_id,
                 client_version: ENGINE_VERSION.to_string(),
+                mod_target: MOD_TARGET.to_string()
             }),
         }, move |client, resp| {
             match &resp.message {
@@ -171,7 +162,7 @@ impl ClientRuntime {
                                         let _ = std::fs::remove_dir_all(format!("runtime/{path}"));
                                         (name_path.clone(),  Rc::new(RefCell::new(LoadingMod {
                                             name: name.to_string(),
-                                            path: name.to_string(),
+                                            path: path.to_string(),
                                             flags,
                                             hash,
                                             total_size: size,
@@ -230,7 +221,7 @@ impl ClientRuntime {
                 self.request_response(&ClientPacket {
                     client_id: self.client_id,
                     conv_id: Id::new(),
-                    message: ClientMessage::DownloadMod(name_path.clone(), i),
+                    message: ClientMessage::DownloadMod(name_path.clone(), MOD_TARGET.to_string(), i),
                 }, move |_client, resp| {
                     let mut lmb = lm.borrow_mut();
                     match &resp.message {

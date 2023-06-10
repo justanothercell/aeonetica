@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::ops::Mul;
 
 use aeonetica_engine::nanoserde::{SerBin, DeBin};
@@ -66,8 +67,23 @@ impl Chunk {
     }
 }
 
-/// THis trait is used for both client and server.
-/// This trait is read only, as the name implies.
+impl Display for Chunk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Chunk {} (base @{})", self.chunk_pos, self.chunk_pos * CHUNK_SIZE as i32)?;
+        for y in 0..CHUNK_SIZE as i32 {
+            for x in 0..CHUNK_SIZE as i32 {
+                let pos = Vector2::new(x, y);
+                write!(f, "[{:02X}|{:02X}|{:02X}] ", self.get_tile(pos) as u16, self.get_fg_tile(pos) as u16, self.get_water_tile(pos))?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
+    }
+}
+
+
+/// This trait is used for both client and server and
+/// is read/viewing only, as the name implies.
 ///
 /// The methods rely on the position being loaded when called client side and being alreaddy generted when being called serverside.
 /// For ease of handling, they return a sensible default (see doc comments).

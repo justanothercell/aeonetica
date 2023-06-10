@@ -7,7 +7,7 @@ server/mods/**.zip
 **/Cargo.lock
 *.zip
 perf.data*
-__pycache__
+**/__pycache__/**
 
 
 local_testing/
