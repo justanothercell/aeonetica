@@ -83,7 +83,7 @@ if __name__ == '__main__':
                     zipf.write('server/' + filename, filename)
                     
         # package mods
-        mods_package = f'server-{target_platform}-{mode}.zip'
+        mods_package = f'mods-{target_platform}-{mode}.zip'
         print(f'{GREEN} -> generating `{mods_package}`{ENDC}')
         
         with zipfile.ZipFile(mods_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
