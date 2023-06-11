@@ -69,7 +69,7 @@ if __name__ == '__main__':
         with zipfile.ZipFile(client_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(f'client/target/{mode}/{client_bin}', client_bin)
         
-        # package server and mods
+        # package server
         server_bin = 'server' + binary_ext
         server_package = f'server-{target_platform}-{mode}.zip'
         print(f'{GREEN} -> generating `{server_package}`{ENDC}')
@@ -80,6 +80,16 @@ if __name__ == '__main__':
             for file in os.listdir('server/mods'):
                 filename = 'mods/' + file
                 if filename.endswith('.zip') or filename.endswith('.ron'):
+                    zipf.write('server/' + filename, filename)
+                    
+        # package mods
+        mods_package = f'server-{target_platform}-{mode}.zip'
+        print(f'{GREEN} -> generating `{mods_package}`{ENDC}')
+        
+        with zipfile.ZipFile(mods_package, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file in os.listdir('server/mods'):
+                filename = 'mods/' + file
+                if filename.endswith('.zip'):
                     zipf.write('server/' + filename, filename)
         
     print(f'{BOLD}done.{ENDC}')
