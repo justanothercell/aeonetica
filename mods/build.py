@@ -22,7 +22,9 @@ mod_target = _a + '-' + _c.replace('linux', 'unix')
 build_mode = 'debug'
 deploy_path = ''
 output_file = ''
+do_build = True
 help_text = f"""Usage: ./build.py [options]
+
 Options:
     -h, --help              | displays this help text
     -r, --release           | build in release mode (default: {build_mode})
@@ -49,6 +51,9 @@ def get_mod_file_ext():
         raise Exception('Unsupported platform {sys.platform}')
 
 def build(feature: str):
+    if not do_build:
+        print('skipping build: -z flag')
+        return
     # run cargo build command
     build_cmd = f'cargo rustc --features="{feature}" --crate-type=dylib'
     if build_mode == 'release':
@@ -126,6 +131,8 @@ if __name__ == '__main__':
                 build_mode = 'release'
             elif arg in ['--deploy', '-d']:
                 deploy_path = next(it)
+           elif arg in ['--only-zip', '-z']:
+                do_build = False
             elif arg in ['--working-dir', '-w']:
                 working_dir = next(it)
             elif arg == '--clean':
