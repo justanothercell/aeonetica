@@ -131,7 +131,7 @@ if __name__ == '__main__':
                 build_mode = 'release'
             elif arg in ['--deploy', '-d']:
                 deploy_path = next(it)
-           elif arg in ['--only-zip', '-z']:
+            elif arg in ['--only-zip', '-z']:
                 do_build = False
             elif arg in ['--working-dir', '-w']:
                 working_dir = next(it)
