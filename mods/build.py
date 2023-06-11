@@ -18,7 +18,7 @@ def pushd(new_dir):
 
 mod_name = None
 _a, _b, _c, _d = subprocess.check_output(['rustc', '-vV']).decode('utf-8').split('\n')[4][6:].split('-')
-mod_target = _a + '-' + _c
+mod_target = _a + '-' + _c.replace('linux', 'unix')
 build_mode = 'debug'
 deploy_path = ''
 output_file = ''
@@ -29,6 +29,7 @@ Options:
     -d, --deploy <dir>      | deploy the mod to <dir>
     -o, --output <file>     | set the output file
     -w, --working-dir <dir> | set the working directory (default: script directory)
+    -z, --only-zip          | do not recompile, only re-zip
         --clean             | clean build files"""
  
 def get_output_file(feature: str):
