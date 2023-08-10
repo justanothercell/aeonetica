@@ -1,10 +1,10 @@
 <div align="center">
 
-![logo](../assets/font_and_glyphs/logo_banner_upscaled_x10.png)
+![logo](/assets/font_and_glyphs/logo_banner_upscaled_x10.png)
 
 <h1>The Aeonetica Multiplayer Game Engine</h1>
 
-#### [📑Documentation](https://github.com/DragonFIghter603/aeonetica/wiki) [⚖️License](../LICENSE) [🌿Release Branch](https://github.com/DragonFIghter603/aeonetica/tree/release) [🚀Releases](https://github.com/DragonFIghter603/aeonetica/releases)
+#### [📑Documentation](https://github.com/DragonFIghter603/aeonetica/wiki) [⚖️License](/LICENSE) [🌿Release Branch](https://github.com/DragonFIghter603/aeonetica/tree/release) [🚀Releases](https://github.com/DragonFIghter603/aeonetica/releases)
 
 </div>
 
@@ -23,7 +23,7 @@
 
 ---
 
-<img src="img/pipes_metal.png" alt="" style="width: 510px; image-rendering: pixelated">
+<img src="/.github/img/pipes_metal.png" alt="" style="width: 510px; image-rendering: pixelated">
 
 ---
 
