@@ -1,5 +1,5 @@
 #![feature(unboxed_closures)]
-#![feature(generators, generator_trait)]
+#![feature(coroutines, coroutine_trait)]
 #![feature(trait_alias)]
 #![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]

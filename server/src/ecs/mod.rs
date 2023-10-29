@@ -233,7 +233,7 @@ impl Engine {
         unsafe {
             #[allow(deprecated)]
             let mut arr: [Option<&mut Box<_>>; TT::LEN] = std::mem::uninitialized();
-            for (e, i) in (0..ids.len()).enumerate() {
+            for i in 0..ids.len() {
                 let mut_engine = self.mut_handle();
                 if let Some(entity) = mut_engine.entites.get_mut(&ids[i]) {
                     arr[i] = entity.modules.get_mut(&tids[i])

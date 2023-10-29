@@ -10,7 +10,7 @@ use crate::tiles::{Tile, FgTile};
 pub const CHUNK_SIZE: usize = 16;
 pub const GRAVITY: f32 = -20.0;
 
-#[derive(SerBin, DeBin, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum Population {
     Uninit,
@@ -19,6 +19,18 @@ pub enum Population {
     TerrainWatered,
     Structures,
     Finished
+}
+
+impl SerBin for Population {
+    fn ser_bin(&self, output: &mut Vec<u8>) {
+        (*self as u8).ser_bin(output)
+    }
+}
+
+impl DeBin for Population {
+    fn de_bin(offset: &mut usize, bytes: &[u8]) -> Result<Self, nanoserde::DeBinErr> {
+        Ok(unsafe { std::mem::transmute(u8::de_bin(offset, bytes)?) })
+    }
 }
 
 #[derive(SerBin, DeBin, Debug, Clone)]

@@ -206,6 +206,7 @@ impl World {
             }
             chunk_ref = chunk_ref.further_y.as_ref().unwrap();
         }
+        #[allow(invalid_reference_casting)] // FIXME: Use UnsafeCell
         let mut_self = unsafe { &mut *(self as *const Self as usize as *mut Self)};
         mut_self.cached_chunk_pos = chunk_pos;
         mut_self.cached_chunk_raw_ptr = &chunk_ref.chunk as *const Chunk as usize;

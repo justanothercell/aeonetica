@@ -21,7 +21,7 @@ impl<T> Nullable<T> {
         Self::Null
     }
     #[inline]
-    pub const fn option(self) -> Option<T> where T: ~const Destruct {
+    pub fn option(self) -> Option<T> where T: Destruct {
         match self {
             Nullable::Null => None,
             Nullable::Value(v) => Some(v)
@@ -59,7 +59,7 @@ impl<T> Nullable<T> {
     }
     #[inline]
     #[track_caller]
-    pub const fn unwrap(self) -> T where T: ~const Destruct {
+    pub fn unwrap(self) -> T where T: Destruct {
         match self {
             Nullable::Value(val) => val,
             Nullable::Null => panic!("called `Nullable::unwrap()` on a `Null` value"),
@@ -67,18 +67,18 @@ impl<T> Nullable<T> {
     }
     #[inline]
     #[track_caller]
-    pub const fn except(self, msg: &str) -> T where T: ~const Destruct {
+    pub fn except(self, msg: &str) -> T where T: Destruct {
         match self {
             Nullable::Value(val) => val,
             Nullable::Null => panic!("{}", msg),
         }
     }
     #[inline]
-    pub fn unwrap_or(self, default: T) -> T where T: ~const Destruct {
+    pub fn unwrap_or(self, default: T) -> T where T: Destruct {
         self.option().unwrap_or(default)
     }
     #[inline]
-    pub fn unwrap_or_else<F: ~const FnOnce() -> T + ~const Destruct>(self, f: F) -> T{
+    pub fn unwrap_or_else<F: FnOnce() -> T + Destruct>(self, f: F) -> T{
         self.option().unwrap_or_else(f)
     }
     #[inline]
@@ -87,37 +87,37 @@ impl<T> Nullable<T> {
     }
     #[inline]
     #[track_caller]
-    pub const unsafe fn unwrap_unchecked(self) -> T where T: ~const Destruct {
+    pub unsafe fn unwrap_unchecked(self) -> T where T: Destruct {
         self.option().unwrap_unchecked()
     }
     #[inline]
-    pub const fn map<U, F: ~const FnOnce(T) -> U + ~const Destruct>(self, f: F) -> Nullable<U> where T: ~const Destruct {
+    pub fn map<U, F: FnOnce(T) -> U + Destruct>(self, f: F) -> Nullable<U> where T: Destruct {
         match self {
             Nullable::Value(x) => Nullable::Value(f(x)),
             Nullable::Null => Nullable::Null,
         }
     }
     #[inline]
-    pub const fn inspect<F: ~const FnOnce(&T) + ~const Destruct>(self, f: F) -> Self {
+    pub fn inspect<F: FnOnce(&T) + Destruct>(self, f: F) -> Self {
         if let Nullable::Value(ref x) = self {
             f(x);
         }
         self
     }
     #[inline]
-    pub fn map_or<U: ~const Destruct, F: ~const FnOnce(T) -> U + ~const Destruct>(self, default: U, f: F) -> U {
+    pub fn map_or<U: Destruct, F: FnOnce(T) -> U + Destruct>(self, default: U, f: F) -> U {
         self.option().map_or(default, f)
     }
     #[inline]
-    pub fn map_or_else<U, D: ~const FnOnce() -> U + ~const Destruct, F: ~const FnOnce(T) -> U + ~const Destruct>(self, default: D, f: F) -> U {
+    pub fn map_or_else<U, D: FnOnce() -> U + Destruct, F: FnOnce(T) -> U + Destruct>(self, default: D, f: F) -> U {
         self.option().map_or_else(default, f)
     }
     #[inline]
-    pub fn ok_or<E: ~const Destruct>(self, err: E) -> Result<T, E> {
+    pub fn ok_or<E: Destruct>(self, err: E) -> Result<T, E> {
         self.option().ok_or(err)
     }
     #[inline]
-    pub fn ok_or_else<E, F: ~const FnOnce() -> E + ~const Destruct>(self, err: F) -> Result<T, E> {
+    pub fn ok_or_else<E, F: FnOnce() -> E + Destruct>(self, err: F) -> Result<T, E> {
         self.option().ok_or_else(err)
     }
     #[inline]
@@ -135,21 +135,21 @@ impl<T> Nullable<T> {
         }
     }
     #[inline]
-    pub const fn and<U: ~const Destruct>(self, nullableb: Nullable<U>) -> Nullable<U> where T: ~const Destruct {
+    pub fn and<U: Destruct>(self, nullableb: Nullable<U>) -> Nullable<U> where T: Destruct {
         match self {
             Nullable::Value(_) => nullableb,
             Nullable::Null => Nullable::Null,
         }
     }
     #[inline]
-    pub const fn and_then<U, F: ~const FnOnce(T) -> Nullable<U> + ~const Destruct>(self, f: F) -> Nullable<U> where T: ~const Destruct {
+    pub fn and_then<U, F: FnOnce(T) -> Nullable<U> + Destruct>(self, f: F) -> Nullable<U> where T: Destruct {
         match self {
             Nullable::Value(x) => f(x),
             Nullable::Null => Nullable::Null,
         }
     }
     #[inline]
-    pub const fn filter<P: ~const FnOnce(&T) -> bool + ~const Destruct>(self, predicate: P) -> Self where T: ~const Destruct {
+    pub fn filter<P: FnOnce(&T) -> bool + Destruct>(self, predicate: P) -> Self where T: Destruct {
         if let Nullable::Value(x) = self {
             if predicate(&x) {
                 return Nullable::Value(x);
@@ -158,21 +158,21 @@ impl<T> Nullable<T> {
         Nullable::Null
     }
     #[inline]
-    pub const fn or(self, nullableb: Nullable<T>) -> Nullable<T> where T: ~const Destruct {
+    pub fn or(self, nullableb: Nullable<T>) -> Nullable<T> where T: Destruct {
         match self {
             Nullable::Value(x) => Nullable::Value(x),
             Nullable::Null => nullableb,
         }
     }
     #[inline]
-    pub const fn or_else<F: ~const FnOnce() -> Nullable<T> + ~const Destruct>(self, f: F) -> Nullable<T> where T: ~const Destruct {
+    pub fn or_else<F: FnOnce() -> Nullable<T> + Destruct>(self, f: F) -> Nullable<T> where T: Destruct {
         match self {
             Nullable::Value(x) => Nullable::Value(x),
             Nullable::Null => f(),
         }
     }
     #[inline]
-    pub const fn xor(self, nullableb: Nullable<T>) -> Nullable<T> where T: ~const Destruct {
+    pub fn xor(self, nullableb: Nullable<T>) -> Nullable<T> where T: Destruct {
         match (self, nullableb) {
             (Nullable::Value(a), Nullable::Null) => Nullable::Value(a),
             (Nullable::Null, Nullable::Value(b)) => Nullable::Value(b),
@@ -181,19 +181,19 @@ impl<T> Nullable<T> {
     }
     #[must_use = "if you intended to set a value, consider assignment instead"]
     #[inline]
-    pub const fn insert(&mut self, value: T) -> &mut T where T: ~const Destruct {
+    pub fn insert(&mut self, value: T) -> &mut T where T: Destruct {
         *self = Nullable::Value(value);
         unsafe { self.as_mut().unwrap_unchecked() }
     }
     #[inline]
-    pub const fn get_or_insert(&mut self, value: T) -> &mut T where T: ~const Destruct {
+    pub fn get_or_insert(&mut self, value: T) -> &mut T where T: Destruct {
         if let Nullable::Null = *self {
             *self = Nullable::Value(value);
         }
         unsafe { self.as_mut().unwrap_unchecked() }
     }
     #[inline]
-    pub const fn get_or_insert_with<F: ~const FnOnce() -> T + ~const Destruct>(&mut self, f: F) -> &mut T {
+    pub fn get_or_insert_with<F: FnOnce() -> T + Destruct>(&mut self, f: F) -> &mut T {
         if let Nullable::Null = *self {
             std::mem::forget(std::mem::replace(self, Nullable::Value(f())))
         }
@@ -216,14 +216,14 @@ impl<T> Nullable<T> {
         }
     }
     #[inline]
-    pub const fn zip<U: ~const Destruct>(self, other: Nullable<U>) -> Nullable<(T, U)> where T: ~const Destruct {
+    pub fn zip<U: Destruct>(self, other: Nullable<U>) -> Nullable<(T, U)> where T: Destruct {
         match (self, other) {
             (Nullable::Value(a), Nullable::Value(b)) => Nullable::Value((a, b)),
             _ => Nullable::Null,
         }
     }
     #[inline]
-    pub const fn zip_with<U: ~const Destruct, F: ~const FnOnce(T, U) -> R + ~const Destruct, R>(self, other: Nullable<U>, f: F) -> Nullable<R> where T: ~const Destruct {
+    pub fn zip_with<U: Destruct, F: FnOnce(T, U) -> R + Destruct, R>(self, other: Nullable<U>, f: F) -> Nullable<R> where T: Destruct {
         match (self, other) {
             (Nullable::Value(a), Nullable::Value(b)) => Nullable::Value(f(a, b)),
             _ => Nullable::Null,
@@ -233,7 +233,7 @@ impl<T> Nullable<T> {
 
 impl<T, U> Nullable<(T, U)> {
     #[inline]
-    pub const fn unzip(self) -> (Nullable<T>, Nullable<U>) where T: ~const Destruct, U: ~const Destruct {
+    pub fn unzip(self) -> (Nullable<T>, Nullable<U>) where T: Destruct, U: Destruct {
         match self {
             Nullable::Value((a, b)) => (Nullable::Value(a), Nullable::Value(b)),
             Nullable::Null => (Nullable::Null, Nullable::Null),
@@ -316,7 +316,7 @@ impl<T> From<Nullable<T>> for Option<T> {
 
 impl<T> Nullable<Option<T>> {
     #[inline]
-    pub const fn flatten(self) -> Nullable<T> where T: ~const Destruct {
+    pub fn flatten(self) -> Nullable<T> where T: Destruct {
         match self {
             Nullable::Value(inner) => match inner {
                 None => Nullable::Null,
@@ -326,7 +326,7 @@ impl<T> Nullable<Option<T>> {
         }
     }
     #[inline]
-    pub const fn opt_flatten(self) -> Option<T> where T: ~const Destruct {
+    pub fn opt_flatten(self) -> Option<T> where T: Destruct {
         match self {
             Nullable::Value(inner) => inner,
             Nullable::Null => None,
@@ -336,14 +336,14 @@ impl<T> Nullable<Option<T>> {
 
 impl<T> Nullable<Nullable<T>> {
     #[inline]
-    pub const fn flatten(self) -> Nullable<T> where T: ~const Destruct {
+    pub fn flatten(self) -> Nullable<T> where T: Destruct {
         match self {
             Nullable::Value(inner) => inner,
             Nullable::Null => Nullable::Null,
         }
     }
     #[inline]
-    pub fn opt_flatten(self) -> Option<T> where T: ~const Destruct {
+    pub fn opt_flatten(self) -> Option<T> where T: Destruct {
         match self {
             Nullable::Value(inner) => inner.into(),
             Nullable::Null => None,

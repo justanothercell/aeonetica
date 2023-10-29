@@ -1,7 +1,7 @@
 use aeonetica_engine::nanoserde::{self, DeBin, SerBin};
 
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, SerBin, DeBin, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Tile {
     Wall,
     StoneBrick,
@@ -12,6 +12,18 @@ pub enum Tile {
     QuarteredLamp,
     LabWall,
     LabBrickWall
+}
+
+impl SerBin for Tile {
+    fn ser_bin(&self, output: &mut Vec<u8>) {
+        (*self as u16).ser_bin(output)
+    }
+}
+
+impl DeBin for Tile {
+    fn de_bin(offset: &mut usize, bytes: &[u8]) -> Result<Self, nanoserde::DeBinErr> {
+        Ok(unsafe { std::mem::transmute(u16::de_bin(offset, bytes)?) })
+    }
 }
 
 impl Tile {
@@ -37,7 +49,7 @@ impl Tile {
 }
 
 #[repr(u16)]
-#[derive(Debug, Copy, Clone, SerBin, DeBin, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum FgTile {
     Empty,
     PipeEndL,
@@ -69,6 +81,18 @@ pub enum FgTile {
     FramedPipeUD,
     FramedPipeLR,
     FramedPipeJunction
+}
+
+impl SerBin for FgTile {
+    fn ser_bin(&self, output: &mut Vec<u8>) {
+        (*self as u16).ser_bin(output)
+    }
+}
+
+impl DeBin for FgTile {
+    fn de_bin(offset: &mut usize, bytes: &[u8]) -> Result<Self, nanoserde::DeBinErr> {
+        Ok(unsafe { std::mem::transmute(u16::de_bin(offset, bytes)?) })
+    }
 }
 
 impl FgTile {

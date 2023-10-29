@@ -2,13 +2,13 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap};
 use std::collections::hash_map::Entry;
 use std::marker::PhantomData;
-use std::ops::{Generator, GeneratorState};
+use std::ops::{Coroutine, CoroutineState};
 use aeonetica_engine::TypeId;
 use aeonetica_engine::util::id_map::IdMap;
 use aeonetica_engine::util::type_to_id;
 use crate::ecs::Engine;
 
-pub trait TaskFunc = for<'a> Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()>;
+pub trait TaskFunc = for<'a> Coroutine<&'a mut Engine, Yield = Yielder<'a>, Return = ()>;
 
 pub(crate) struct Task {
     timestamp: usize,
@@ -72,8 +72,8 @@ impl Engine {
         Yielder(PrivateYielder, PhantomData, waiter)
     }
 
-    pub fn queue_task<'a>(&mut self, task: impl Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()> + 'static) {
-        let taskfn: Box<dyn Generator<&'a mut Engine, Yield = Yielder<'a>, Return = ()>> = Box::new(*Box::new(task));
+    pub fn queue_task<'a>(&mut self, task: impl Coroutine<&'a mut Engine, Yield = Yielder<'a>, Return = ()> + 'static) {
+        let taskfn: Box<dyn Coroutine<&'a mut Engine, Yield = Yielder<'a>, Return = ()>> = Box::new(*Box::new(task));
         self.tasks.heap.push(Task {
             timestamp: self.tick,
             func: unsafe { std::mem::transmute::<_, _>(taskfn) }
@@ -106,7 +106,7 @@ impl Engine {
     pub(crate) fn run_task(&mut self, f: Box<dyn TaskFunc>) {
         let mut fnpin = Box::into_pin(f);
         match fnpin.as_mut().resume(self) {
-            GeneratorState::Yielded(yielder) => match yielder.2 {
+            CoroutineState::Yielded(yielder) => match yielder.2 {
                 WaitFor::Ticks(t, _) => self.tasks.heap.push(Task {
                     timestamp: { self.tick + t },
                     func: Box::from(fnpin),
@@ -119,7 +119,7 @@ impl Engine {
                     }
                 }
             }
-            GeneratorState::Complete(_) => (),
+            CoroutineState::Complete(_) => (),
         }
     }
 }
