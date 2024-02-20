@@ -88,13 +88,18 @@ pub trait Typle {
     unsafe fn opt_boxed_arr_to_tuple_of_nullable_mut<'a, PseudoTy: ?Sized>(arr: [Option<&mut Box<PseudoTy>>; Self::LEN]) -> Self::NullableMutTuple<'a>;
 }
 
+macro_rules! count {
+    () => (0usize);
+    ( $x:tt $($xs:tt)* ) => (1usize + count!($($xs)*));
+}
+
 macro_rules! typle_impls {
     ($($name: ident $index: literal)+) => {
-        impl<$($name:'static,)+> Typle for ($($name,)+){
-            const LEN: usize = ${count(name)};
+        impl<$($name:'static,)+> Typle for ($($name,)+) {
+            const LEN: usize = count!($($name)+);
             type NullableMutTuple<'a> = ($($crate::util::nullable::Nullable<&'a mut $name>,)+) where $($name: 'a,)+;
             
-            fn to_type_id_arr() -> [$crate::TypeId; ${count(name)}]{
+            fn to_type_id_arr() -> [$crate::TypeId; count!($($name)+)] {
                 [$($crate::util::type_to_id::<$name>(),)+]
             }
 
